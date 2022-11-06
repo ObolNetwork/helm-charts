@@ -7,3 +7,4 @@
 **/override.yaml
 
 .DS_Store
+*ignore*
