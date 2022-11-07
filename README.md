@@ -8,7 +8,7 @@ The curated list of Obol helm charts. Every chart is located in a separate folde
 
 ```bash
 $ helm repo add charon https://obolnetwork.github.io/helm-charts
-$ helm install my-release obol/charon
+$ helm install my-release obol/<chart-name>
 ```
 
 ## Before you begin
@@ -41,6 +41,6 @@ to use the Helm client to manage packages on your Kubernetes cluster.
 
 Useful Helm Client Commands:
 
-* Install a chart: `helm install my-release obol/charon`
+* Install a chart: `helm install my-release obol/<chart-name>`
 * Upgrade your application: `helm upgrade`
 * Uninstall a chart: `helm uninstall my-release`
