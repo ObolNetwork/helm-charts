@@ -9,7 +9,7 @@
 # when the hash of the last commit in the branch you set up changes. This does
 # NOT apply to ownership claim operations, which are processed immediately.
 #
-repositoryID: 56d5740d-3a1a-4a58-a5ab-c53a5e744cb5
+repositoryID: d08600e1-8a77-4469-84b7-be6fcf286493
 owners: # (optional, used to claim repository ownership)
   - name: aly
     email: aly@obol.tech
