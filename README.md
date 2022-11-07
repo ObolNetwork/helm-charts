@@ -1,3 +1,5 @@
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/charon)](https://artifacthub.io/packages/search?repo=charon)
+
 # The Obol Charts for Kubernetes
 
 The curated list of Obol helm charts. Every chart is located in a separate folder and has the configuration parameters located in `values.yaml` file.
@@ -5,8 +7,8 @@ The curated list of Obol helm charts. Every chart is located in a separate folde
 ## TL;DR
 
 ```bash
-$ helm repo add obol https://charts.gcp.obol.tech
-$ helm install my-release obol/<chart-name>
+$ helm repo add charon https://obolnetwork.github.io/helm-charts
+$ helm install my-release obol/charon
 ```
 
 ## Before you begin
@@ -39,6 +41,6 @@ to use the Helm client to manage packages on your Kubernetes cluster.
 
 Useful Helm Client Commands:
 
-* Install a chart: `helm install my-release obol/<chart-name>`
+* Install a chart: `helm install my-release obol/charon`
 * Upgrade your application: `helm upgrade`
 * Uninstall a chart: `helm uninstall my-release`
