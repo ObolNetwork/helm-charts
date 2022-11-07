@@ -1,14 +1,13 @@
-
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/charon)](https://artifacthub.io/packages/search?repo=charon)
 
-# Charon Chart
+# The Obol Charts for Kubernetes
 
 The curated list of Obol helm charts. Every chart is located in a separate folder and has the configuration parameters located in `values.yaml` file.
 
 ## TL;DR
 
 ```bash
-$ helm repo add obol https://obolnetwork.github.io/helm-charts
+$ helm repo add charon https://obolnetwork.github.io/helm-charts
 $ helm install my-release obol/<chart-name>
 ```
 
