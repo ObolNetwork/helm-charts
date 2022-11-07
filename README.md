@@ -7,7 +7,7 @@ The curated list of Obol helm charts. Every chart is located in a separate folde
 ## TL;DR
 
 ```bash
-$ helm repo add charon https://obolnetwork.github.io/helm-charts
+$ helm repo add obol https://obolnetwork.github.io/helm-charts
 $ helm install my-release obol/<chart-name>
 ```
 
