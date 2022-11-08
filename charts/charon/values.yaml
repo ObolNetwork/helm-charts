@@ -131,15 +131,10 @@ tolerations: {}
 ##         - key: app.kubernetes.io/name
 ##           operator: In
 ##           values:
-##           - teku
+##           - charon
 ##       topologyKey: kubernetes.io/hostname
 ##
 affinity: {}
-
-## Additional labels for all resources
-##
-additionalLabels:
-  client-type: "consensus"
 
 ## Configure session affinity for validator clients to hit the same beacon node
 ## for the period specified in `timeoutSeconds`
