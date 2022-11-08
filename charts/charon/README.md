@@ -4,6 +4,37 @@ Charon
 
 Charon is an open-source Ethereum Distributed validator client written in golang.
 
+# Charon Helm Chart
+
+* Installs Charon distributed validator client node [Charin](https://github.com/ObolNetwork/charon)
+
+## Get Repo Info
+
+```console
+helm repo add obol https://obolnetwork.github.io/helm-charts
+helm repo update
+```
+
+_See [helm repo](https://helm.sh/docs/helm/helm_repo/) for command documentation._
+
+## Installing the Chart
+
+To install the chart with the release name `my-release`:
+
+```console
+helm install my-release obol/charon
+```
+
+## Uninstalling the Chart
+
+To uninstall/delete the my-release deployment:
+
+```console
+helm delete my-release
+```
+
+The command removes all the Kubernetes components associated with the chart and deletes the release.
+
 
 ## Configuration
 
