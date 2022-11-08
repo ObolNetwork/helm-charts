@@ -2,13 +2,41 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-replicaCount: 1
+global:
+  ## Credentials to fetch images from private registry
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+  ##
+  imagePullSecrets: []
+
+  ## Service account
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
+  ## Additional settings could be made in non-global section.
+  ##
+  serviceAccount:
+    # Specifies whether a service account should be created
+    create: true
+    # Annotations to add to the service account
+    annotations: {}
+    # The name of the service account to use.
+    # If not set and create is true, a name is generated using the fullname template
+    name: ""
+  
+  ## Configure liveness and readiness probes
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+  ## NB! readinessProbe and livenessProbe must be disabled before fully synced
+  ## Additional settings could be made in non-global section.
+  ##
+  livenessProbe:
+    enabled: true
+
+  readinessProbe:
+    enabled: true
 
 image:
-  repository: ghcr.io/obolnetwork/charon:v0.11.1
+  repository: ghcr.io/obolnetwork/charon
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  tag: v0.11.1
 
 imagePullSecrets: []
 nameOverride: ""
@@ -25,20 +53,49 @@ serviceAccount:
 
 podAnnotations: {}
 
+## Pod Security Context
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+##
 podSecurityContext: {}
   # fsGroup: 2000
 
-securityContext: {}
+## Pod Security Context
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+##
+securityContext:
+  fsGroup: 1000
+  runAsUser: 1000
   # capabilities:
   #   drop:
   #   - ALL
   # readOnlyRootFilesystem: true
   # runAsNonRoot: true
-  # runAsUser: 1000
 
 service:
+  ## Defines whether the service must be headless
+  svcHeadless: false
   type: ClusterIP
-  port: 80
+  ports:
+    validatorApi:
+      name: validator-api
+      port: 3600
+      protocol: TCP
+      targetPort: 3600
+    p2pTcp:
+      name: p2p-tcp
+      port: 3610
+      protocol: TCP
+      targetPort: 3610
+    monitoring:
+      name: monitoring
+      port: 3620
+      protocol: TCP
+      targetPort: 3620
+    p2pUdp:
+      name: p2p-udp
+      port: 3630
+      protocol: UDP
+      targetPort: 3630
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
@@ -52,15 +109,90 @@ resources: {}
   #   cpu: 100m
   #   memory: 128Mi
 
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 100
-  targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
-
+## Node labels for pod assignment
+## ref: https://kubernetes.io/docs/user-guide/node-selection/
+##
 nodeSelector: {}
 
-tolerations: []
+## Tolerations for pod assignment
+## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+##
+tolerations: {}
 
+## Affinity for pod assignment
+## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+##
+## Example:
+## affinity:
+##   podAntiAffinity:
+##     requiredDuringSchedulingIgnoredDuringExecution:
+##     - labelSelector:
+##         matchExpressions:
+##         - key: app.kubernetes.io/name
+##           operator: In
+##           values:
+##           - teku
+##       topologyKey: kubernetes.io/hostname
+##
 affinity: {}
+
+## Additional labels for all resources
+##
+additionalLabels:
+  client-type: "consensus"
+
+## Configure session affinity for validator clients to hit the same beacon node
+## for the period specified in `timeoutSeconds`
+## ref: https://kubernetes.io/docs/concepts/services-networking/service/#proxy-mode-userspace
+##
+sessionAffinity:
+  # Whether to enable session affinity or not
+  enabled: false
+  # The session duration in seconds
+  timeoutSeconds: 86400
+
+## Used to assign priority to pods
+## ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/
+##
+priorityClassName: ""
+
+## Configure liveness and readiness probes
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+## NB! readinessProbe and livenessProbe must be disabled before genesis
+##
+livenessProbe:
+  httpGet:
+    path: /metrics
+    port: 3620
+  initialDelaySeconds: 10
+  periodSeconds: 5
+
+readinessProbe:
+  httpGet:
+    path: /metrics
+    port: 3620
+  initialDelaySeconds: 5
+  periodSeconds: 3
+
+## Enable pod disruption budget
+## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb
+##
+podDisruptionBudget:
+  enabled: false
+  maxUnavailable: 1
+
+charon:
+  config:
+    validatorApiAddress: "0.0.0.0:3600"
+    p2pTcpAddress: "0.0.0.0:3610"
+    monitoringAddress: "0.0.0.0:3620"
+    p2pUdpAddress: "0.0.0.0:3630"
+    p2pBootnodeRelay: true
+    p2pBootnodes: "http://bootnode.lb.gcp.obol.tech:3640/enr"
+    beaconNodeEndpoints: ""
+    charonDataDir: "/charon"
+    charonLockFile: "/charon/cluster-lock.json"
+    p2pExternalHostname: ""
+    jaegerAddress: "jaeger:6831"
+    jaegerService: "charon"
+    jaegerServicelogLevel: "debug"
