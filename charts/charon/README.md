@@ -17,12 +17,20 @@ helm repo update
 
 _See [helm repo](https://helm.sh/docs/helm/helm_repo/) for command documentation._
 
+## Prerequisites
+The charon cluster keys must be generated bebforehand and populated as secrets to the Kubernetes cluster to the same namespace where the chart will get deployed.
+
+These are the secrets that should exist for a node name `node0`:
+`node0-charon-enr-private-key`
+`node0-cluster-lock`
+`node0-validators`
+
 ## Installing the Chart
 
-To install the chart with the release name `my-release`:
+To install the chart with the release name `node0`:
 
 ```console
-helm install my-release obol/charon
+helm install node0 obol/charon --set charon.config.beaconNodeEndpoints=<BEACON_NODES_ENDPOINTS>
 ```
 
 ## Uninstalling the Chart
@@ -50,7 +58,7 @@ The following table lists the configurable parameters of the Charon chart and th
 | `global.readinessProbe.enabled` |  | `true` |
 | `image.repository` |  | `"ghcr.io/obolnetwork/charon"` |
 | `image.pullPolicy` |  | `"IfNotPresent"` |
-| `image.tag` |  | `"v0.11.1"` |
+| `image.tag` |  | `"v0.11.0"` |
 | `imagePullSecrets` |  | `[]` |
 | `nameOverride` |  | `""` |
 | `fullnameOverride` |  | `""` |
@@ -58,9 +66,9 @@ The following table lists the configurable parameters of the Charon chart and th
 | `serviceAccount.annotations` |  | `{}` |
 | `serviceAccount.name` |  | `""` |
 | `podAnnotations` |  | `{}` |
-| `podSecurityContext` |  | `{}` |
-| `securityContext.fsGroup` |  | `1000` |
-| `securityContext.runAsUser` |  | `1000` |
+| `podSecurityContext.fsGroup` |  | `1000` |
+| `podSecurityContext.runAsUser` |  | `1000` |
+| `securityContext` |  | `null` |
 | `service.svcHeadless` |  | `false` |
 | `service.type` |  | `"ClusterIP"` |
 | `service.ports.validatorApi.name` |  | `"validator-api"` |
@@ -103,12 +111,14 @@ The following table lists the configurable parameters of the Charon chart and th
 | `charon.config.p2pBootnodeRelay` |  | `true` |
 | `charon.config.p2pBootnodes` |  | `"http://bootnode.lb.gcp.obol.tech:3640/enr"` |
 | `charon.config.beaconNodeEndpoints` |  | `""` |
-| `charon.config.charonDataDir` |  | `"/charon"` |
-| `charon.config.charonLockFile` |  | `"/charon/cluster-lock.json"` |
+| `charon.config.charonLockFile` |  | `"/charon/cluster-lock/cluster-lock.json"` |
+| `charon.config.privateKeyFile` |  | `"/charon/charon-enr-private-key/charon-enr-private-key"` |
+| `charon.config.logLevel` |  | `"debug"` |
 | `charon.config.p2pExternalHostname` |  | `""` |
+| `charon.config.noVerify` |  | `true` |
 | `charon.config.jaegerAddress` |  | `"jaeger:6831"` |
 | `charon.config.jaegerService` |  | `"charon"` |
 | `charon.config.jaegerServicelogLevel` |  | `"debug"` |
-| `charon.secrets.validatorKeys` |  | `"validator-keys"` |
+| `charon.secrets.validatorKeys` |  | `"validators"` |
 | `charon.secrets.enrPrivateKey` |  | `"charon-enr-private-key"` |
 | `charon.secrets.clusterlock` |  | `"cluster-lock"` |
