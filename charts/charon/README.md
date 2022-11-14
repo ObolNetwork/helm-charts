@@ -83,7 +83,6 @@ The following table lists the configurable parameters of the Charon chart and th
 | `nodeSelector` |  | `{}` |
 | `tolerations` |  | `{}` |
 | `affinity` |  | `{}` |
-| `additionalLabels.client-type` |  | `"consensus"` |
 | `sessionAffinity.enabled` |  | `false` |
 | `sessionAffinity.timeoutSeconds` |  | `86400` |
 | `priorityClassName` |  | `""` |
@@ -110,4 +109,6 @@ The following table lists the configurable parameters of the Charon chart and th
 | `charon.config.jaegerAddress` |  | `"jaeger:6831"` |
 | `charon.config.jaegerService` |  | `"charon"` |
 | `charon.config.jaegerServicelogLevel` |  | `"debug"` |
-
+| `charon.secrets.validatorKeys` |  | `"validator-keys"` |
+| `charon.secrets.enrPrivateKey` |  | `"charon-enr-private-key"` |
+| `charon.secrets.clusterlock` |  | `"cluster-lock"` |

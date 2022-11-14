@@ -15,6 +15,4 @@ data:
   CHARON_DATA_DIR: {{ .Values.charon.config.charonDataDir }}
   CHARON_LOCK_FILE: {{ .Values.charon.config.charonLockFile }}
   CHARON_P2P_EXTERNAL_HOSTNAME: {{ .Values.charon.config.p2pExternalHostname }}
-  CHARON_JAEGER_ADDRESS: {{ .Values.charon.config.jaegerAddress }}
-  CHARON_JAEGER_SERVICE: {{ .Values.charon.config.jaegerService }}
   CHARON_LOG_LEVEL: {{ .Values.charon.config.logLevel }}

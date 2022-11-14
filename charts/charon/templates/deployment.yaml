@@ -93,14 +93,14 @@ spec:
         projected:
           sources:
           - secret:
-              name: validator-keys
+              name: {{ .Values.charon.secrets.validatorKeys }}
       - name: charon-enr-private-key
         projected:
           sources:
           - secret:
-              name: charon-enr-private-key
+              name: {{ .Values.charon.secrets.enrPrivateKey }}
       - name: cluster-lock
         projected:
           sources:
           - secret:
-              name: cluster-lock
+              name: {{ .Values.charon.secrets.clusterlock }}
