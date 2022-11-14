@@ -191,3 +191,7 @@ charon:
     jaegerAddress: "jaeger:6831"
     jaegerService: "charon"
     jaegerServicelogLevel: "debug"
+  secrets:
+    validatorKeys: "validator-keys"
+    enrPrivateKey: "charon-enr-private-key"
+    clusterlock: "cluster-lock"
