@@ -36,7 +36,7 @@ image:
   repository: ghcr.io/obolnetwork/charon
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: v0.11.1
+  tag: v0.11.0
 
 imagePullSecrets: []
 nameOverride: ""
@@ -56,15 +56,16 @@ podAnnotations: {}
 ## Pod Security Context
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 ##
-podSecurityContext: {}
-  # fsGroup: 2000
+podSecurityContext:
+  fsGroup: 1000
+  runAsUser: 1000
 
 ## Pod Security Context
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 ##
 securityContext:
-  fsGroup: 1000
-  runAsUser: 1000
+  # fsGroup: 1000
+  # runAsUser: 1000
   # capabilities:
   #   drop:
   #   - ALL
@@ -185,13 +186,15 @@ charon:
     p2pBootnodeRelay: true
     p2pBootnodes: "http://bootnode.lb.gcp.obol.tech:3640/enr"
     beaconNodeEndpoints: ""
-    charonDataDir: "/charon"
-    charonLockFile: "/charon/cluster-lock.json"
+    charonLockFile: "/charon/cluster-lock/cluster-lock.json"
+    privateKeyFile: "/charon/charon-enr-private-key/charon-enr-private-key"
+    logLevel: "debug"
     p2pExternalHostname: ""
+    noVerify: true
     jaegerAddress: "jaeger:6831"
     jaegerService: "charon"
     jaegerServicelogLevel: "debug"
   secrets:
-    validatorKeys: "validator-keys"
+    validatorKeys: "validators"
     enrPrivateKey: "charon-enr-private-key"
     clusterlock: "cluster-lock"

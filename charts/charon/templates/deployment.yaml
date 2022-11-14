@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "charon.fullname" . }}
+  name: {{ include "release.name" . }}
   labels:
     {{- include "charon.labels" . | nindent 4 }}
 spec:
@@ -48,7 +48,7 @@ spec:
             value: {{ .Values.kubernetesClusterDomain }}
           envFrom:
           - configMapRef:
-              name: {{ include "charon.fullname" . }}
+              name: {{ include "release.name" . }}
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           name: {{ .Chart.Name }}
           securityContext:
@@ -68,39 +68,27 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 3
           volumeMounts:
-          - mountPath: /charon/validator_keys
-            name: validator-keys
-          - mountPath: /charon
-            name: charon-enr-private-key
-          - mountPath: /charon
-            name: cluster-lock
-          ports:
-            - name: http
-              containerPort: 80
-              protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
+            - mountPath: /charon/validator_keys
+              name: validator-keys
+            - mountPath: /charon/charon-enr-private-key
+              name: charon-enr-private-key
+            - mountPath: /charon/cluster-lock
+              name: cluster-lock
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
-      - name: validator-keys
-        projected:
-          sources:
-          - secret:
-              name: {{ .Values.charon.secrets.validatorKeys }}
-      - name: charon-enr-private-key
-        projected:
-          sources:
-          - secret:
-              name: {{ .Values.charon.secrets.enrPrivateKey }}
-      - name: cluster-lock
-        projected:
-          sources:
-          - secret:
-              name: {{ .Values.charon.secrets.clusterlock }}
+        - name: validator-keys
+          projected:
+            sources:
+            - secret:
+                name: {{ include "release.name" . }}-{{ .Values.charon.secrets.validatorKeys }}
+        - name: charon-enr-private-key
+          projected:
+            sources:
+            - secret:
+                name: {{ include "release.name" . }}-{{ .Values.charon.secrets.enrPrivateKey }}
+        - name: cluster-lock
+          projected:
+            sources:
+            - secret:
+                name: {{ include "release.name" . }}-{{ .Values.charon.secrets.clusterlock }}
