@@ -50,75 +50,71 @@ The following table lists the configurable parameters of the Charon chart and th
 
 | Parameter                | Description             | Default        |
 | ------------------------ | ----------------------- | -------------- |
-| `global.imagePullSecrets` |  | `[]` |
-| `global.serviceAccount.create` |  | `true` |
-| `global.serviceAccount.annotations` |  | `{}` |
-| `global.serviceAccount.name` |  | `""` |
-| `global.livenessProbe.enabled` |  | `true` |
-| `global.readinessProbe.enabled` |  | `true` |
-| `image.repository` |  | `"ghcr.io/obolnetwork/charon"` |
-| `image.pullPolicy` |  | `"IfNotPresent"` |
-| `image.tag` |  | `"v0.11.0"` |
-| `imagePullSecrets` |  | `[]` |
-| `nameOverride` |  | `""` |
-| `fullnameOverride` |  | `""` |
-| `serviceAccount.create` |  | `true` |
-| `serviceAccount.annotations` |  | `{}` |
-| `serviceAccount.name` |  | `""` |
-| `podAnnotations` |  | `{}` |
-| `podSecurityContext.fsGroup` |  | `1000` |
-| `podSecurityContext.runAsUser` |  | `1000` |
-| `securityContext` |  | `null` |
-| `service.svcHeadless` |  | `false` |
-| `service.type` |  | `"ClusterIP"` |
-| `service.ports.validatorApi.name` |  | `"validator-api"` |
-| `service.ports.validatorApi.port` |  | `3600` |
-| `service.ports.validatorApi.protocol` |  | `"TCP"` |
-| `service.ports.validatorApi.targetPort` |  | `3600` |
-| `service.ports.p2pTcp.name` |  | `"p2p-tcp"` |
-| `service.ports.p2pTcp.port` |  | `3610` |
-| `service.ports.p2pTcp.protocol` |  | `"TCP"` |
-| `service.ports.p2pTcp.targetPort` |  | `3610` |
-| `service.ports.monitoring.name` |  | `"monitoring"` |
-| `service.ports.monitoring.port` |  | `3620` |
-| `service.ports.monitoring.protocol` |  | `"TCP"` |
-| `service.ports.monitoring.targetPort` |  | `3620` |
-| `service.ports.p2pUdp.name` |  | `"p2p-udp"` |
-| `service.ports.p2pUdp.port` |  | `3630` |
-| `service.ports.p2pUdp.protocol` |  | `"UDP"` |
-| `service.ports.p2pUdp.targetPort` |  | `3630` |
-| `resources` |  | `{}` |
-| `nodeSelector` |  | `{}` |
-| `tolerations` |  | `{}` |
-| `affinity` |  | `{}` |
-| `sessionAffinity.enabled` |  | `false` |
-| `sessionAffinity.timeoutSeconds` |  | `86400` |
-| `priorityClassName` |  | `""` |
-| `livenessProbe.httpGet.path` |  | `"/metrics"` |
-| `livenessProbe.httpGet.port` |  | `3620` |
-| `livenessProbe.initialDelaySeconds` |  | `10` |
-| `livenessProbe.periodSeconds` |  | `5` |
-| `readinessProbe.httpGet.path` |  | `"/metrics"` |
-| `readinessProbe.httpGet.port` |  | `3620` |
-| `readinessProbe.initialDelaySeconds` |  | `5` |
-| `readinessProbe.periodSeconds` |  | `3` |
-| `podDisruptionBudget.enabled` |  | `false` |
-| `podDisruptionBudget.maxUnavailable` |  | `1` |
-| `charon.config.validatorApiAddress` |  | `"0.0.0.0:3600"` |
-| `charon.config.p2pTcpAddress` |  | `"0.0.0.0:3610"` |
-| `charon.config.monitoringAddress` |  | `"0.0.0.0:3620"` |
-| `charon.config.p2pUdpAddress` |  | `"0.0.0.0:3630"` |
-| `charon.config.p2pBootnodeRelay` |  | `true` |
-| `charon.config.p2pBootnodes` |  | `"http://bootnode.lb.gcp.obol.tech:3640/enr"` |
-| `charon.config.beaconNodeEndpoints` |  | `""` |
-| `charon.config.charonLockFile` |  | `"/charon/cluster-lock/cluster-lock.json"` |
-| `charon.config.privateKeyFile` |  | `"/charon/charon-enr-private-key/charon-enr-private-key"` |
-| `charon.config.logLevel` |  | `"debug"` |
-| `charon.config.p2pExternalHostname` |  | `""` |
-| `charon.config.noVerify` |  | `true` |
-| `charon.config.jaegerAddress` |  | `"jaeger:6831"` |
-| `charon.config.jaegerService` |  | `"charon"` |
-| `charon.config.jaegerServicelogLevel` |  | `"debug"` |
-| `charon.secrets.validatorKeys` |  | `"validators"` |
-| `charon.secrets.enrPrivateKey` |  | `"charon-enr-private-key"` |
-| `charon.secrets.clusterlock` |  | `"cluster-lock"` |
+| `global.imagePullSecrets` | `Secret name to pull private images.` | `[]` |
+| `global.serviceAccount.create` | `Create charon service account.` | `true` |
+| `global.serviceAccount.annotations` | `Charon service account annotations.` | `{}` |
+| `global.serviceAccount.name` | `Charon service account name.` | `""` |
+| `global.livenessProbe.enabled` | `Enable liveness probe.` | `true` |
+| `global.readinessProbe.enabled` | `Enable readiness probe.` | `true` |
+| `image.repository` | `Charon image repository.` | `"ghcr.io/obolnetwork/charon"` |
+| `image.pullPolicy` | `Charon image pull policy.` | `"IfNotPresent"` |
+| `image.tag` | `Charon image version.` | `"v0.11.0"` |
+| `imagePullSecrets` | `Charon image pull secret.` | `[]` |
+| `nameOverride` | `Chart name override.`  | `""` |
+| `fullnameOverride` | `Chart full name override.` | `""` |
+| `podAnnotations` | `Pod annotations.` | `{}` |
+| `podSecurityContext.fsGroup` | `Pod security context FsGroup.` | `1000` |
+| `podSecurityContext.runAsUser` | `Pod security context runAsUser.` | `1000` |
+| `securityContext` | `Deployment securityContext.` | `null` |
+| `resources` | `CPU/Memory resource requests/limits` | `{}` |
+| `nodeSelector` | `Kubernetes node selector.` | `{}` |
+| `tolerations` | `Kubernetes tolerations.` | `{}` |
+| `affinity` | `Kubernetes pod affinity.` | `{}` |
+| `sessionAffinity.enabled` | `Enable aession afinity.` | `false` |
+| `sessionAffinity.timeoutSeconds` | `Set session affinity timeout in seconds.` | `86400` |
+| `priorityClassName` | `Set deployment priority class name.` | `""` |
+| `service.svcHeadless` | `Run charon service as headless.` | `false` |
+| `service.type` | `Charon service type.` | `"ClusterIP"` |
+| `service.ports.validatorApi.name` | `Charon validator API port name.` | `"validator-api"` |
+| `service.ports.validatorApi.port` | `Charon validator API port.` | `3600` |
+| `service.ports.validatorApi.protocol` | `Charon validator API port protocol.` | `"TCP"` |
+| `service.ports.validatorApi.targetPort` | `Charon validator API target port.` | `3600` |
+| `service.ports.p2pTcp.name` | `Charon p2p tcp port name.` | `"p2p-tcp"` |
+| `service.ports.p2pTcp.port` | `Charon p2p tcp port.` | `3610` |
+| `service.ports.p2pTcp.protocol` | `Charon p2p tcp protocol port.` | `"TCP"` |
+| `service.ports.p2pTcp.targetPort` | `Charon p2p tcp target port.` | `3610` |
+| `service.ports.monitoring.name` | `Charon monitoring port name.` | `"monitoring"` |
+| `service.ports.monitoring.port` | `Charon monitoring port.` | `3620` |
+| `service.ports.monitoring.protocol` | `Charon monitoring port protocol.` | `"TCP"` |
+| `service.ports.monitoring.targetPort` | `Charon monitoring target port.` | `3620` |
+| `service.ports.p2pUdp.name` | `Charon p2p udp port name.` | `"p2p-udp"` |
+| `service.ports.p2pUdp.port` | `Charon p2p udp port.` | `3630` |
+| `service.ports.p2pUdp.protocol` | `Charon p2p udp port protocol.` | `"UDP"` |
+| `service.ports.p2pUdp.targetPort` | `Charon p2p udp target port.` | `3630` |
+| `livenessProbe.httpGet.path` | `Charon livenessProbe http path.` | `"/metrics"` |
+| `livenessProbe.httpGet.port` | `Charon livenessProbe http port.` | `3620` |
+| `livenessProbe.initialDelaySeconds` | `Charon livenessProbe initial delay in seconds.` | `10` |
+| `livenessProbe.periodSeconds` | `Charon livenessProbe period in seconds.` | `5` |
+| `readinessProbe.httpGet.path` | `Charon readinessProbe http path.` | `"/metrics"` |
+| `readinessProbe.httpGet.port` | `Charon readinessProbe http port.` | `3620` |
+| `readinessProbe.initialDelaySeconds` | `Charon readinessProbe initial delay in seconds.` | `5` |
+| `readinessProbe.periodSeconds` | `Charon readinessProbe period in seconds.` | `3` |
+| `podDisruptionBudget.enabled` | `Enable podDisruptionBudget.` | `false` |
+| `podDisruptionBudget.maxUnavailable` | `podDisruptionBudget max unavailable replicas.` | `1` |
+| `charon.config.validatorApiAddress` | `Listening address (ip and port) for validator-facing traffic proxying the beacon-node API` | `"0.0.0.0:3600"` |
+| `charon.config.p2pTcpAddress` | `Comma-separated list of listening TCP addresses (ip and port) for libP2P traffic. Empty default doesn't bind to local port therefore only supports outgoing connections.` | `"0.0.0.0:3610"` |
+| `charon.config.monitoringAddress` | `Listening address (ip and port) for the monitoring API (prometheus, pprof).` | `"0.0.0.0:3620"` |
+| `charon.config.p2pUdpAddress` | `Listening UDP address (ip and port) for discv5 discovery. Empty default disables discv5 discovery.` | `"0.0.0.0:3630"` |
+| `charon.config.p2pBootnodeRelay` | `Enables using bootnodes as libp2p circuit relays. Useful if some charon nodes are not publicly accessible.` | `true` |
+| `charon.config.p2pBootnodes` | `Comma-separated list of discv5 bootnode URLs or ENRs.` | `"http://bootnode.lb.gcp.obol.tech:3640/enr"` |
+| `charon.config.beaconNodeEndpoints` | `Comma separated list of one or more beacon node endpoint URLs.` | `""` |
+| `charon.config.charonLockFile` | `The path to the cluster lock file defining distributed validator cluster.` | `"/charon/cluster-lock/cluster-lock.json"` |
+| `charon.config.privateKeyFile` | `The path to the charon enr private key file.` | `"/charon/charon-enr-private-key/charon-enr-private-key"` |
+| `charon.config.logLevel` | `Log level; debug, info, warn or error` | `"debug"` |
+| `charon.config.p2pExternalHostname` | `The DNS hostname advertised by libp2p. This may be used to advertise an external DNS.` | `""` |
+| `charon.config.noVerify` | `Disables cluster definition and lock file verification.` | `true` |
+| `charon.config.jaegerAddress` | `Listening address for jaeger tracing.` | `"jaeger:6831"` |
+| `charon.config.jaegerService` | `Service name used for jaeger tracing.` | `"charon"` |
+| `charon.secrets.validatorKeys` | `Validators Keys Kubernetes secret name.` | `"validators"` |
+| `charon.secrets.enrPrivateKey` | `ENR Private Key Kubernetes secret name.` | `"charon-enr-private-key"` |
+| `charon.secrets.clusterlock` | `Cluster Lock Kubernetes secret name.` | `"cluster-lock"` |
