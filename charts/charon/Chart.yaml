@@ -5,6 +5,15 @@ icon: https://raw.githubusercontent.com/ObolNetwork/charon/main/docs/images/char
 home: https://obol.tech/
 sources:
   - https://github.com/ObolNetwork/charon
+maintainers:
+  - name: Eth2DevOps
+    email: devops@obol.tech
+keywords:
+  - ethereum
+  - blockchain
+  - obol
+  - charon
+  - dvt
 
 # A chart can be either an 'application' or a 'library' chart.
 #
@@ -27,8 +36,3 @@ version: 0.1.0
 # It is recommended to use it with quotes.
 appVersion: "0.11.0"
 
-keywords:
-  - ethereum
-  - blockchain
-  - obol
-  - charon
