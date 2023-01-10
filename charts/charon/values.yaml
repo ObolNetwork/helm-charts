@@ -181,7 +181,7 @@ charon:
     privateKeyFile: "/charon/charon-enr-private-key/charon-enr-private-key"
     logLevel: "debug"
     p2pExternalHostname: ""
-    noVerify: true
+    noVerify: false
     jaegerAddress: "jaeger:6831"
     jaegerService: "charon"
   secrets:
