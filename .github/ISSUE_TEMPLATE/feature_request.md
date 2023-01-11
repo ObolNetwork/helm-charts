@@ -7,11 +7,14 @@ assignees: ''
 
 ---
 
-**Is your feature request related to a problem? Please describe.**
+**Problem to be solved**
 A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
 
-**Describe the solution you'd like**
+**Proposed solution**
 A clear and concise description of what you want to happen.
+
+**Out of scope**
+If there is anything to highlight as out of scope for this issue, please outline it here.
 
 **Describe alternatives you've considered**
 A clear and concise description of any alternative solutions or features you've considered.
