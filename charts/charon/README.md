@@ -6,7 +6,7 @@ Charon is an open-source Ethereum Distributed validator client written in golang
 
 # Charon Helm Chart
 
-* Installs Charon distributed validator client node [Charin](https://github.com/ObolNetwork/charon)
+* Installs Charon distributed validator client node [Charon](https://github.com/ObolNetwork/charon)
 
 ## Get Repo Info
 
