@@ -6,7 +6,7 @@ Charon is an open-source Ethereum Distributed validator client written in golang
 
 # Charon Helm Chart
 
-* Installs Charon distributed validator client node [Charin](https://github.com/ObolNetwork/charon)
+* Installs Charon distributed validator client node [Charon](https://github.com/ObolNetwork/charon)
 
 ## Get Repo Info
 
@@ -18,7 +18,7 @@ helm repo update
 _See [helm repo](https://helm.sh/docs/helm/helm_repo/) for command documentation._
 
 ## Prerequisites
-The charon cluster keys must be generated bebforehand and populated as secrets to the Kubernetes cluster to the same namespace where the chart will get deployed.
+The charon cluster keys must be generated beforehand and populated to your Kubernetes cluster as secrets in the same namespace where the chart will get deployed.
 
 These are the secrets that should exist for a node name `node0`:
 `node0-charon-enr-private-key`
