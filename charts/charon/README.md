@@ -18,7 +18,7 @@ helm repo update
 _See [helm repo](https://helm.sh/docs/helm/helm_repo/) for command documentation._
 
 ## Prerequisites
-The charon cluster keys must be generated bebforehand and populated to your Kubernetes cluster as secrets in the same namespace where the chart will get deployed.
+The charon cluster keys must be generated beforehand and populated to your Kubernetes cluster as secrets in the same namespace where the chart will get deployed.
 
 These are the secrets that should exist for a node name `node0`:
 `node0-charon-enr-private-key`
