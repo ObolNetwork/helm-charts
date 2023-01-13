@@ -1,10 +1,14 @@
+![Obol Logo](https://obol.tech/obolnetwork.png)
+
+<h1 align="center">Obol Helm Charts for Kubernetes</h1>
+
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/charon)](https://artifacthub.io/packages/search?repo=charon)
 
-# The Obol Charts for Kubernetes
+This repo contains Helm Charts for deploying Obol Distributed Validator [middleware clients](https://github.com/ObolNetwork/charon) on Kubernetes using [Helm](https://helm.sh/).  
 
-The curated list of Obol helm charts. Every chart is located in a separate folder and has the configuration parameters located in `values.yaml` file.
+## Getting Started
 
-## TL;DR
+Every chart is located in a separate folder and has its configuration parameters located in a corresponding `values.yaml` file.
 
 ```bash
 $ helm repo add obol https://obolnetwork.github.io/helm-charts
