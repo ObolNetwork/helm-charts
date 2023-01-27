@@ -61,9 +61,9 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 Create the name of the service account to use
 */}}
 {{- define "charon.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create }}
-{{- default (include "charon.fullname" .) .Values.serviceAccount.name }}
+{{- if .Values.serviceAccount.enabled }}
+{{- default .Values.serviceAccount.name }}
 {{- else }}
-{{- default "default" .Values.serviceAccount.name }}
+{{- default "default" .Release.Name }}
 {{- end }}
 {{- end }}
