@@ -28,7 +28,7 @@ podAnnotations: {}
 ##
 serviceAccount:
   # Specifies whether a service account should be created
-  enabled: false
+  enabled: true
   # Annotations to add to the service account
   annotations: {}
   # The name of the service account to use.
@@ -265,7 +265,7 @@ secrets:
 serviceMonitor:
   # If true, a ServiceMonitor CRD is created for a prometheus operator
   # https://github.com/coreos/prometheus-operator
-  enabled: false
+  enabled: true
   # Path to scrape
   path: /metrics
   # Alternative namespace for ServiceMonitor
