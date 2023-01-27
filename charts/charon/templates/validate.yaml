@@ -1,3 +1,15 @@
-{{- if not .Values.charon.config.beaconNodeEndpoints }}
-{{- fail ".Values.charon.config.beaconNodeEndpoints is required" }}
+{{- if not .Values.config.beaconNodeEndpoints }}
+{{- fail ".Values.config.beaconNodeEndpoints is required" }}
+{{- end }}
+
+{{- if not .Values.secrets.validatorKeys }}
+{{- fail ".Values.secrets.validatorKeys is required" }}
+{{- end }}
+
+{{- if not .Values.secrets.enrPrivateKey }}
+{{- fail ".Values.secrets.enrPrivateKey is required" }}
+{{- end }}
+
+{{- if not .Values.secrets.clusterlock }}
+{{- fail ".Values.secrets.clusterlock is required" }}
 {{- end }}
