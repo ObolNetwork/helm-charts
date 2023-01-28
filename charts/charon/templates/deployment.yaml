@@ -22,8 +22,12 @@ spec:
         imagePullSecrets:
           {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if or .Values.serviceAccount.enabled }}
       serviceAccountName: {{ include "charon.serviceAccountName" . }}
+      {{- end }}
+      {{- if .Values.priorityClassName }}
       priorityClassName: {{ .Values.priorityClassName | quote }}
+      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -36,8 +40,10 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.podSecurityContext }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- end }}
       containers:
         - args:
           - run
@@ -51,8 +57,10 @@ spec:
               name: {{ include "release.name" . }}
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           name: {{ .Chart.Name }}
+          {{- with .Values.podSecurityContext }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
         {{- if or .Values.livenessProbe.enabled }}
           livenessProbe:
@@ -77,8 +85,10 @@ spec:
               name: charon-enr-private-key
             - mountPath: /charon/cluster-lock
               name: cluster-lock
+          {{- with .Values.resources }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
       volumes:
         - name: validator-keys
           projected:

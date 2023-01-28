@@ -13,9 +13,3 @@
 {{- if not .Values.secrets.clusterlock }}
 {{- fail ".Values.secrets.clusterlock is required" }}
 {{- end }}
-
-{{- if .Values.serviceAccount.enabled -}}
-  {{- if not .Values.serviceAccount.name }}
-  {{- fail ".Values.serviceAccount.name is required" }}
-  {{- end }}
-{{- end }}
