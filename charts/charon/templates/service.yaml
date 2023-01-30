@@ -14,14 +14,10 @@ spec:
     - name: {{ .Values.service.ports.p2pTcp.name }}
       protocol: {{ .Values.service.ports.p2pTcp.protocol }}
       port: {{ .Values.service.ports.p2pTcp.port }}
-      targetPort: {{ .Values.service.ports.monitoring.targetPort }}
+      targetPort: {{ .Values.service.ports.p2pTcp.targetPort }}
     - name: {{ .Values.service.ports.monitoring.name }}
       protocol: {{ .Values.service.ports.monitoring.protocol }}
       port: {{ .Values.service.ports.monitoring.port }}
       targetPort: {{ .Values.service.ports.monitoring.targetPort }}
-    - name: {{ .Values.service.ports.p2pUdp.name }}
-      protocol: {{ .Values.service.ports.p2pUdp.protocol }}
-      port: {{ .Values.service.ports.p2pUdp.port }}
-      targetPort: {{ .Values.service.ports.p2pUdp.targetPort }}
   selector:
     {{- include "charon.selectorLabels" . | nindent 4 }}
