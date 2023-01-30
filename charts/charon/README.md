@@ -4,7 +4,7 @@ Charon
 
 ![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.13.0](https://img.shields.io/badge/AppVersion-0.13.0-informational?style=flat-square)
 
-Charon is an open-source Ethereum Distributed validator written in golang.
+Charon is an open-source Ethereum Distributed validator middleware written in golang.
 
 **Homepage:** <https://obol.tech/>
 
@@ -108,11 +108,11 @@ Charon is an open-source Ethereum Distributed validator written in golang.
 | serviceMonitor.tlsConfig | object | `{}` | ServiceMonitor TLS configuration |
 | tolerations | object | `{}` |  |
 
-# Usage
+# Usage Example
 
 * Installs Charon distributed validator client node [Charon](https://github.com/ObolNetwork/charon)
 
-## Get Repo Info
+## Add Obol's Helm Charts
 
 ```console
 helm repo add obol https://obolnetwork.github.io/helm-charts
