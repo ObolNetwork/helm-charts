@@ -18,12 +18,16 @@ spec:
       labels:
         {{- include "charon.selectorLabels" . | nindent 8 }}
     spec:
-      {{- with (concat .Values.imagePullSecrets .Values.global.imagePullSecrets) }}
+      {{- with concat .Values.imagePullSecrets }}
         imagePullSecrets:
           {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if or .Values.serviceAccount.enabled }}
       serviceAccountName: {{ include "charon.serviceAccountName" . }}
+      {{- end }}
+      {{- if .Values.priorityClassName }}
       priorityClassName: {{ .Values.priorityClassName | quote }}
+      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -36,8 +40,10 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.podSecurityContext }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- end }}
       containers:
         - args:
           - run
@@ -51,22 +57,27 @@ spec:
               name: {{ include "release.name" . }}
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           name: {{ .Chart.Name }}
+          {{- with .Values.podSecurityContext }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          imagePullPolicy: Always
+        {{- if or .Values.livenessProbe.enabled }}
           livenessProbe:
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
             httpGet:
-              path: /metrics
-              port: 3620
-            initialDelaySeconds: 10
-            periodSeconds: 5
+              path: {{ .Values.livenessProbe.httpGet.path }}
+              port: {{ .Values.service.ports.monitoring.port }}
+        {{- end }}
+        {{- if or .Values.readinessProbe.enabled }}
           readinessProbe:
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
             httpGet:
-              path: /metrics
-              port: 3620
-            initialDelaySeconds: 5
-            periodSeconds: 3
+              path: {{ .Values.readinessProbe.httpGet.path }}
+              port: {{ .Values.service.ports.monitoring.port }}
+        {{- end }}  
           volumeMounts:
             - mountPath: /charon/validator_keys
               name: validator-keys
@@ -74,21 +85,23 @@ spec:
               name: charon-enr-private-key
             - mountPath: /charon/cluster-lock
               name: cluster-lock
+          {{- with .Values.resources }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
       volumes:
         - name: validator-keys
           projected:
             sources:
             - secret:
-                name: {{ include "release.name" . }}-{{ .Values.charon.secrets.validatorKeys }}
+                name: {{ .Values.secrets.validatorKeys }}
         - name: charon-enr-private-key
           projected:
             sources:
             - secret:
-                name: {{ include "release.name" . }}-{{ .Values.charon.secrets.enrPrivateKey }}
+                name: {{ .Values.secrets.enrPrivateKey }}
         - name: cluster-lock
           projected:
             sources:
             - secret:
-                name: {{ include "release.name" . }}-{{ .Values.charon.secrets.clusterlock }}
+                name: {{ .Values.secrets.clusterlock }}

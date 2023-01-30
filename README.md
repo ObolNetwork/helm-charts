@@ -12,7 +12,7 @@ Every chart is located in a separate folder and has its configuration parameters
 
 ```bash
 $ helm repo add obol https://obolnetwork.github.io/helm-charts
-$ helm install my-release obol/<chart-name>
+$ helm install <release-name> obol/<chart-name>
 ```
 
 ## Before you begin
@@ -45,6 +45,6 @@ to use the Helm client to manage packages on your Kubernetes cluster.
 
 Useful Helm Client Commands:
 
-* Install a chart: `helm install my-release obol/<chart-name>`
+* Install a chart: `helm install <release-name> obol/<chart-name>`
 * Upgrade your application: `helm upgrade`
-* Uninstall a chart: `helm uninstall my-release`
+* Uninstall a chart: `helm uninstall <release-name>`
