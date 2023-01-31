@@ -1,0 +1,200 @@
+{{- $root := . -}}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "release.name" . }}
+  labels:
+    {{- include "charon.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.clusterSize }}
+  serviceName: {{ include "release.name" . }}
+  updateStrategy:
+    type: {{ .Values.updateStrategy }}
+  selector:
+    matchLabels:
+      {{- include "charon.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "charon.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with concat .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if or .Values.serviceAccount.enabled }}
+      serviceAccountName: {{ include "charon.serviceAccountName" . }}
+      {{- end }}
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName | quote }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- end }}
+      containers:
+        - command:
+            - sh
+            - -ac
+            - >
+              exec /usr/local/bin/charon run
+              --beacon-node-endpoints={{ .Values.config.beaconNodeEndpoints }}
+              {{- if .Values.config.builderApi }}
+              --builder-api={{ .Values.config.builderApi }}
+              {{- end }}
+              {{- if .Values.config.featureSet }}
+              --feature-set={{ .Values.config.featureSet }}
+              {{- end }}
+              {{- if .Values.config.featureSetDisable }}
+              --feature-set-disable={{ .Values.config.featureSetDisable }}
+              {{- end }}
+              {{- if .Values.config.featureSetEnable }}
+              --feature-set-enable={{ .Values.config.featureSetEnable }}
+              {{- end }}
+              {{- if .Values.config.jaegerAddress }}
+              --jaeger-address={{ .Values.config.jaegerAddress }}
+              {{- end }}
+              {{- if .Values.config.jaegerService }}
+              --jaeger-service={{ .Values.config.jaegerService }}
+              {{- else }}
+              --jaeger-service="${NODE_NAME}"
+              {{- end }}
+              {{- if .Values.config.LockFile }}
+              --lock-file={{ .Values.config.LockFile }}
+              {{- end }}
+              {{- if .Values.config.logFormat }}
+              --log-format={{ .Values.config.logFormat }}
+              {{- end }}
+              {{- if .Values.config.logLevel }}
+              --log-level={{ .Values.config.logLevel }}
+              {{- end }}
+              {{- if .Values.config.lokiAddresses }}
+              --loki-addresses={{ .Values.config.lokiAddresses }}
+              {{- end }}
+              {{- if .Values.config.lokiService }}
+              --loki-service={{ .Values.config.lokiService }}
+              {{- else }}
+              --loki-service="${NODE_NAME}"
+              {{- end }}
+              {{- if .Values.config.monitoringAddress }}
+              --monitoring-address={{ .Values.config.monitoringAddress }}
+              {{- end }}
+              {{- if .Values.config.noVerify }}
+              --no-verify={{ .Values.config.noVerify }}
+              {{- end }}
+              {{- if .Values.config.p2pAllowlist }}
+              --p2p-allowlist={{ .Values.config.p2pAllowlist }}
+              {{- end }}
+              {{- if .Values.config.p2pDenylist }}
+              --p2p-denylist={{ .Values.config.p2pDenylist }}
+              {{- end }}
+              {{- if .Values.config.p2pDisableReuseport }}
+              --p2p-disable-reuseport={{ .Values.config.p2pDisableReuseport }}
+              {{- end }}
+              {{- if .Values.config.directConnectionEnabled }}
+              --p2p-external-hostname="${NODE_NAME}"
+              {{- else }}
+              --p2p-external-hostname={{ .Values.config.p2pExternalHostname }}
+              {{- end }}
+              {{- if .Values.config.p2pExternalIp }}
+              --p2p-external-ip={{ .Values.config.p2pExternalIp }}
+              {{- end }}
+              {{- if .Values.config.p2pRelays }}
+              --p2p-relays={{ .Values.config.p2pRelays }}
+              {{- end }}
+              {{- if .Values.config.p2pTcpAddress }}
+              --p2p-tcp-address={{ .Values.config.p2pTcpAddress }}
+              {{- end }}
+              --private-key-file="/charon/${NODE_NAME}/charon-enr-private-key"
+              {{- if .Values.config.simnetBeaconMock }}
+              --simnet-beacon-mock={{ .Values.config.simnetBeaconMock }}
+              {{- end }}
+              {{- if .Values.config.simnetValidatorKeysDir }}
+              --simnet-validator-keys-dir={{ .Values.config.simnetValidatorKeysDir }}
+              {{- end }}
+              {{- if .Values.config.simnetValidatorMock }}
+              --simnet-validator-mock={{ .Values.config.simnetValidatorMock }}
+              {{- end }}
+              {{- if .Values.config.syntheticBlockProposals }}
+              --synthetic-block-proposals={{ .Values.config.syntheticBlockProposals }}
+              {{- end }}
+              {{- if .Values.config.validatorApiAddress }}
+              --validator-api-address={{ .Values.config.validatorApiAddress }}
+              {{- end }}
+          env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: KUBERNETES_CLUSTER_DOMAIN
+            value: {{ .Values.kubernetesClusterDomain }}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          name: {{ .Chart.Name }}
+          {{- with .Values.podSecurityContext }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- end }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+        {{- if or .Values.livenessProbe.enabled }}
+          livenessProbe:
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            httpGet:
+              path: {{ .Values.livenessProbe.httpGet.path }}
+              port: {{ .Values.service.ports.monitoring.port }}
+        {{- end }}
+        {{- if or .Values.readinessProbe.enabled }}
+          readinessProbe:
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            httpGet:
+              path: {{ .Values.readinessProbe.httpGet.path }}
+              port: {{ .Values.service.ports.monitoring.port }}
+        {{- end }}  
+          volumeMounts:
+            - mountPath: /charon
+              name: cluster-lock
+            {{- range untilStep 0 (.Values.clusterSize | int) 1 }}
+            - mountPath: /charon/{{$root.Release.Name}}-{{ . }}/validator_keys
+              name: {{$root.Release.Name}}-{{ . }}-validators
+            - mountPath: /charon/{{$root.Release.Name}}-{{ . }}
+              name: {{$root.Release.Name}}-{{ . }}-private-key
+            {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: cluster-lock
+          projected:
+            sources:
+            - secret:
+                name: {{ .Values.secrets.clusterlock }}
+        {{- range untilStep 0 (.Values.clusterSize | int) 1 }}
+        - name: {{$root.Release.Name}}-{{ . }}-validators
+          projected:
+            sources:
+            - secret:
+                name: {{$root.Release.Name}}-{{ . }}-{{$root.Values.secrets.validatorKeys}}
+        - name: {{$root.Release.Name}}-{{ . }}-private-key
+          projected:
+            sources:
+            - secret:
+                name: {{$root.Release.Name}}-{{ . }}-{{$root.Values.secrets.enrPrivateKey}}
+        {{- end }}
