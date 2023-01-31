@@ -129,19 +129,18 @@ The charon cluster keys must be generated beforehand and populated to your Kuber
 
 These are the secrets must exist to use this helm chart:
 ```console
-Pair of these secrets per each node in the cluster:
-`<cluster-name>-<node-index>-validators`
-`<cluster-name>-<node-index>-charon-enr-private-key`
-Single secret for all nodes in the cluster:
-`cluster-lock`
+<cluster-name>-<node-index>-validators
+<cluster-name>-<node-index>-charon-enr-private-key
+cluster-lock
 ```
 
 ### Example: How to create the k8s secrets from a `.charon` directory:
 ```console
+cat << 'EOF' >> create-k8s-secrets.sh
 i=0
-CLUSTER_NAME=<cluster_name>
-NAMESPACE=<charon_cluster_namespace>
-NODES=<cluster_size>
+CLUSTER_NAME=charon-cluster
+NAMESPACE=charon-cluster
+NODES=4
 # set current namespace
 kubectl config set-context --current --namespace=$NAMESPACE
 kubectl -n ${CLUSTER_NAME} create secret generic cluster-lock --from-file=cluster-lock.json=.charon/cluster/cluster-lock.json --dry-run=client -o yaml | kubectl apply -f -
@@ -155,6 +154,8 @@ do
     kubectl -n ${CLUSTER_NAME} create secret generic ${CLUSTER_NAME}-${i}-charon-enr-private-key --from-file=charon-enr-private-key=.charon/cluster/node${i}/charon-enr-private-key --dry-run=client -o yaml | kubectl apply -f -
     ((i=i+1))
 done
+EOF
+chmod +x create-k8s-secrets.sh && ./create-k8s-secrets.sh
 ```
 
 ## Installing the Chart
