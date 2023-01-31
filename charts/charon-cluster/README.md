@@ -111,7 +111,7 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | tolerations | object | `{}` |  |
 | updateStrategy | string | `"RollingUpdate"` |  |
 
-# Usage Example
+# How to use the chart
 
 * Installs Charon distributed validator client full cluster [Charon](https://github.com/ObolNetwork/charon)
 
@@ -127,16 +127,16 @@ _See [helm repo](https://helm.sh/docs/helm/helm_repo/) for command documentation
 ## Prerequisites
 The charon cluster keys must be generated beforehand and populated to your Kubernetes cluster as secrets in the same namespace where the chart will get deployed.
 
-These are the secrets that should exist the charon cluster:
+These are the secrets must exist to use this helm chart:
 ```console
-For each node:
+Pair of these secrets per each node in the cluster:
 `<cluster-name>-<node-index>-validators`
 `<cluster-name>-<node-index>-charon-enr-private-key`
-For the whole cluster:
+Single secret for all nodes in the cluster:
 `cluster-lock`
 ```
 
-Example: How to create the k8s secrets from a `.charon` directory:
+### Example: How to create the k8s secrets from a `.charon` directory:
 ```console
 i=0
 CLUSTER_NAME=<cluster_name>
@@ -167,8 +167,8 @@ helm upgrade --install charon-cluster obol/charon-cluster \
 ```
 
 ## Uninstalling the Chart
-To uninstall and delete the `charon-node`:
+To uninstall and delete the `charon-cluster`:
 ```console
-helm uninstall charon-node
+helm uninstall charon-cluster
 ```
 The command removes all the Kubernetes components associated with the chart and deletes the release.
