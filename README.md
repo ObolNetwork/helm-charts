@@ -1,19 +1,16 @@
 ![Obol Logo](https://obol.tech/obolnetwork.png)
 
-<h1 align="center">Obol Helm Charts for Kubernetes</h1>
+<h1 align="center">Obol Helm Charts</h1>
 
-[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/charon)](https://artifacthub.io/packages/search?repo=charon)
+[![Release Charts](https://github.com/ObolNetwork/helm-charts/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/ObolNetwork/helm-charts/actions/workflows/release.yml)
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/charon)](https://artifacthub.io/packages/search?org=obol)
 
 This repo contains Helm Charts for deploying Obol Distributed Validator [middleware clients](https://github.com/ObolNetwork/charon) on Kubernetes using [Helm](https://helm.sh/).  
 
-## Getting Started
+## List of charts
 
-Every chart is located in a separate folder and has its configuration parameters located in a corresponding `values.yaml` file.
-
-```bash
-$ helm repo add obol https://obolnetwork.github.io/helm-charts
-$ helm install <release-name> obol/<chart-name>
-```
+- [`charon`](charts/charon)
+- [`charon-cluster`](charts/charon-cluster)
 
 ## Before you begin
 
@@ -21,7 +18,6 @@ $ helm install <release-name> obol/<chart-name>
 
 - Kubernetes 1.18+
 - Helm 3
-- PV provisioner support in the underlying infrastructure for some charts
 
 ### Setup a Kubernetes Cluster
 
@@ -48,3 +44,34 @@ Useful Helm Client Commands:
 * Install a chart: `helm install <release-name> obol/<chart-name>`
 * Upgrade your application: `helm upgrade`
 * Uninstall a chart: `helm uninstall <release-name>`
+
+## Development
+
+### Prerequisites
+
+- [`pre-commit`](https://pre-commit.com/) - Used to setup pre-commit git hooks
+- [`docker`](https://www.docker.com/) - Used by many Makefile targets
+
+### Pre-commit hooks
+
+This repository used [`pre-commit`](https://pre-commit.com/) to manage and run certain git hooks. Hook definitions can be found within the [`.pre-commit-config.yaml`](.pre-commit-config.yaml) file.
+
+Run the following to add the hooks to your local repository:
+
+```sh
+make init
+```
+
+### Useful commands
+
+The `README` for every chart is auto generated using [helm-docs](https://github.com/norwoodj/helm-docs). This is defined as a pre-commit hook. If you want to run it manually, you can run:
+
+```sh
+make docs
+```
+
+The [CT (Chart Testing)](https://github.com/helm/chart-testing) tool is used to lint and validate charts. You can run this via:
+
+```sh
+make lint
+```
