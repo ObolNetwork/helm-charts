@@ -113,7 +113,7 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 
 # How to use the chart
 
-* Installs Charon distributed validator client full cluster [Charon](https://github.com/ObolNetwork/charon)
+Installs [Charon](https://github.com/ObolNetwork/charon) full cluster
 
 ## Add Obol's Helm Charts
 
