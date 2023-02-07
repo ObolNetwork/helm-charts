@@ -3,6 +3,30 @@ entries:
   charon:
   - apiVersion: v2
     appVersion: 0.13.0
+    created: "2023-02-07T19:44:14.927389636Z"
+    description: Charon is an open-source Ethereum Distributed validator middleware
+      written in golang.
+    digest: a148635576d7df968977432157848a599788f26026e4c4beffd1c98a59fb3dae
+    home: https://obol.tech/
+    icon: https://raw.githubusercontent.com/ObolNetwork/charon/main/docs/images/charonlogo.svg
+    keywords:
+    - ethereum
+    - blockchain
+    - obol
+    - charon
+    - dvt
+    maintainers:
+    - email: devops@obol.tech
+      name: Eth2DevOps
+    name: charon
+    sources:
+    - https://github.com/ObolNetwork/charon
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/charon-0.2.1/charon-0.2.1.tgz
+    version: 0.2.1
+  - apiVersion: v2
+    appVersion: 0.13.0
     created: "2023-01-30T15:46:03.421482956Z"
     description: Charon is an open-source Ethereum Distributed validator middleware
       written in golang.
@@ -48,6 +72,31 @@ entries:
   charon-cluster:
   - apiVersion: v2
     appVersion: 0.13.0
+    created: "2023-02-07T19:44:15.165545018Z"
+    description: Charon is an open-source Ethereum Distributed validator middleware
+      written in golang. This chart deploys a full Charon cluster.
+    digest: 837d9d1f08bfa6fb96ec7446a0061bf3da4925eda98874e56de09952a9307451
+    home: https://obol.tech/
+    icon: https://raw.githubusercontent.com/ObolNetwork/charon/main/docs/images/charonlogo.svg
+    keywords:
+    - ethereum
+    - blockchain
+    - obol
+    - charon
+    - dvt
+    - cluster
+    maintainers:
+    - email: devops@obol.tech
+      name: Eth2DevOps
+    name: charon-cluster
+    sources:
+    - https://github.com/ObolNetwork/charon
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/charon-cluster-0.1.1/charon-cluster-0.1.1.tgz
+    version: 0.1.1
+  - apiVersion: v2
+    appVersion: 0.13.0
     created: "2023-01-31T17:51:05.376405135Z"
     description: Charon is an open-source Ethereum Distributed validator middleware
       written in golang. This chart deploys a full Charon cluster.
@@ -71,4 +120,4 @@ entries:
     urls:
     - https://github.com/ObolNetwork/helm-charts/releases/download/charon-cluster-0.1.0/charon-cluster-0.1.0.tgz
     version: 0.1.0
-generated: "2023-01-31T17:51:05.376414135Z"
+generated: "2023-02-07T19:44:15.165566719Z"
