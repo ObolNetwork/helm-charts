@@ -110,51 +110,62 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 
 # Usage Example
 
-* Installs Charon distributed validator client node [Charon](https://github.com/ObolNetwork/charon)
+Installs [Charon](https://github.com/ObolNetwork/charon) single node
 
 ## Add Obol's Helm Charts
-
 ```console
 helm repo add obol https://obolnetwork.github.io/helm-charts
 helm repo update
 ```
-
 _See [helm repo](https://helm.sh/docs/helm/helm_repo/) for command documentation._
 
 ## Prerequisites
-The charon cluster keys must be generated beforehand and populated to your Kubernetes cluster as secrets in the same namespace where the chart will get deployed.
+- You completed the DKG ceremony and have generated the `.charon` directory.
+- The charon cluster keys are added to your Kubernetes cluster as secrets to the same namespace where the charon node is deployed.
 
-These are the secrets that should exist the charon node:
-`validator-keys`
-`charon-enr-private-key`
-`cluster-lock`
-
-You can create the secrets from `.charon` directory as the following:
+### Example: How to create the k8s secrets from a `.charon` directory:
 ```console
+cat << 'EOF' >> create-k8s-secrets.sh
 files=""
+CHARON_NODE_NAMESPACE=charon-node
 for secret in ./.charon/validator_keys/*; do
     files="$files --from-file=./.charon/validator_keys/$(basename $secret)"
 done
-kubectl -n $NAME_SPACE create secret generic validator-keys $files --dry-run=client -o yaml | kubectl apply -f -
-kubectl -n $NAME_SPACE create secret generic charon-enr-private-key --from-file=charon-enr-private-key=./.charon/charon-enr-private-key --dry-run=client -o yaml | kubectl apply -f -
-kubectl -n $NAME_SPACE create secret generic cluster-lock --from-file=cluster-lock.json=./.charon/cluster-lock.json --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n $CHARON_NODE_NAMESPACE create secret generic validator-keys $files --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n $CHARON_NODE_NAMESPACE create secret generic charon-enr-private-key --from-file=charon-enr-private-key=./.charon/charon-enr-private-key --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n $CHARON_NODE_NAMESPACE create secret generic cluster-lock --from-file=cluster-lock.json=./.charon/cluster-lock.json --dry-run=client -o yaml | kubectl apply -f -
+EOF
+chmod +x create-k8s-secrets.sh && ./create-k8s-secrets.sh
 ```
 
-## Installing the Chart
+### Check the secrets are created
+```console
+kubeclt -n $CHARON_NODE_NAMESPACE get secrets
+```
+You should get list of charon secrets as the following:
+- `validator-keys`
+- `charon-enr-private-key`
+- `cluster-lock`
 
-To install the chart with the release name `charon-node`:
-
+## Install the chart
 ```console
 helm upgrade --install charon-node obol/charon \
   --set='config.beaconNodeEndpoints=<BEACON_NODES_ENDPOINTS>' \
   --create-namespace \
-  --namespace <charon-node-namespace>
+  --namespace $CHARON_NODE_NAMESPACE
 ```
 
-## Uninstalling the Chart
+## Connect your validator client
+Ensure the charon node is up and healthy:
+```console
+kubectl -n $CHARON_NODE_NAMESPACE
+```
+Update the validator client to connect to charon node API endpoint.
+For example:
+- Teku: `--beacon-node-api-endpoint="http://CHARON_NODE_SERVICE_NAME:3600"`
 
+## Uninstall the chart
 To uninstall and delete the `charon-node`:
-
 ```console
 helm uninstall charon-node
 ```
