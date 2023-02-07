@@ -113,7 +113,7 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 
 # How to use the chart
 
-* Installs Charon distributed validator client full cluster [Charon](https://github.com/ObolNetwork/charon)
+Installs [Charon](https://github.com/ObolNetwork/charon) full cluster
 
 ## Add Obol's Helm Charts
 
@@ -121,53 +121,66 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 helm repo add obol https://obolnetwork.github.io/helm-charts
 helm repo update
 ```
-
 _See [helm repo](https://helm.sh/docs/helm/helm_repo/) for command documentation._
 
 ## Prerequisites
-The charon cluster keys must be generated beforehand and populated to your Kubernetes cluster as secrets in the same namespace where the chart will get deployed.
-
-These are the secrets must exist to use this helm chart:
-```console
-<cluster-name>-<node-index>-validators
-<cluster-name>-<node-index>-charon-enr-private-key
-cluster-lock
-```
+- You completed the DKG ceremony and have generated the `.charon` directory.
+- The charon cluster keys are added to the Kubernetes cluster as secrets in the same namespace where the charon cluster is deployed.
 
 ### Example: How to create the k8s secrets from a `.charon` directory:
 ```console
 cat << 'EOF' >> create-k8s-secrets.sh
 i=0
 CLUSTER_NAME=charon-cluster
-NAMESPACE=charon-cluster
+CHARON_CLUSTER_NAMESPACE=charon-cluster
 NODES=4
 # set current namespace
-kubectl config set-context --current --namespace=$NAMESPACE
-kubectl -n ${CLUSTER_NAME} create secret generic cluster-lock --from-file=cluster-lock.json=.charon/cluster/cluster-lock.json --dry-run=client -o yaml | kubectl apply -f -
+kubectl config set-context --current --namespace=$CHARON_CLUSTER_NAMESPACE
+kubectl -n $CHARON_CLUSTER_NAMESPACE create secret generic cluster-lock --from-file=cluster-lock.json=.charon/cluster/cluster-lock.json --dry-run=client -o yaml | kubectl apply -f -
 while [[ $i -lt "$NODES" ]]
 do
     files=""
     for secret in .charon/cluster/node${i}/validator_keys/*; do
         files="$files --from-file=.charon/cluster/node${i}/validator_keys/$(basename $secret)"
     done
-    kubectl -n ${CLUSTER_NAME} create secret generic ${CLUSTER_NAME}-${i}-validators $files --dry-run=client -o yaml | kubectl apply -f -
-    kubectl -n ${CLUSTER_NAME} create secret generic ${CLUSTER_NAME}-${i}-charon-enr-private-key --from-file=charon-enr-private-key=.charon/cluster/node${i}/charon-enr-private-key --dry-run=client -o yaml | kubectl apply -f -
+    kubectl -n $CHARON_CLUSTER_NAMESPACE create secret generic ${CLUSTER_NAME}-${i}-validators $files --dry-run=client -o yaml | kubectl apply -f -
+    kubectl -n $CHARON_CLUSTER_NAMESPACE create secret generic ${CLUSTER_NAME}-${i}-charon-enr-private-key --from-file=charon-enr-private-key=.charon/cluster/node${i}/charon-enr-private-key --dry-run=client -o yaml | kubectl apply -f -
     ((i=i+1))
 done
 EOF
 chmod +x create-k8s-secrets.sh && ./create-k8s-secrets.sh
 ```
 
-## Installing the Chart
+### Check the secrets are created
+```console
+kubeclt -n $CHARON_NODE_NAMESPACE get secrets
+```
+You should get list of charon secrets as the following:
+- `<cluster-name>-<node-index>-validators`
+- `<cluster-name>-<node-index>-charon-enr-private-key`
+- `cluster-lock`
+
+## Install the Chart
 To install the chart with the release name `charon-cluster`:
 ```console
 helm upgrade --install charon-cluster obol/charon-cluster \
+  --set='clusterSize=4' \
   --set='config.beaconNodeEndpoints=<BEACON_NODES_ENDPOINTS>' \
   --create-namespace \
-  --namespace <charon-cluster-namespace>
+  --namespace $CHARON_NODE_NAMESPACE
 ```
 
-## Uninstalling the Chart
+## Connect your validator client
+Ensure the charon node is up and healthy:
+```console
+kubectl -n $CHARON_NODE_NAMESPACE
+```
+Update the validator client to connect to charon node API endpoint.
+For example:
+- Teku: `--beacon-node-api-endpoint="http://CHARON_NODE_SERVICE_NAME:3600"`
+You need to repeat that for each VC and charon node pair.
+
+## Uninstall the Chart
 To uninstall and delete the `charon-cluster`:
 ```console
 helm uninstall charon-cluster
