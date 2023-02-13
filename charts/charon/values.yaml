@@ -2,66 +2,64 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+# -- Charon image ropsitory, pull policy, and tag version
 image:
   repository: obolnetwork/charon
   pullPolicy: IfNotPresent
   tag: v0.13.0
 
-## Credentials to fetch images from private registry
+# -- Credentials to fetch images from private registry
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
-##
 imagePullSecrets: []
 
-## Provide a name in place of lighthouse for `app:` labels
-##
+# -- Provide a name in place of lighthouse for `app:` labels
 nameOverride: ""
 
-## Provide a name to substitute for the full names of resources
-##
+# -- Provide a name to substitute for the full names of resources
 fullnameOverride: ""
 
-## Pod annotations
+# -- Pod annotations
 podAnnotations: {}
 
-## Service account
+# -- Service account
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
-##
 serviceAccount:
-  # Specifies whether a service account should be created
+  # -- Specifies whether a service account should be created
   enabled: true
-  # Annotations to add to the service account
+  # -- Annotations to add to the service account
   annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the default template
+  # -- The name of the service account to use. If not set and create is true, a name is generated using the default template
   name: ""
 
-## Pod Security Context
-## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-##
-securityContext:
-  # fsGroup: 1000
+# -- The security context for pods
+# @default -- See `values.yaml`
+securityContext: {}
+  # runAsUser: 10001
+  # fsGroup: 10001
+  # runAsGroup: 10001
+  # runAsNonRoot: true
+  # runAsUser: 10001
+
+# -- The security context for containers
+# @default -- See `values.yaml`
+containerSecurityContext: {}
   # runAsUser: 1000
+  # runAsNonRoot: true
+  # readOnlyRootFilesystem: true
   # capabilities:
   #   drop:
   #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
 
-## RBAC configuration.
+# -- RBAC configuration.
 ## ref: https://kubernetes.io/docs/reference/access-authn-authz/rbac/
-##
 rbac:
-  # Specifies whether RBAC resources are to be created
+  # -- Specifies whether RBAC resources are to be created
   enabled: true
-
-  # The name of the cluster role to use.
-  # If not set and create is true, a name is generated using the fullname template
+  # -- The name of the cluster role to use. If not set and create is true, a name is generated using the fullname template
   name: ""
-  ## Required ClusterRole rules
-  ##
+  # -- Required ClusterRole rules
   clusterRules:
-    ## Required to obtain the nodes external IP
-    ##
+    # -- Required to obtain the nodes external IP
     - apiGroups: [""]
       resources:
       - "nodes"
@@ -69,11 +67,9 @@ rbac:
       - "get"
       - "list"
       - "watch"
-  ## Required Role rules
-  ##
+  # -- Required Role rules
   rules:
-    ## Required to get information about the serices nodePort.
-    ##
+    # -- Required to get information about the serices nodePort.
     - apiGroups: [""]
       resources:
       - "services"
@@ -82,8 +78,7 @@ rbac:
       - "list"
       - "watch"
 
-## Charon service ports
-##
+# -- Charon service ports
 service:
   type: ClusterIP
   ports:
@@ -103,8 +98,7 @@ service:
       protocol: TCP
       targetPort: 3620
 
-## Pod resources limits and requests
-##
+# -- Pod resources limits and requests
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
@@ -117,17 +111,15 @@ resources: {}
   #   cpu: 100m
   #   memory: 128Mi
 
-## Node labels for pod assignment
+# -- Node labels for pod assignment
 ## ref: https://kubernetes.io/docs/user-guide/node-selection/
-##
 nodeSelector: {}
 
-## Tolerations for pod assignment
+# -- Tolerations for pod assignment
 ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
-##
 tolerations: {}
 
-## Affinity for pod assignment
+# -- Affinity for pod assignment
 ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
 ##
 ## Example:
@@ -144,150 +136,135 @@ tolerations: {}
 ##
 affinity: {}
 
-## Used to assign priority to pods
+# -- Used to assign priority to pods
 ## ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/
-##
 priorityClassName: ""
 
-## Enable pod disruption budget
+# -- Enable and configure pod disruption budget
 ## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb
-##
 podDisruptionBudget:
   enabled: false
   maxUnavailable: 1
 
-## Charon CLI configuration
+## Charon command line options
 ## ref: https://docs.obol.tech/docs/charon/charon_cli_reference
-##
 config:
-  ## Comma separated list of one or more beacon node endpoint URLs.
+  # -- Comma separated list of one or more beacon node endpoint URLs.
   beaconNodeEndpoints: ""
   
-  ## Enables the builder api. Will only produce builder blocks. 
-  ## Builder API must also be enabled on the validator client. 
-  ## Beacon node must be connected to a builder-relay to access the builder network.
+  # -- Enables the builder api. Will only produce builder blocks. Builder API must also be enabled on the validator client. Beacon node must be connected to a builder-relay to access the builder network.
   builderApi: ""
   
-  ## Minimum feature set to enable by default: alpha, beta, or stable. Warning: modify at own risk. (default "stable")
+  # -- Minimum feature set to enable by default: alpha, beta, or stable. Warning: modify at own risk. (default "stable")
   featureSet: "stable"
 
-  ## Comma-separated list of features to disable, overriding the default minimum feature set.
+  # -- Comma-separated list of features to disable, overriding the default minimum feature set.
   featureSetDisable: ""
 
-  ## Comma-separated list of features to enable, overriding the default minimum feature set.
+  # -- Comma-separated list of features to enable, overriding the default minimum feature set.
   featureSetEnable: ""
 
-  ## Listening address for jaeger tracing.
+  # -- Listening address for jaeger tracing.
   jaegerAddress: "jaeger:6831"
 
-  ## Service name used for jaeger tracing. (default "charon")
+  # -- Service name used for jaeger tracing. (default "charon")
   jaegerService: "charon"
 
-  ## The path to the cluster lock file defining distributed validator cluster. (default ".charon/cluster-lock.json")
+  # -- The path to the cluster lock file defining distributed validator cluster. (default ".charon/cluster-lock.json")
   LockFile: "/charon/cluster-lock/cluster-lock.json"
 
-  ## Log format; console, logfmt or json (default "console")
-  logFormat: "console"
+  # -- Log format; console, logfmt or json (default "console")
+  logFormat: "json"
 
-  ## Log level; debug, info, warn or error (default "info")
+  # -- Log level; debug, info, warn or error (default "info")
   logLevel: "info"
 
-  ## Enables sending of logfmt structured logs to these Loki log aggregation server addresses. This is in addition to normal stderr logs.
+  # -- Enables sending of logfmt structured logs to these Loki log aggregation server addresses. This is in addition to normal stderr logs.
   lokiAddresses: ""
   
-  ## Service label sent with logs to Loki. (default "charon")
+  # -- Service label sent with logs to Loki. (default "charon")
   lokiService: "charon"
 
-  ## Listening address (ip and port) for the monitoring API (prometheus, pprof). (default "127.0.0.1:3620")
+  # -- Listening address (ip and port) for the monitoring API (prometheus, pprof). (default "127.0.0.1:3620")
   monitoringAddress: "0.0.0.0:3620"
 
-  ## Disables cluster definition and lock file verification.
+  # -- Disables cluster definition and lock file verification.
   noVerify: false
 
-  ## Comma-separated list of CIDR subnets for allowing only certain peer connections. 
-  ## Example: 192.168.0.0/16 would permit connections to peers on your local network only. 
-  ## The default is to accept all connections.
+  # -- Comma-separated list of CIDR subnets for allowing only certain peer connections. Example: 192.168.0.0/16 would permit connections to peers on your local network only. The default is to accept all connections.
   p2pAllowlist: ""
 
-  ## Comma-separated list of CIDR subnets for disallowing certain peer connections. 
-  ## Example: 192.168.0.0/16 would disallow connections to peers on your local network. 
-  ## The default is to accept all connections.
+  # -- Comma-separated list of CIDR subnets for disallowing certain peer connections. Example: 192.168.0.0/16 would disallow connections to peers on your local network. The default is to accept all connections.
   p2pDenylist: ""
 
-  ## Disables TCP port reuse for outgoing libp2p connections.
+  # -- Disables TCP port reuse for outgoing libp2p connections.
   p2pDisableReuseport: ""
   
-  ## The DNS hostname advertised by libp2p. This may be used to advertise an external DNS.
+  # -- The DNS hostname advertised by libp2p. This may be used to advertise an external DNS.
   p2pExternalHostname: ""
 
-  ## The IP address advertised by libp2p. This may be used to advertise an external IP.
+  # -- The IP address advertised by libp2p. This may be used to advertise an external IP.
   p2pExternalIp: ""
 
-  ## Comma-separated list of libp2p relay URLs or multiaddrs. 
-  ## (default [https://0.relay.obol.tech/enr,http://bootnode.lb.gcp.obol.tech:3640/enr])
-  p2pRelays: ""
+  # -- Comma-separated list of libp2p relay URLs or multiaddrs. (default [https://0.relay.obol.tech/enr,http://bootnode.lb.gcp.obol.tech:3640/enr])
+  p2pRelays: "https://0.relay.obol.tech/enr,http://bootnode.lb.gcp.obol.tech:3640/enr"
 
-  ## Comma-separated list of listening TCP addresses (ip and port) for libP2P traffic. 
-  ## Empty default doesn't bind to local port therefore only supports outgoing connections.
+  # -- Comma-separated list of listening TCP addresses (ip and port) for libP2P traffic. Empty default doesn't bind to local port therefore only supports outgoing connections.
   p2pTcpAddress: "0.0.0.0:3610"
 
-  ## The path to the charon enr private key file. (default ".charon/charon-enr-private-key")
+  # -- The path to the charon enr private key file. (default ".charon/charon-enr-private-key")
   privateKeyFile: "/charon/charon-enr-private-key/charon-enr-private-key"
 
-  ## Enables an internal mock beacon node for running a simnet.
+  # -- Enables an internal mock beacon node for running a simnet.
   simnetBeaconMock: ""
   
-  ## The directory containing the simnet validator key shares. (default ".charon/validator_keys")
+  # -- The directory containing the simnet validator key shares. (default ".charon/validator_keys")
   simnetValidatorKeysDir: ""
   
-  ## Enables an internal mock validator client when running a simnet. Requires simnet-beacon-mock.
+  # -- Enables an internal mock validator client when running a simnet. Requires simnet-beacon-mock.
   simnetValidatorMock: ""
 
-  ## Enables additional synthetic block proposal duties. Used for testing of rare duties.
+  # -- Enables additional synthetic block proposal duties. Used for testing of rare duties.
   syntheticBlockProposals: ""
   
-  ## Listening address (ip and port) for validator-facing traffic proxying the beacon-node API. (default "127.0.0.1:3600")
+  # -- Listening address (ip and port) for validator-facing traffic proxying the beacon-node API. (default "127.0.0.1:3600")
   validatorApiAddress: "0.0.0.0:3600"
 
-## Kubernetes secrets names
+# -- Kubernetes secrets names
 secrets:
-  ## validators keys
+  # -- validators keys
   validatorKeys: "validator-keys"
-  ## charon enr private key
+  # -- charon enr private key
   enrPrivateKey: "charon-enr-private-key"
-  ## charon cluster lock
+  # -- charon cluster lock
   clusterlock: "cluster-lock"
 
-## Prometheus Service Monitor
+# -- Prometheus Service Monitor
 ## ref: https://github.com/coreos/prometheus-operator
-##      https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#endpoint
-##
 serviceMonitor:
-  # If true, a ServiceMonitor CRD is created for a prometheus operator
-  # https://github.com/coreos/prometheus-operator
+  # -- If true, a ServiceMonitor CRD is created for a prometheus operator. https://github.com/coreos/prometheus-operator
   enabled: true
-  # Path to scrape
+  # -- Path to scrape
   path: /metrics
-  # Alternative namespace for ServiceMonitor
+  # -- Alternative namespace for ServiceMonitor
   namespace: null
-  # Additional ServiceMonitor labels
+  # -- Additional ServiceMonitor labels
   labels: {}
-  # Additional ServiceMonitor annotations
+  # -- Additional ServiceMonitor annotations
   annotations: {}
-  # ServiceMonitor scrape interval
+  # -- ServiceMonitor scrape interval
   interval: 1m
-  # ServiceMonitor scheme
+  # -- ServiceMonitor scheme
   scheme: http
   # -- ServiceMonitor TLS configuration
   tlsConfig: {}
-  # ServiceMonitor scrape timeout
+  # -- ServiceMonitor scrape timeout
   scrapeTimeout: 30s
-  # ServiceMonitor relabelings
+  # -- ServiceMonitor relabelings
   relabelings: []
 
-## Configure liveness and readiness probes
+# -- Configure liveness probes
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
-##
 livenessProbe:
   enabled: true
   initialDelaySeconds: 10
@@ -295,6 +272,8 @@ livenessProbe:
   httpGet:
     path: /livez
 
+# -- Configure readiness probes
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 readinessProbe:
   enabled: true
   initialDelaySeconds: 5
