@@ -97,40 +97,18 @@ A distributed validator node is a machine running:
 
 ![Distributed Validator Node](https://github.com/ObolNetwork/charon-distributed-validator-node/blob/main/DVNode.png?raw=true)
 
+## Prerequisites
+You have the followin charon node artifacts created as k8s secrets:
+- `validator-keys`
+- `charon-enr-private-key`
+- `cluster-lock`
+
 ## Add Obol's Helm Charts
 ```console
 helm repo add obol https://obolnetwork.github.io/helm-charts
 helm repo update
 ```
 _See [helm repo](https://helm.sh/docs/helm/helm_repo/) for command documentation._
-
-## Prerequisites
-- You completed the DKG ceremony and have generated the `.charon` directory.
-- The charon cluster keys are added to your Kubernetes cluster as secrets to the same namespace where the charon node is deployed.
-
-### Example: How to create the k8s secrets from a `.charon` directory:
-```console
-cat << 'EOF' >> create-k8s-secrets.sh
-files=""
-CHARON_NODE_NAMESPACE=charon-node
-for secret in ./.charon/validator_keys/*; do
-    files="$files --from-file=./.charon/validator_keys/$(basename $secret)"
-done
-kubectl -n $CHARON_NODE_NAMESPACE create secret generic validator-keys $files --dry-run=client -o yaml | kubectl apply -f -
-kubectl -n $CHARON_NODE_NAMESPACE create secret generic charon-enr-private-key --from-file=charon-enr-private-key=./.charon/charon-enr-private-key --dry-run=client -o yaml | kubectl apply -f -
-kubectl -n $CHARON_NODE_NAMESPACE create secret generic cluster-lock --from-file=cluster-lock.json=./.charon/cluster-lock.json --dry-run=client -o yaml | kubectl apply -f -
-EOF
-chmod +x create-k8s-secrets.sh && ./create-k8s-secrets.sh
-```
-
-### Check the secrets are created
-```console
-kubeclt -n $CHARON_NODE_NAMESPACE get secrets
-```
-You should get list of charon secrets as the following:
-- `validator-keys`
-- `charon-enr-private-key`
-- `cluster-lock`
 
 ## Install the chart
 ```console
@@ -140,14 +118,9 @@ helm upgrade --install charon-node obol/charon \
   --namespace $CHARON_NODE_NAMESPACE
 ```
 
-## Connect your validator client
-Ensure the charon node is up and healthy:
-```console
-kubectl -n $CHARON_NODE_NAMESPACE
-```
-Update the validator client to connect to charon node API endpoint.
-For example:
-- Teku: `--beacon-node-api-endpoint="http://CHARON_NODE_SERVICE_NAME:3600"`
+## Connect the validator client
+- Update the validator client to connect to charon node API endpoint instead of the beacon node endpoint `--beacon-node-api-endpoint="http://CHARON_NODE_SERVICE_NAME:3600"`
+- Mount `validator-keys` k8s secrets to the validator client validator folder.
 
 ## Uninstall the chart
 To uninstall and delete the `charon-node`:
