@@ -1,0 +1,27 @@
+{{ range 0 until .Values.clusterSize }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "release.name" . }}
+  labels:
+    {{- include "relay.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  loadBalancerIP: {{ .Values.config.p2pExternalIp }}
+  externalTrafficPolicy: Local
+  ports:
+    - name: {{ .Values.service.ports.http.name }}
+      protocol: {{ .Values.service.ports.http.protocol }}
+      port: {{ .Values.service.ports.http.port }}
+      targetPort: {{ .Values.service.ports.http.targetPort }}
+    - name: {{ .Values.service.ports.p2pTcp.name }}
+      protocol: {{ .Values.service.ports.p2pTcp.protocol }}
+      port: {{ .Values.service.ports.p2pTcp.port }}
+      targetPort: {{ .Values.service.ports.p2pTcp.targetPort }}
+    - name: {{ .Values.service.ports.monitoring.name }}
+      protocol: {{ .Values.service.ports.monitoring.protocol }}
+      port: {{ .Values.service.ports.monitoring.port }}
+      targetPort: {{ .Values.service.ports.monitoring.targetPort }}
+  selector:
+    {{- include "relay.selectorLabels" . | nindent 4 }}
+{{- end }}
