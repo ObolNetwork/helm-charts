@@ -2,7 +2,7 @@
 Charon Cluster
 ===========
 
-![Version: 0.1.3](https://img.shields.io/badge/Version-0.1.3-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.13.0](https://img.shields.io/badge/AppVersion-0.13.0-informational?style=flat-square)
+![Version: 0.1.4](https://img.shields.io/badge/Version-0.1.4-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.13.0](https://img.shields.io/badge/AppVersion-0.13.0-informational?style=flat-square)
 
 Charon is an open-source Ethereum Distributed validator middleware written in golang. This chart deploys a full Charon cluster.
 
@@ -70,7 +70,8 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | secrets.enrPrivateKey | string | `"charon-enr-private-key"` | charon enr private key |
 | secrets.validatorKeys | string | `"validators"` | validators keys |
 | securityContext | object | See `values.yaml` | The security context for pods |
-| service | object | `{"ports":{"monitoring":{"name":"monitoring","port":3620,"protocol":"TCP","targetPort":3620},"p2pTcp":{"name":"p2p-tcp","port":3610,"protocol":"TCP","targetPort":3610},"validatorApi":{"name":"validator-api","port":3600,"protocol":"TCP","targetPort":3600}},"type":"ClusterIP"}` | Charon service ports |
+| service | object | `{"clusterIP":"None","ports":{"monitoring":{"name":"monitoring","port":3620,"protocol":"TCP","targetPort":3620},"p2pTcp":{"name":"p2p-tcp","port":3610,"protocol":"TCP","targetPort":3610},"validatorApi":{"name":"validator-api","port":3600,"protocol":"TCP","targetPort":3600}}}` | Charon service ports |
+| service.clusterIP | string | `"None"` | Headless service to create DNS for each statefulset instance |
 | serviceAccount | object | `{"annotations":{},"enabled":true,"name":""}` | Service account |
 | serviceAccount.annotations | object | `{}` | Annotations to add to the service account |
 | serviceAccount.enabled | bool | `true` | Specifies whether a service account should be created |
@@ -91,7 +92,7 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 
 # How to use this chart
 
-A distributed validator cluster is a docker-compose file with the following containers running:
+A distributed validator cluster is composed of the following containers:
 
 - Single execution layer client
 - Single consensus layer client
@@ -108,9 +109,22 @@ You have the followin charon artifacts created as k8s secrets per each charon no
 The cluster lock is a single secret for the whole cluster:
 - `cluster-lock`
 
-## Add Obol's Helm Charts
-
+List of secrets for a cluster `charon-cluster` with 4 nodes are:
 ```console
+charon-cluster-0-charon-enr-private-key
+charon-cluster-0-validators
+charon-cluster-1-charon-enr-private-key
+charon-cluster-1-validators
+charon-cluster-2-charon-enr-private-key
+charon-cluster-2-validators
+charon-cluster-3-charon-enr-private-key
+charon-cluster-3-validators
+cluster-lock
+```
+
+## Add Obol's Helm Charts Repo
+
+```sh
 helm repo add obol https://obolnetwork.github.io/helm-charts
 helm repo update
 ```
@@ -118,7 +132,7 @@ _See [helm repo](https://helm.sh/docs/helm/helm_repo/) for command documentation
 
 ## Install the chart
 Install a charon cluster `charon-cluster` with 4 nodes:
-```console
+```sh
 helm upgrade --install charon-cluster obol/charon-cluster \
   --set='clusterSize=4' \
   --set='config.beaconNodeEndpoints=<BEACON_NODES_ENDPOINTS>' \
@@ -130,9 +144,84 @@ helm upgrade --install charon-cluster obol/charon-cluster \
 - Update each validator client to connect to charon node API endpoint instead of the beacon node endpoint `--beacon-node-api-endpoint="http://CHARON_NODE_SERVICE_NAME:3600"`
 - Mount each of the `<cluster-name>-<node-index>-validators` k8s secrets to the validator client validators folder.
 
+Example of a single teku deployment that pairs with the charon-cluster node `charon-cluster-0`
+```yaml
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: charon-cluster-0-teku
+  name: charon-cluster-0-teku
+  namespace: charon-cluster
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: charon-cluster-0-teku
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: charon-cluster-0-teku
+    spec:
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+      initContainers:
+        - name: init-chown
+          image: busybox
+          securityContext:
+            runAsUser: 0
+          command:
+            - sh
+            - -ac
+            - >
+              rm -rf /data/teku/validator_keys 2>/dev/null || true;
+              mkdir -p /data/teku/validator_keys;
+              cp /validator_keys/* /data/teku/validator_keys;
+              chown -R 1000:1000 /data/teku;
+          volumeMounts:
+            - name: data
+              mountPath: /data/teku
+            - name: validators
+              mountPath: "/validator_keys"
+      containers:
+        - name: charon-cluster-0-teku
+          image: consensys/teku:latest
+          command:
+            - sh
+            - -ace
+            - |
+              /opt/teku/bin/teku vc \
+              --network=auto \
+              --log-destination=console \
+              --data-base-path=/data/teku \
+              --metrics-enabled=true \
+              --metrics-host-allowlist="*" \
+              --metrics-interface="0.0.0.0" \
+              --metrics-port="8008" \
+              --validator-keys="/data/teku/validator_keys:/data/teku/validator_keys" \
+              --validators-graffiti="Obol Distributed Validator" \
+              --beacon-node-api-endpoint="http://charon-cluster-0.charon-cluster.charon-cluster.svc.cluster.local:3600" \
+              --validators-proposer-default-fee-recipient="0x9FD17880D4F5aE131D62CE6b48dF7ba7D426a410";
+          volumeMounts:
+            - name: data
+              mountPath: /data/teku
+      volumes:
+        - name: validators
+          projected:
+            sources:
+            - secret:
+                name: charon-cluster-validators
+        - name: data
+          emptyDir: {}
+```
+
 ## Uninstall the Chart
 To uninstall and delete the `charon-cluster`:
-```console
+```sh
 helm uninstall charon-cluster
 ```
 The command removes all the Kubernetes components associated with the chart and deletes the release.
