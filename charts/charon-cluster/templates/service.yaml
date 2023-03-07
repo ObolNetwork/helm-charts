@@ -5,7 +5,7 @@ metadata:
   labels:
     {{- include "charon.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.service.type }}
+  clusterIP: {{ .Values.service.clusterIP }}
   ports:
     - name: {{ .Values.service.ports.validatorApi.name }}
       protocol: {{ .Values.service.ports.validatorApi.protocol }}

@@ -86,7 +86,8 @@ rbac:
 
 # -- Charon service ports
 service:
-  type: ClusterIP
+  # -- Headless service to create DNS for each statefulset instance
+  clusterIP: None
   ports:
     validatorApi:
       name: validator-api
