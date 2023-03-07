@@ -2,7 +2,7 @@
 Charon Cluster
 ===========
 
-![Version: 0.1.3](https://img.shields.io/badge/Version-0.1.3-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.13.0](https://img.shields.io/badge/AppVersion-0.13.0-informational?style=flat-square)
+![Version: 0.1.4](https://img.shields.io/badge/Version-0.1.4-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.13.0](https://img.shields.io/badge/AppVersion-0.13.0-informational?style=flat-square)
 
 Charon is an open-source Ethereum Distributed validator middleware written in golang. This chart deploys a full Charon cluster.
 
@@ -70,7 +70,8 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | secrets.enrPrivateKey | string | `"charon-enr-private-key"` | charon enr private key |
 | secrets.validatorKeys | string | `"validators"` | validators keys |
 | securityContext | object | See `values.yaml` | The security context for pods |
-| service | object | `{"ports":{"monitoring":{"name":"monitoring","port":3620,"protocol":"TCP","targetPort":3620},"p2pTcp":{"name":"p2p-tcp","port":3610,"protocol":"TCP","targetPort":3610},"validatorApi":{"name":"validator-api","port":3600,"protocol":"TCP","targetPort":3600}},"type":"ClusterIP"}` | Charon service ports |
+| service | object | `{"clusterIP":"None","ports":{"monitoring":{"name":"monitoring","port":3620,"protocol":"TCP","targetPort":3620},"p2pTcp":{"name":"p2p-tcp","port":3610,"protocol":"TCP","targetPort":3610},"validatorApi":{"name":"validator-api","port":3600,"protocol":"TCP","targetPort":3600}}}` | Charon service ports |
+| service.clusterIP | string | `"None"` | Headless service to create DNS for each statefulset instance |
 | serviceAccount | object | `{"annotations":{},"enabled":true,"name":""}` | Service account |
 | serviceAccount.annotations | object | `{}` | Annotations to add to the service account |
 | serviceAccount.enabled | bool | `true` | Specifies whether a service account should be created |
