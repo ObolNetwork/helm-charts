@@ -1,14 +1,15 @@
-{{ range 0 until .Values.clusterSize }}
+{{- range $i, $e := until .Values.clusterSize }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "release.name" . }}
+  name: {{ include "release.name" . }}-{{ $i }}
   labels:
     {{- include "relay.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   loadBalancerIP: {{ .Values.config.p2pExternalIp }}
   externalTrafficPolicy: Local
+  sessionAffinity: ClientIP
   ports:
     - name: {{ .Values.service.ports.http.name }}
       protocol: {{ .Values.service.ports.http.protocol }}
@@ -23,5 +24,7 @@ spec:
       port: {{ .Values.service.ports.monitoring.port }}
       targetPort: {{ .Values.service.ports.monitoring.targetPort }}
   selector:
+    app: {{ include "release.name" . }}
+    statefulset.kubernetes.io/pod-name: {{ include "release.name" . }}-{{ $i }}
     {{- include "relay.selectorLabels" . | nindent 4 }}
 {{- end }}

@@ -17,7 +17,7 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | affinity | object | `{}` | Affinity for pod assignment |
-| clusterSize | int | `2` | The number of nodes in the relay cluster |
+| clusterSize | int | `3` | The number of nodes in the relay cluster |
 | config.autoP2pKey | string | `"true"` | Automatically create a p2pkey (secp256k1 private key used for p2p authentication and ENR) if none found in data directory. (default true) |
 | config.httpAddress | string | `""` | Listening address (ip and port) for the relay http server serving runtime ENR. (default "127.0.0.1:3640") |
 | config.logFormat | string | `"json"` | Log format; console, logfmt or json (default "console") |

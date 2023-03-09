@@ -1,4 +1,3 @@
-
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -109,7 +108,7 @@ spec:
           - name: KUBERNETES_CLUSTER_DOMAIN
             value: {{ .Values.kubernetesClusterDomain }}
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
-          #name: {{ .Chart.Name }}
+          name: {{ .Chart.Name }}
           {{- with .Values.containerSecurityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
@@ -151,4 +150,3 @@ spec:
           requests:
             storage: 1Gi
         storageClassName: {{ .Values.storageClassName }}
-
