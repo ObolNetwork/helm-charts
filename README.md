@@ -11,6 +11,7 @@ This repo contains Helm Charts for deploying Obol Distributed Validator [middlew
 
 - [`charon`](charts/charon)
 - [`charon-cluster`](charts/charon-cluster)
+- [`charon-relay`](charts/charon-relay)
 
 ## Before you begin
 
