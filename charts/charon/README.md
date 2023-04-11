@@ -46,7 +46,7 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | config.validatorApiAddress | string | `"0.0.0.0:3600"` | Listening address (ip and port) for validator-facing traffic proxying the beacon-node API. (default "127.0.0.1:3600") |
 | containerSecurityContext | object | See `values.yaml` | The security context for containers |
 | fullnameOverride | string | `""` | Provide a name to substitute for the full names of resources |
-| image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v0.14.3"}` | Charon image ropsitory, pull policy, and tag version |
+| image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v0.15.0"}` | Charon image ropsitory, pull policy, and tag version |
 | imagePullSecrets | list | `[]` | Credentials to fetch images from private registry |
 | livenessProbe | object | `{"enabled":true,"httpGet":{"path":"/livez"},"initialDelaySeconds":10,"periodSeconds":5}` | Configure liveness probes |
 | nameOverride | string | `""` | Provide a name in place of lighthouse for `app:` labels |
