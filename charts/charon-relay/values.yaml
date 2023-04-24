@@ -203,7 +203,7 @@ config:
   # Libp2p circuit relay log level. E.g., debug, info, warn, error.
   p2pRelayLogLevel: "info"
 
-  # -- Comma-separated list of libp2p relay URLs or multiaddrs. (default [https://0.relay.obol.tech/enr,http://bootnode.lb.gcp.obol.tech:3640/enr])
+  # -- Comma-separated list of libp2p relay URLs or multiaddrs. (default [https://0.relay.obol.tech/enr])
   p2pRelays: ""
 
   # -- Comma-separated list of listening TCP addresses (ip and port) for libP2P traffic. Empty default doesn't bind to local port therefore only supports outgoing connections.

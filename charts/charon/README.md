@@ -36,7 +36,7 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | config.p2pDisableReuseport | string | `""` | Disables TCP port reuse for outgoing libp2p connections. |
 | config.p2pExternalHostname | string | `""` | The DNS hostname advertised by libp2p. This may be used to advertise an external DNS. |
 | config.p2pExternalIp | string | `""` | The IP address advertised by libp2p. This may be used to advertise an external IP. |
-| config.p2pRelays | string | `"https://0.relay.obol.tech/enr,http://bootnode.lb.gcp.obol.tech:3640/enr"` | Comma-separated list of libp2p relay URLs or multiaddrs. (default [https://0.relay.obol.tech/enr,http://bootnode.lb.gcp.obol.tech:3640/enr]) |
+| config.p2pRelays | string | `"https://0.relay.obol.tech/enr"` | Comma-separated list of libp2p relay URLs or multiaddrs. (default [https://0.relay.obol.tech/enr]) |
 | config.p2pTcpAddress | string | `"0.0.0.0:3610"` | Comma-separated list of listening TCP addresses (ip and port) for libP2P traffic. Empty default doesn't bind to local port therefore only supports outgoing connections. |
 | config.privateKeyFile | string | `"/charon/charon-enr-private-key/charon-enr-private-key"` | The path to the charon enr private key file. (default ".charon/charon-enr-private-key") |
 | config.simnetBeaconMock | string | `""` | Enables an internal mock beacon node for running a simnet. |
