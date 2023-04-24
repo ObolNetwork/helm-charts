@@ -216,7 +216,7 @@ config:
   # -- The IP address advertised by libp2p. This may be used to advertise an external IP.
   p2pExternalIp: ""
 
-  # -- Comma-separated list of libp2p relay URLs or multiaddrs. (default [https://0.relay.obol.tech/enr,http://bootnode.lb.gcp.obol.tech:3640/enr])
+  # -- Comma-separated list of libp2p relay URLs or multiaddrs. (default [https://0.relay.obol.tech/enr])
   p2pRelays: ""
 
   # -- Comma-separated list of listening TCP addresses (ip and port) for libP2P traffic. Empty default doesn't bind to local port therefore only supports outgoing connections.
