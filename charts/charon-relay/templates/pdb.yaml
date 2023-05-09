@@ -1,20 +1,22 @@
-{{ range 0 until .Values.clusterSize }}
 {{- if .Values.podDisruptionBudget.enabled }}
+{{- range $i := until (int .Values.clusterSize) }}
+---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: {{ include "relay.fullname" . }}
+  name: {{ include "relay.fullname" $ }}-{{ $i }}
+  namespace: {{ $.Release.Namespace }}
   labels:
-    {{- include "relay.labels" . | nindent 4 }}
+    name: {{ include "release.name" $ }}-{{ $i }}
 spec:
-{{- if .Values.podDisruptionBudget.minAvailable }}
-  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+{{- if $.Values.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ $.Values.podDisruptionBudget.minAvailable }}
 {{- end }}
-{{- if .Values.podDisruptionBudget.maxUnavailable }}
-  maxUnavailable: {{ .Values.podDisruptionBudget.maxUnavailable }}
+{{- if $.Values.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ $.Values.podDisruptionBudget.maxUnavailable }}
 {{- end }}
   selector:
     matchLabels:
-      {{- include "relay.selectorLabels" . | nindent 6 }}
+      name: {{ include "release.name" $ }}-{{ $i }}
 {{- end }}
 {{- end }}

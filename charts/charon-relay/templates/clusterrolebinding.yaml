@@ -1,18 +1,19 @@
-{{ range 0 until .Values.clusterSize }}
 {{- if .Values.rbac.enabled }}
+{{- range $i := until (int .Values.clusterSize) }}
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ include "relay.serviceAccountName" . }}
+  name: {{ include "relay.serviceAccountName" $ }}-{{ $i }}
   labels:
-    {{- include "relay.labels" . | nindent 4 }}
+    name: {{ include "release.name" $ }}-{{ $i }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ include "relay.serviceAccountName" . }}
+  name: {{ include "relay.serviceAccountName" $ }}-{{ $i }}
 subjects:
   - kind: ServiceAccount
-    name: {{ include "relay.serviceAccountName" . }}
-    namespace: {{ .Release.Namespace }}
+    name: {{ include "relay.serviceAccountName" $ }}-{{ $i }}
+    namespace: {{ $.Release.Namespace }}
 {{- end }}
 {{- end }}

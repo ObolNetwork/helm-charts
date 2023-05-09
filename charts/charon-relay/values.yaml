@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 # -- The number of nodes in the relay cluster
-clusterSize: 3
+clusterSize: 2
 
 # -- Charon image ropsitory, pull policy, and tag version
 image:
@@ -14,6 +14,9 @@ image:
 # -- Credentials to fetch images from private registry
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
+
+# -- Init container image
+initContainerImage: "bitnami/kubectl:latest"
 
 # -- Provide a name in place of lighthouse for `app:` labels
 nameOverride: ""
@@ -85,7 +88,7 @@ service:
   type: LoadBalancer
   ports:
     http:
-      name: http
+      name: bootnode-http
       port: 3640
       protocol: TCP
       targetPort: 3640
@@ -162,13 +165,13 @@ config:
   autoP2pKey: "true"
 
   # -- Listening address (ip and port) for the relay http server serving runtime ENR. (default "127.0.0.1:3640")
-  httpAddress: ""
+  httpAddress: "0.0.0.0:3640"
 
   # -- Log format; console, logfmt or json (default "console")
   logFormat: "json"
 
   # -- Log level; debug, info, warn or error (default "info")
-  logLevel: "info"
+  logLevel: "debug"
 
   # --  Enables sending of logfmt structured logs to these Loki log aggregation server addresses. This is in addition to normal stderr logs.
   lokiAddresses: ""
@@ -187,12 +190,6 @@ config:
 
   # -- Disables TCP port reuse for outgoing libp2p connections.
   p2pDisableReuseport: ""
-  
-  # --  The DNS hostname advertised by libp2p. This may be used to advertise an external DNS.
-  p2pExternalHostname: ""
-
-  # -- The IP address advertised by libp2p. This may be used to advertise an external IP.
-  p2pExternalIp: ""
 
   # -- Libp2p maximum number of peers that can connect to this relay. (default 16384)
   p2pMaxConnections: "16384"
@@ -201,7 +198,7 @@ config:
   p2pMaxReservatoins: "512"
   
   # Libp2p circuit relay log level. E.g., debug, info, warn, error.
-  p2pRelayLogLevel: "info"
+  p2pRelayLogLevel: "debug"
 
   # -- Comma-separated list of libp2p relay URLs or multiaddrs. (default [https://0.relay.obol.tech/enr])
   p2pRelays: ""
@@ -213,7 +210,7 @@ config:
 ## ref: https://github.com/coreos/prometheus-operator
 serviceMonitor:
   # -- If true, a ServiceMonitor CRD is created for a prometheus operator. https://github.com/coreos/prometheus-operator
-  enabled: true
+  enabled: false
   # -- Path to scrape
   path: /metrics
   # -- Alternative namespace for ServiceMonitor

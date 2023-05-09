@@ -1,30 +1,27 @@
-{{- range $i, $e := until .Values.clusterSize }}
+{{- range $i := until (int .Values.clusterSize) }}
+---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "release.name" . }}-{{ $i }}
-  labels:
-    {{- include "relay.labels" . | nindent 4 }}
+  name: {{ include "release.name" $ }}-{{ $i }}
+  namespace: {{ $.Release.Namespace }}
 spec:
-  type: {{ .Values.service.type }}
-  loadBalancerIP: {{ .Values.config.p2pExternalIp }}
+  type: {{ $.Values.service.type }}
   externalTrafficPolicy: Local
-  sessionAffinity: ClientIP
+  sessionAffinity: None
   ports:
-    - name: {{ .Values.service.ports.http.name }}
-      protocol: {{ .Values.service.ports.http.protocol }}
-      port: {{ .Values.service.ports.http.port }}
-      targetPort: {{ .Values.service.ports.http.targetPort }}
-    - name: {{ .Values.service.ports.p2pTcp.name }}
-      protocol: {{ .Values.service.ports.p2pTcp.protocol }}
-      port: {{ .Values.service.ports.p2pTcp.port }}
-      targetPort: {{ .Values.service.ports.p2pTcp.targetPort }}
-    - name: {{ .Values.service.ports.monitoring.name }}
-      protocol: {{ .Values.service.ports.monitoring.protocol }}
-      port: {{ .Values.service.ports.monitoring.port }}
-      targetPort: {{ .Values.service.ports.monitoring.targetPort }}
+    - name: {{ $.Values.service.ports.http.name }}
+      protocol: {{ $.Values.service.ports.http.protocol }}
+      port: {{ $.Values.service.ports.http.port }}
+      targetPort: {{ $.Values.service.ports.http.targetPort }}
+    - name: {{ $.Values.service.ports.p2pTcp.name }}
+      protocol: {{ $.Values.service.ports.p2pTcp.protocol }}
+      port: {{ $.Values.service.ports.p2pTcp.port }}
+      targetPort: {{ $.Values.service.ports.p2pTcp.targetPort }}
+    - name: {{ $.Values.service.ports.monitoring.name }}
+      protocol: {{ $.Values.service.ports.monitoring.protocol }}
+      port: {{ $.Values.service.ports.monitoring.port }}
+      targetPort: {{ $.Values.service.ports.monitoring.targetPort }}
   selector:
-    app: {{ include "release.name" . }}
-    statefulset.kubernetes.io/pod-name: {{ include "release.name" . }}-{{ $i }}
-    {{- include "relay.selectorLabels" . | nindent 4 }}
+    name: {{ include "release.name" $ }}-{{ $i }}
 {{- end }}
