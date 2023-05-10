@@ -90,8 +90,8 @@ helm repo update
 _See [helm repo](https://helm.sh/docs/helm/helm_repo/) for command documentation._
 
 ## Prerequisites
-- A valid domain name (i.e obol.tech)
-- An operational Kubernetes cluster (GKE and EKS are only supported)
+- A valid domain (i.e obol.tech)
+- An operational Kubernetes cluster (This chart supports GKE only)
 - Kubernetes add-ons: nginx-ingress, external-dns, and cert-manager.
 
 ## Install the Chart
