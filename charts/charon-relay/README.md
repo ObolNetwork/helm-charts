@@ -17,7 +17,7 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | affinity | object | `{}` | Affinity for pod assignment # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity # # Example: # affinity: #   podAntiAffinity: #     requiredDuringSchedulingIgnoredDuringExecution: #     - labelSelector: #         matchExpressions: #         - key: app.kubernetes.io/name #           operator: In #           values: #           - charon #       topologyKey: kubernetes.io/hostname # |
-| clusterSize | int | `2` | The number of nodes in the relay cluster |
+| clusterSize | int | `3` | The number of nodes in the relay cluster |
 | config.autoP2pKey | string | `"true"` | Automatically create a p2pkey (secp256k1 private key used for p2p authentication and ENR) if none found in data directory. (default true) |
 | config.httpAddress | string | `"0.0.0.0:3640"` | Listening address (ip and port) for the relay http server serving runtime ENR. (default "127.0.0.1:3640") |
 | config.logFormat | string | `"json"` | Log format; console, logfmt or json (default "console") |
@@ -78,7 +78,7 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 
 A charon public relay composed of the following infrastructure containers:
 - HAProxy (reverse proxy) in front of the charon relay nodes
-- The harpoxy uses the `cluster-name` to establish a sticky session between the charon cluster nodes and the relay server
+- The haproxy uses the `cluster-name` to establish a sticky session between the charon cluster nodes and the relay server
 - One or more charon instances started in relay mode and deployed as Kubernetes statefulsets.
 
 ## Add Obol's Helm Charts
@@ -98,7 +98,7 @@ _See [helm repo](https://helm.sh/docs/helm/helm_repo/) for command documentation
 To install the chart with the release name `charon-relay`:
 ```console
 helm upgrade --install charon-relay obol/charon-relay \
-  --set='clusterSize=4' \
+  --set='clusterSize=3' \
   --create-namespace \
   --namespace charon-relay
 ```

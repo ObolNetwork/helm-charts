@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 # -- The number of nodes in the relay cluster
-clusterSize: 2
+clusterSize: 3
 
 # -- Charon image ropsitory, pull policy, and tag version
 image:
