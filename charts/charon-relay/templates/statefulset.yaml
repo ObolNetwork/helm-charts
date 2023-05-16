@@ -1,104 +1,130 @@
+{{- range $i := until (int .Values.clusterSize) }}
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{- include "release.name" . }}
+  name: {{ include "release.name" $ }}-{{ $i }}
+  namespace: {{ $.Release.Namespace }}
   labels:
-    {{- include "relay.labels" . | nindent 4 }}
+    name: {{ include "release.name" $ }}-{{ $i }}
 spec:
   replicas: 1
-  serviceName: {{ include "release.name" . }}
+  serviceName: {{ include "release.name" $ }}-{{ $i }}
   updateStrategy:
-    type: {{ .Values.updateStrategy }}
+    type: {{ $.Values.updateStrategy }}
   selector:
     matchLabels:
-      {{- include "relay.selectorLabels" . | nindent 6 }}
+      name: {{ include "release.name" $ }}-{{ $i }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
+      {{- with $.Values.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "relay.selectorLabels" . | nindent 8 }}
+        name: {{ include "release.name" $ }}-{{ $i }}
     spec:
-      {{- with concat .Values.imagePullSecrets }}
+      {{- with concat $.Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if or .Values.serviceAccount.enabled }}
-      serviceAccountName: {{ include "relay.serviceAccountName" . }}
+      {{- if or $.Values.serviceAccount.enabled }}
+      serviceAccountName: {{ include "relay.serviceAccountName" $ }}-{{ $i }}
       {{- end }}
-      {{- if .Values.priorityClassName }}
-      priorityClassName: {{ .Values.priorityClassName | quote }}
+      {{- if $.Values.priorityClassName }}
+      priorityClassName: {{ $.Values.priorityClassName | quote }}
       {{- end }}
-      {{- with .Values.nodeSelector }}
+      {{- with $.Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.affinity }}
+      {{- with $.Values.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.tolerations }}
+      {{- with $.Values.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.securityContext }}
+      {{- with $.Values.securityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      initContainers:
+        - name: loadbalancer-ip-fetcher
+          image: {{ $.Values.initContainerImage }}
+          command:
+            - "/bin/sh"
+            - "-c"
+            - |
+              echo "Fetching load balancer ip ...";
+              while true; do
+                LB_IP=$(kubectl get svc {{ include "release.name" $ }}-{{ $i }} -n {{ $.Release.Namespace }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}');
+                if [ ! -z "$LB_IP" ]; then
+                  echo "Load balancer ip: $LB_IP";
+                  echo "$LB_IP" > /shared/load_balancer_ip;
+                  break;
+                else
+                  echo "Load balancer ip not available yet, retrying in 5 seconds...";
+                  sleep 5;
+                fi;
+              done;
+          volumeMounts:
+            - name: shared
+              mountPath: /shared
       containers:
         - command:
             - sh
             - -ac
             - >
-              exec /usr/local/bin/charon relay --p2p-external-ip={{ .Values.config.p2pExternalIp }} --p2p-external-hostname={{ .Values.config.p2pExternalHostname }}
-              {{- if .Values.config.autoP2pKey }}
-              --auto-p2pkey={{ .Values.config.autoP2pKey }}
+              export LOAD_BALANCER_IP=$(cat /shared/load_balancer_ip);
+              exec /usr/local/bin/charon relay --p2p-external-ip="${LOAD_BALANCER_IP}"
+              {{- if $.Values.config.autoP2pKey }}
+              --auto-p2pkey={{ $.Values.config.autoP2pKey }}
               {{- end }}
-              {{- if .Values.config.httpAddress }}
-              --http-address={{ .Values.config.httpAddress }}
+              {{- if $.Values.config.httpAddress }}
+              --http-address={{ $.Values.config.httpAddress }}
               {{- end }}
-              {{- if .Values.config.logFormat }}
-              --log-format={{ .Values.config.logFormat }}
+              {{- if $.Values.config.logFormat }}
+              --log-format={{ $.Values.config.logFormat }}
               {{- end }}
-              {{- if .Values.config.logLevel }}
-              --log-level={{ .Values.config.logLevel }}
+              {{- if $.Values.config.logLevel }}
+              --log-level={{ $.Values.config.logLevel }}
               {{- end }}
-              {{- if .Values.config.lokiAddresses }}
-              --loki-addresses={{ .Values.config.lokiAddresses }}
+              {{- if $.Values.config.lokiAddresses }}
+              --loki-addresses={{ $.Values.config.lokiAddresses }}
               {{- end }}
-              {{- if .Values.config.lokiService }}
-              --loki-service={{ .Values.config.lokiService }}
+              {{- if $.Values.config.lokiService }}
+              --loki-service={{ $.Values.config.lokiService }}
               {{- else }}
               --loki-service="${NODE_NAME}"
               {{- end }}
-              {{- if .Values.config.monitoringAddress }}
-              --monitoring-address={{ .Values.config.monitoringAddress }}
+              {{- if $.Values.config.monitoringAddress }}
+              --monitoring-address={{ $.Values.config.monitoringAddress }}
               {{- end }}
-              {{- if .Values.config.p2pAllowlist }}
-              --p2p-allowlist={{ .Values.config.p2pAllowlist }}
+              {{- if $.Values.config.p2pAllowlist }}
+              --p2p-allowlist={{ $.Values.config.p2pAllowlist }}
               {{- end }}
-              {{- if .Values.config.p2pDenylist }}
-              --p2p-denylist={{ .Values.config.p2pDenylist }}
+              {{- if $.Values.config.p2pDenylist }}
+              --p2p-denylist={{ $.Values.config.p2pDenylist }}
               {{- end }}
-              {{- if .Values.config.p2pDisableReuseport }}
-              --p2p-disable-reuseport={{ .Values.config.p2pDisableReuseport }}
+              {{- if $.Values.config.p2pDisableReuseport }}
+              --p2p-disable-reuseport={{ $.Values.config.p2pDisableReuseport }}
               {{- end }}
-              {{- if .Values.config.p2pMaxConnections }}
-              --p2p-max-connections={{ .Values.config.p2pMaxConnections }}
+              {{- if $.Values.config.p2pMaxConnections }}
+              --p2p-max-connections={{ $.Values.config.p2pMaxConnections }}
               {{- end }}
-              {{- if .Values.config.p2pMaxReservatoins }}
-              --p2p-max-reservations={{ .Values.config.p2pMaxReservatoins }}
+              {{- if $.Values.config.p2pMaxReservatoins }}
+              --p2p-max-reservations={{ $.Values.config.p2pMaxReservatoins }}
               {{- end }}
-              {{- if .Values.config.p2pRelayLogLevel }}
-              --p2p-relay-loglevel={{ .Values.config.p2pRelayLogLevel }}
+              {{- if $.Values.config.p2pRelayLogLevel }}
+              --p2p-relay-loglevel={{ $.Values.config.p2pRelayLogLevel }}
               {{- end }}
-              {{- if .Values.config.p2pRelays }}
-              --p2p-relays={{ .Values.config.p2pRelays }}
+              {{- if $.Values.config.p2pRelays }}
+              --p2p-relays={{ $.Values.config.p2pRelays }}
               {{- end }}
-              {{- if .Values.config.p2pTcpAddress }}
-              --p2p-tcp-address={{ .Values.config.p2pTcpAddress }}
+              {{- if $.Values.config.p2pTcpAddress }}
+              --p2p-tcp-address={{ $.Values.config.p2pTcpAddress }}
               {{- end }}
           env:
           - name: NODE_NAME
@@ -106,47 +132,43 @@ spec:
               fieldRef:
                 fieldPath: metadata.name
           - name: KUBERNETES_CLUSTER_DOMAIN
-            value: {{ .Values.kubernetesClusterDomain }}
-          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
-          name: {{ .Chart.Name }}
-          {{- with .Values.containerSecurityContext }}
+            value: {{ $.Values.kubernetesClusterDomain }}
+          image: {{ $.Values.image.repository }}:{{ $.Values.image.tag }}
+          name: {{ $.Chart.Name }}
+          {{- with $.Values.containerSecurityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-        {{- if or .Values.livenessProbe.enabled }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+        {{- if or $.Values.livenessProbe.enabled }}
           livenessProbe:
-            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            initialDelaySeconds: {{ $.Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ $.Values.livenessProbe.periodSeconds }}
             httpGet:
-              path: {{ .Values.livenessProbe.httpGet.path }}
-              port: {{ .Values.service.ports.monitoring.port }}
+              path: {{ $.Values.livenessProbe.httpGet.path }}
+              port: {{ $.Values.service.ports.http.port }}
         {{- end }}
-        {{- if or .Values.readinessProbe.enabled }}
+        {{- if or $.Values.readinessProbe.enabled }}
           readinessProbe:
-            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            initialDelaySeconds: {{ $.Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ $.Values.readinessProbe.periodSeconds }}
             httpGet:
-              path: {{ .Values.readinessProbe.httpGet.path }}
-              port: {{ .Values.service.ports.monitoring.port }}
+              path: {{ $.Values.readinessProbe.httpGet.path }}
+              port: {{ $.Values.service.ports.http.port }}
         {{- end }}
           workingDir: /charon
           volumeMounts:
-            - mountPath: /charon
-              name: data
-          {{- with .Values.resources }}
+            - name: data
+              mountPath: /charon
+            - name: shared
+              mountPath: "/shared"
+          {{- with $.Values.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-  volumeClaimTemplates:
-    - apiVersion: v1
-      kind: PersistentVolumeClaim
-      metadata:
-        name: data
-      spec:
-        accessModes:
-        - ReadWriteOnce
-        resources:
-          requests:
-            storage: 1Gi
-        storageClassName: {{ .Values.storageClassName }}
+      volumes:
+        - name: shared
+          emptyDir: {}
+        - name: data
+          emptyDir: {}
+{{- end }}
