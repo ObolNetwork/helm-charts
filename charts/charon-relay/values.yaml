@@ -88,7 +88,7 @@ service:
   type: LoadBalancer
   ports:
     http:
-      name: bootnode-http
+      name: relay-http
       port: 3640
       protocol: TCP
       targetPort: 3640
