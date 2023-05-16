@@ -1,7 +1,3 @@
 {{- if not .Values.clusterSize }}
 {{- fail ".Values.clusterSize is required" }}
 {{- end }}
-
-{{- if not .Values.config.p2pExternalIp }}
-{{- fail ".Values.config.p2pExternalIp is required" }}
-{{- end }}

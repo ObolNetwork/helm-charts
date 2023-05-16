@@ -17,16 +17,10 @@ Charon Relay
 
 # How to use this chart
 
-A distributed validator cluster is a docker-compose file with the following containers running:
-
-- Single [Nethermind](https://github.com/NethermindEth/nethermind) execution layer client
-- Single [Lighthouse](https://github.com/sigp/lighthouse) consensus layer client
-- Six [charon](https://github.com/ObolNetwork/charon) Distributed Validator clients
-- Three [Lighthouse](https://github.com/sigp/lighthouse) Validator clients
-- Three [Teku](https://github.com/ConsenSys/teku) Validator Clients
-- Prometheus, Grafana and Jaeger clients for monitoring this cluster.
-
-![Distributed Validator Cluster](https://github.com/ObolNetwork/charon-distributed-validator-cluster/blob/main/DVCluster.png?raw=true)
+A charon public relay composed of the following infrastructure containers:
+- HAProxy (reverse proxy) in front of the charon relay nodes
+- The haproxy uses the `cluster-name` to establish a sticky session between the charon cluster nodes and the relay server
+- One or more charon instances started in relay mode and deployed as Kubernetes statefulsets.
 
 ## Add Obol's Helm Charts
 
@@ -37,42 +31,28 @@ helm repo update
 _See [helm repo](https://helm.sh/docs/helm/helm_repo/) for command documentation._
 
 ## Prerequisites
-- You completed the DKG ceremony and have generated the `.charon` directory.
-- The charon cluster keys are added to the Kubernetes cluster as secrets in the same namespace where the charon cluster is deployed.
-
-### Check the creataed secrets
-```console
-kubeclt -n $CHARON_NODE_NAMESPACE get secrets
-```
-You should get list of charon secrets as the following:
-- `<cluster-name>-<node-index>-validators`
-- `<cluster-name>-<node-index>-charon-enr-private-key`
-- `cluster-lock`
+- A valid domain (i.e obol.tech)
+- An operational Kubernetes cluster (This chart supports GKE only)
+- Kubernetes add-ons: nginx-ingress, external-dns, and cert-manager.
 
 ## Install the Chart
-To install the chart with the release name `charon-cluster`:
+To install the chart with the release name `charon-relay`:
 ```console
-helm upgrade --install charon-cluster obol/charon-cluster \
-  --set='clusterSize=4' \
-  --set='config.beaconNodeEndpoints=<BEACON_NODES_ENDPOINTS>' \
+helm upgrade --install charon-relay obol/charon-relay \
+  --set='clusterSize=3' \
   --create-namespace \
-  --namespace $CHARON_NODE_NAMESPACE
+  --namespace charon-relay
 ```
 
 ## Cluster health check
 Ensure the charon node is up and healthy:
 ```console
-kubectl -n $CHARON_NODE_NAMESPACE
+kubectl -n charon-relay
 ```
 
-## Connect your validator client
-Update the validator client to connect to charon node API endpoint.
-- Teku: `--beacon-node-api-endpoint="http://CHARON_NODE_SERVICE_NAME:3600"`
-You need to repeat that for each VC and charon node pair.
-
 ## Uninstall the Chart
-To uninstall and delete the `charon-cluster`:
+To uninstall and delete the `charon-relay`:
 ```console
-helm uninstall charon-cluster
+helm uninstall charon-relay
 ```
 The command removes all the Kubernetes components associated with the chart and deletes the release.
