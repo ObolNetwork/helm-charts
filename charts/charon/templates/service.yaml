@@ -19,7 +19,7 @@ spec:
       targetPort: monitoring
       protocol: TCP
       name: monitoring
-  {{- if .Values.extraPorts }}
+  {{- if .Values.extraPorts -}}
     {{ toYaml .Values.extraPorts | nindent 4}}
   {{- end }}
   selector:

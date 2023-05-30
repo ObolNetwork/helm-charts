@@ -18,7 +18,7 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 |-----|------|---------|-------------|
 | affinity | object | `{}` | Affinity for pod assignment # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity # # Example: # affinity: #   podAntiAffinity: #     requiredDuringSchedulingIgnoredDuringExecution: #     - labelSelector: #         matchExpressions: #         - key: app.kubernetes.io/name #           operator: In #           values: #           - charon #       topologyKey: kubernetes.io/hostname # |
 | config.LockFile | string | `"/charon/cluster-lock/cluster-lock.json"` | The path to the cluster lock file defining distributed validator cluster. (default ".charon/cluster-lock.json") |
-| config.beaconNodeEndpoints | string | `"a"` | Comma separated list of one or more beacon node endpoint URLs. |
+| config.beaconNodeEndpoints | string | `""` | Comma separated list of one or more beacon node endpoint URLs. |
 | config.builderApi | string | `""` | Enables the builder api. Will only produce builder blocks. Builder API must also be enabled on the validator client. Beacon node must be connected to a builder-relay to access the builder network. |
 | config.featureSet | string | `"stable"` | Minimum feature set to enable by default: alpha, beta, or stable. Warning: modify at own risk. (default "stable") |
 | config.featureSetDisable | string | `""` | Comma-separated list of features to disable, overriding the default minimum feature set. |
@@ -48,7 +48,6 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | extraContainers | list | `[]` | Additional containers |
 | extraEnv | list | `[]` | Additional env variables |
 | extraPorts | list | `[]` | Additional ports. Useful when using extraContainers |
-| extraSecrets | object | `{}` | Additional secrets |
 | extraVolumeMounts | list | `[]` | Additional volume mounts |
 | extraVolumes | list | `[]` | Additional volumes |
 | fullnameOverride | string | `""` | Provide a name to substitute for the full names of resources |

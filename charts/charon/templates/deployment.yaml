@@ -83,6 +83,9 @@ spec:
             - containerPort: {{ .Values.monitoringPort }}
               name: monitoring
               protocol: TCP
+          {{- if .Values.extraPorts -}}
+            {{ toYaml .Values.extraPorts | nindent 12 }}
+          {{- end }}
           {{- with .Values.resources }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
