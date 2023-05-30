@@ -40,7 +40,7 @@ data:
   CHARON_LOKI_SERVICE: {{ .Values.config.lokiService }}
   {{- end }}
   {{- if .Values.config.monitoringAddress }}
-  CHARON_MONITORING_ADDRESS: {{ .Values.config.monitoringAddress }}
+  CHARON_MONITORING_ADDRESS: {{ .Values.config.monitoringAddress }}:{{ .Values.monitoringPort }}
   {{- end }}
   {{- if .Values.config.noVerify }}
   CHARON_NO_VERIFY: {{ .Values.config.noVerify | quote }}
@@ -62,7 +62,7 @@ data:
   CHARON_P2P_RELAYS: {{ .Values.config.p2pRelays | quote }}
   {{- end }}
   {{- if .Values.config.p2pTcpAddress }}
-  CHARON_P2P_TCP_ADDRESS: {{ .Values.config.p2pTcpAddress }}
+  CHARON_P2P_TCP_ADDRESS: {{ .Values.config.p2pTcpAddress }}:{{ .Values.p2pPort }}
   {{- end }}
   {{- if .Values.config.privateKeyFile }}
   CHARON_PRIVATE_KEY_FILE: {{ .Values.config.privateKeyFile | quote }}
@@ -80,5 +80,5 @@ data:
   CHARON_SYNTHETIC_BLOCK_PROPOSALS: {{ .Values.config.syntheticBlockProposals }}
   {{- end }}
   {{- if .Values.config.validatorApiAddress }}
-  CHARON_VALIDATOR_API_ADDRESS: {{ .Values.config.validatorApiAddress }}
+  CHARON_VALIDATOR_API_ADDRESS: {{ .Values.config.validatorApiAddress }}:{{ .Values.httpPort }}
   {{- end }}
