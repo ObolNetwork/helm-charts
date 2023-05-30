@@ -7,17 +7,20 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   ports:
-    - name: {{ .Values.service.ports.validatorApi.name }}
-      protocol: {{ .Values.service.ports.validatorApi.protocol }}
-      port: {{ .Values.service.ports.validatorApi.port }}
-      targetPort: {{ .Values.service.ports.validatorApi.targetPort }}
-    - name: {{ .Values.service.ports.p2pTcp.name }}
-      protocol: {{ .Values.service.ports.p2pTcp.protocol }}
-      port: {{ .Values.service.ports.p2pTcp.port }}
-      targetPort: {{ .Values.service.ports.p2pTcp.targetPort }}
-    - name: {{ .Values.service.ports.monitoring.name }}
-      protocol: {{ .Values.service.ports.monitoring.protocol }}
-      port: {{ .Values.service.ports.monitoring.port }}
-      targetPort: {{ .Values.service.ports.monitoring.targetPort }}
+    - port: {{ .Values.httpPort }}
+      targetPort: validator-api
+      protocol: TCP
+      name: validator-api
+    - port: {{ .Values.p2pPort }}
+      targetPort: p2p-tcp
+      protocol: TCP
+      name: p2p-tcp
+    - port: {{ .Values.monitoringPort }}
+      targetPort: monitoring
+      protocol: TCP
+      name: monitoring
+  {{- if .Values.extraPorts }}
+    {{ toYaml .Values.extraPorts | nindent 4}}
+  {{- end }}
   selector:
     {{- include "charon.selectorLabels" . | nindent 4 }}

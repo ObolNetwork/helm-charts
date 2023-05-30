@@ -44,6 +44,10 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      initContainers:
+      {{- if .Values.initContainers }}
+        {{- tpl (toYaml .Values.initContainers | nindent 8) $ }}
+      {{- end }}
       containers:
         - args:
           - run
@@ -52,6 +56,9 @@ spec:
           env:
           - name: KUBERNETES_CLUSTER_DOMAIN
             value: {{ .Values.kubernetesClusterDomain }}
+        {{- if .Values.extraEnv }}
+          {{- toYaml .Values.extraEnv | nindent 10 }}
+        {{- end }}
           envFrom:
           - configMapRef:
               name: {{ include "release.name" . }}
@@ -62,34 +69,41 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-        {{- if or .Values.livenessProbe.enabled }}
           livenessProbe:
-            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
-            httpGet:
-              path: {{ .Values.livenessProbe.httpGet.path }}
-              port: {{ .Values.service.ports.monitoring.port }}
-        {{- end }}
-        {{- if or .Values.readinessProbe.enabled }}
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
-            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
-            httpGet:
-              path: {{ .Values.readinessProbe.httpGet.path }}
-              port: {{ .Values.service.ports.monitoring.port }}
-        {{- end }}  
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          ports:
+            - containerPort: {{ .Values.httpPort }}
+              name: validator-api
+              protocol: TCP
+            - containerPort: {{ .Values.p2pPort }}
+              name: p2p-tcp
+              protocol: TCP
+            - containerPort: {{ .Values.monitoringPort }}
+              name: monitoring
+              protocol: TCP
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
           volumeMounts:
+          {{- if .Values.extraVolumeMounts -}}
+            {{ toYaml .Values.extraVolumeMounts | nindent 12 }}
+          {{- end }}
             - mountPath: /charon/validator_keys
               name: validator-keys
             - mountPath: /charon/charon-enr-private-key
               name: charon-enr-private-key
             - mountPath: /charon/cluster-lock
               name: cluster-lock
-          {{- with .Values.resources }}
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
-          {{- end }}
+      {{- if .Values.extraContainers }}
+        {{ tpl (toYaml .Values.extraContainers | nindent 8) $ }}
+      {{- end }}
       volumes:
+      {{- if .Values.extraVolumes -}}
+        {{ toYaml .Values.extraVolumes | nindent 8 }}
+      {{- end }}
         - name: validator-keys
           projected:
             sources:
@@ -105,3 +119,4 @@ spec:
             sources:
             - secret:
                 name: {{ .Values.secrets.clusterlock }}
+

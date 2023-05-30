@@ -78,26 +78,6 @@ rbac:
       - "list"
       - "watch"
 
-# -- Charon service ports
-service:
-  type: ClusterIP
-  ports:
-    validatorApi:
-      name: validator-api
-      port: 3600
-      protocol: TCP
-      targetPort: 3600
-    p2pTcp:
-      name: p2p-tcp
-      port: 3610
-      protocol: TCP
-      targetPort: 3610
-    monitoring:
-      name: monitoring
-      port: 3620
-      protocol: TCP
-      targetPort: 3620
-
 # -- Pod resources limits and requests
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
@@ -140,17 +120,33 @@ affinity: {}
 ## ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/
 priorityClassName: ""
 
+service:
+  # -- Service type
+  type: ClusterIP
+
 # -- Enable and configure pod disruption budget
 ## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb
 podDisruptionBudget:
   enabled: false
   maxUnavailable: 1
 
+# -- HTTP Port
+httpPort: 3600
+
+# -- Engine Port (Auth Port)
+p2pPort: 3610
+
+# -- Monitoring Port
+monitoringPort: 3620
+
+# -- Jaeger Port
+jaegerPort: 6831
+
 ## Charon command line options
 ## ref: https://docs.obol.tech/docs/charon/charon_cli_reference
 config:
   # -- Comma separated list of one or more beacon node endpoint URLs.
-  beaconNodeEndpoints: ""
+  beaconNodeEndpoints: "a"
   
   # -- Enables the builder api. Will only produce builder blocks. Builder API must also be enabled on the validator client. Beacon node must be connected to a builder-relay to access the builder network.
   builderApi: ""
@@ -186,7 +182,7 @@ config:
   lokiService: "charon"
 
   # -- Listening address (ip and port) for the monitoring API (prometheus, pprof). (default "127.0.0.1:3620")
-  monitoringAddress: "0.0.0.0:3620"
+  monitoringAddress: "0.0.0.0"
 
   # -- Disables cluster definition and lock file verification.
   noVerify: false
@@ -210,7 +206,7 @@ config:
   p2pRelays: "https://0.relay.obol.tech/enr"
 
   # -- Comma-separated list of listening TCP addresses (ip and port) for libP2P traffic. Empty default doesn't bind to local port therefore only supports outgoing connections.
-  p2pTcpAddress: "0.0.0.0:3610"
+  p2pTcpAddress: "0.0.0.0"
 
   # -- The path to the charon enr private key file. (default ".charon/charon-enr-private-key")
   privateKeyFile: "/charon/charon-enr-private-key/charon-enr-private-key"
@@ -228,7 +224,7 @@ config:
   syntheticBlockProposals: ""
   
   # -- Listening address (ip and port) for validator-facing traffic proxying the beacon-node API. (default "127.0.0.1:3600")
-  validatorApiAddress: "0.0.0.0:3600"
+  validatorApiAddress: "0.0.0.0"
 
 # -- Kubernetes secrets names
 secrets:
@@ -239,11 +235,35 @@ secrets:
   # -- charon cluster lock
   clusterlock: "cluster-lock"
 
+# -- Additional init containers
+initContainers: []
+# - name: my-init-container
+#   image: busybox:latest
+#   command: ['sh', '-c', 'echo hello']
+
+# -- Additional containers
+extraContainers: []
+
+# -- Additional volumes
+extraVolumes: []
+
+# -- Additional volume mounts
+extraVolumeMounts: []
+
+# -- Additional ports. Useful when using extraContainers
+extraPorts: []
+
+# -- Additional env variables
+extraEnv: []
+
+# -- Additional secrets
+extraSecrets: {}
+
 # -- Prometheus Service Monitor
 ## ref: https://github.com/coreos/prometheus-operator
 serviceMonitor:
   # -- If true, a ServiceMonitor CRD is created for a prometheus operator. https://github.com/coreos/prometheus-operator
-  enabled: true
+  enabled: false
   # -- Path to scrape
   path: /metrics
   # -- Alternative namespace for ServiceMonitor
@@ -266,17 +286,16 @@ serviceMonitor:
 # -- Configure liveness probes
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 livenessProbe:
-  enabled: true
-  initialDelaySeconds: 10
-  periodSeconds: 5
+  initialDelaySeconds: 60
+  periodSeconds: 120
   httpGet:
     path: /livez
-
+    port: monitoring
 # -- Configure readiness probes
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 readinessProbe:
-  enabled: true
-  initialDelaySeconds: 5
-  periodSeconds: 3
+  initialDelaySeconds: 10
+  periodSeconds: 10
   httpGet:
     path: /readyz
+    port: monitoring
