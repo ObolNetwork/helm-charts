@@ -57,7 +57,7 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | imagePullSecrets | list | `[]` | Credentials to fetch images from private registry # ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ |
 | initContainers | list | `[]` | Additional init containers |
 | jaegerPort | int | `6831` | Jaeger Port |
-| livenessProbe | object | `{"httpGet":{"path":"/livez","port":"monitoring"},"initialDelaySeconds":60,"periodSeconds":120}` | Configure liveness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ |
+| livenessProbe | object | `{"httpGet":{"path":"/livez","port":"monitoring"},"initialDelaySeconds":60,"periodSeconds":120}` | Configure liveness probes |
 | monitoringPort | int | `3620` | Monitoring Port |
 | nameOverride | string | `""` | Provide a name in place of lighthouse for `app:` labels |
 | nodeSelector | object | `{}` | Node labels for pod assignment # ref: https://kubernetes.io/docs/user-guide/node-selection/ |
@@ -72,7 +72,7 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | rbac.name | string | `""` | The name of the cluster role to use. If not set and create is true, a name is generated using the fullname template |
 | rbac.rules | list | `[{"apiGroups":[""],"resources":["services"],"verbs":["get","list","watch"]}]` | Required Role rules |
 | rbac.rules[0] | object | `{"apiGroups":[""],"resources":["services"],"verbs":["get","list","watch"]}` | Required to get information about the serices nodePort. |
-| readinessProbe | object | `{"httpGet":{"path":"/readyz","port":"monitoring"},"initialDelaySeconds":10,"periodSeconds":10}` | Configure readiness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ |
+| readinessProbe | object | `{"httpGet":{"path":"/readyz","port":"monitoring"},"initialDelaySeconds":10,"periodSeconds":10}` | Configure readiness probes |
 | resources | object | `{}` | Pod resources limits and requests |
 | secrets | object | `{"clusterlock":"cluster-lock","enrPrivateKey":"charon-enr-private-key","validatorKeys":"validator-keys"}` | Kubernetes secrets names |
 | secrets.clusterlock | string | `"cluster-lock"` | charon cluster lock |
