@@ -284,7 +284,6 @@ serviceMonitor:
   relabelings: []
 
 # -- Configure liveness probes
-## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 livenessProbe:
   initialDelaySeconds: 60
   periodSeconds: 120
@@ -292,7 +291,6 @@ livenessProbe:
     path: /livez
     port: monitoring
 # -- Configure readiness probes
-## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 readinessProbe:
   initialDelaySeconds: 10
   periodSeconds: 10
