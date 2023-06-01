@@ -64,6 +64,10 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | podAnnotations | object | `{}` | Pod annotations |
 | podDisruptionBudget | object | `{"enabled":false,"maxUnavailable":1}` | Enable and configure pod disruption budget # ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb |
 | priorityClassName | string | `""` | Used to assign priority to pods # ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/ |
+| prometheus.enabled | bool | `false` |  |
+| prometheus.image | string | `"prom/prometheus"` |  |
+| prometheus.resources | object | `{}` |  |
+| prometheus.tag | string | `"v2.30.0"` |  |
 | rbac | object | `{"clusterRules":[{"apiGroups":[""],"resources":["nodes"],"verbs":["get","list","watch"]}],"enabled":true,"name":"","rules":[{"apiGroups":[""],"resources":["services"],"verbs":["get","list","watch"]}]}` | RBAC configuration. # ref: https://kubernetes.io/docs/reference/access-authn-authz/rbac/ |
 | rbac.clusterRules | list | `[{"apiGroups":[""],"resources":["nodes"],"verbs":["get","list","watch"]}]` | Required ClusterRole rules |
 | rbac.clusterRules[0] | object | `{"apiGroups":[""],"resources":["nodes"],"verbs":["get","list","watch"]}` | Required to obtain the nodes external IP |

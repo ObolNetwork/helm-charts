@@ -294,3 +294,10 @@ readinessProbe:
   httpGet:
     path: /readyz
     port: monitoring
+
+prometheus:
+  enabled: false
+  image: prom/prometheus
+  tag: v2.30.0
+  resources: {}
+
