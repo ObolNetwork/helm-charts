@@ -74,12 +74,15 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | tolerations | object | `{}` | Tolerations for pod assignment # ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/ |
 | updateStrategy | string | `"RollingUpdate"` | Allows you to configure and disable automated rolling updates for containers, labels, resource request/limits, and annotations for the Pods in a StatefulSet. |
 
-# How to use this chart
+# Prerequisites
+- An operational Kubernetes GKE cluster with these add-ons, nginx-ingress, external-dns, and cert-manager
+- A valid public domain name (i.e obol.tech)
 
-A charon public relay composed of the following infrastructure containers:
-- HAProxy (reverse proxy) in front of the charon relay nodes
-- The haproxy uses the `cluster-name` to establish a sticky session between the charon cluster nodes and the relay server
-- One or more charon instances started in relay mode and deployed as Kubernetes statefulsets.
+# Deployment Architecture
+- HAProxy, to establish a header-base sticky session between the charon DV nodes and the relay server
+- Charon nodes, running in relay mode and deployed as statefulsets
+
+# How to use this chart
 
 ## Add Obol's Helm Charts
 
@@ -89,11 +92,6 @@ helm repo update
 ```
 _See [helm repo](https://helm.sh/docs/helm/helm_repo/) for command documentation._
 
-## Prerequisites
-- A valid domain (i.e obol.tech)
-- An operational Kubernetes cluster (This chart supports GKE only)
-- Kubernetes add-ons: nginx-ingress, external-dns, and cert-manager.
-
 ## Install the Chart
 To install the chart with the release name `charon-relay`:
 ```console
@@ -102,6 +100,10 @@ helm upgrade --install charon-relay obol/charon-relay \
   --create-namespace \
   --namespace charon-relay
 ```
+  relay_name             = "relay-1"
+  cluster_size           = 3
+  primary_base_domain    = "example.com" # the relay domain: https://relay-1.example.com
+  haproxy_replicas_count = 3
 
 ## Cluster health check
 Ensure the charon node is up and healthy:
