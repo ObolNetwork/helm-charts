@@ -1,0 +1,53 @@
+{{- if .Values.prometheus.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+ name: prometheus
+ namespace: {{ .Release.Namespace }}
+rules:
+ -
+  apiGroups:
+   - ''
+  resources:
+   - secrets
+   - endpoints
+   - pods
+   - configmaps"
+   - services
+  verbs:
+   - get
+   - list
+   - watch
+ -
+  apiGroups:
+   - extensions
+  resources:
+   - ingresses
+  verbs:
+   - get
+   - list
+   - watch
+ -
+  apiGroups:
+   - ""
+  resources:
+   - configmaps
+  verbs:
+   - create
+   - update
+ - 
+  apiGroups:
+   - ""
+  resources:
+   - namespaces
+  verbs:
+   - get
+ -
+  apiGroups:
+   - ""
+  resources:
+   - events
+  verbs:
+   - create
+   - patch
+{{- end }}

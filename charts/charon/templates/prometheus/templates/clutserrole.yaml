@@ -1,0 +1,34 @@
+{{- if .Values.prometheus.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: prometheus
+rules:
+- apiGroups: [""]
+  resources:
+  - nodes
+  - nodes/metrics
+  - services
+  - endpoints
+  - pods
+  - configmaps
+  - secrets
+  verbs: ["get", "list", "watch"]
+
+- apiGroups:
+  - "networking.k8s.io"
+  resources:
+  - ingresses
+  verbs: ["get", "list", "watch"]
+
+- apiGroups: [""]
+  resources:
+  - events
+  verbs: ["create", "patch"]
+
+- nonResourceURLs: ["/metrics", "/metrics/cadvisor"]
+  verbs: ["get"]
+{{- end }}

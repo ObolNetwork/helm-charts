@@ -1,0 +1,37 @@
+{{- if .Values.prometheus.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  labels:
+    name: prometheus
+data:
+  prometheus.rules: |-
+    groups:
+    - name: composable-gke
+      rules:
+      - alert: High Pod Memory
+        expr: sum(container_memory_usage_bytes) > 1
+        for: 1m
+        labels:
+          severity: slack
+        annotations:
+          summary: High Memory Usage
+  prometheus.yml: |-
+    global:
+      scrape_interval: 5s
+      evaluation_interval: 5s
+    rule_files:
+      - /etc/config/prometheus.rules
+    scrape_configs:
+      - job_name: 'node-exporter'
+        kubernetes_sd_configs:
+          - role: endpoints
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_endpoints_name]
+          regex: 'node-exporter'
+          action: keep
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+{{- end }}

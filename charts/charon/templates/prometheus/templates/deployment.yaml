@@ -1,0 +1,110 @@
+{{- if .Values.prometheus.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: prometheus
+
+spec:
+    replicas: 1
+    revisionHistoryLimit: 3
+    selector: 
+      matchLabels:
+        app: prometheus
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                  - prometheus
+            topologyKey: "kubernetes.io/hostname"
+
+        nodeAffinity: 
+            preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 1
+            preference:
+            - matchExpressions:
+                - key: node-role.kubernetes.io/master
+                  operator: In
+                  values:
+                    - "true"
+    toleration:
+        effect: "NoSchedule"
+        key: "onlyfor"
+        operator: "Equal"
+        value: "highcpu"
+
+
+    toleration:
+        effect: "NoSchedule"
+        key: "dbonly"
+        operator: "Equal"
+        value: "yes"
+
+    template:
+        metadata:
+          labels:
+            app: prometheus
+        spec:
+          serviceAccountName: prometheus
+          containers:
+          - name: prometheus
+            image: prom/prometheus
+            args:
+            - "--config.file=/etc/config/prometheus.yml"
+            - "--storage.tsdb.retention.time=24h"
+            - "--web.console.libraries=/etc/prometheus/console_libraries"
+            - "--web.console.templates=/etc/prometheus/consoles"
+            - "--web.enable-lifecycle"
+            ports:
+            - containerPort: 9090
+            volumeMounts:
+              - name: prometheus-config-volume
+                mountPath: /etc/config/prometheus.yml
+                subPath: prometheus.yml
+
+              - name: prometheus-rules
+                mountPath: /etc/config/prometheus.rules
+                subPath: prometheus.rules
+
+            resources: {}
+                # requests:
+                # memory: "1Gi"
+                # cpu: "1"
+                # limits:
+                # memory: "2Gi"
+                # cpu: "2"
+          volumes:
+          - name: prometheus-config-volume
+            configMap:
+              name: prometheus-config
+              items:
+              - key: prometheus.yml
+                path: prometheus.yml
+          - name: prometheus-rules
+            configMap:
+              name: prometheus-config
+              items:
+              - key: prometheus.rules
+                path: prometheus.rules
+
+          readinessProbe:
+            httpGet:
+            path: /
+            port: 9090
+            initialDelaySeconds: 30
+            timeoutSeconds: 30
+          livenessProbe:
+            httpGet:
+            path: /
+            port: 9090
+            initialDelaySeconds: 30
+            timeoutSeconds: 30
+        terminationGracePeriodSeconds: 30
+
+{{- end }}
