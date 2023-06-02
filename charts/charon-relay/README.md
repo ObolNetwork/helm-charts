@@ -17,8 +17,8 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | affinity | object | `{}` | Affinity for pod assignment # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity # # Example: # affinity: #   podAntiAffinity: #     requiredDuringSchedulingIgnoredDuringExecution: #     - labelSelector: #         matchExpressions: #         - key: app.kubernetes.io/name #           operator: In #           values: #           - charon #       topologyKey: kubernetes.io/hostname # |
-| centralMonitoring | object | `{"enabled":true,"promEndpoint":"https://vm.monitoring.gcp.obol.tech/write","token":""}` | Central Monitoring |
-| centralMonitoring.enabled | bool | `true` | Specifies whether central monitoring should be enabled |
+| centralMonitoring | object | `{"enabled":false,"promEndpoint":"https://vm.monitoring.gcp.obol.tech/write","token":""}` | Central Monitoring |
+| centralMonitoring.enabled | bool | `false` | Specifies whether central monitoring should be enabled |
 | centralMonitoring.promEndpoint | string | `"https://vm.monitoring.gcp.obol.tech/write"` | https endpoint to obol central prometheus  |
 | centralMonitoring.token | string | `""` | The authentication token to the central prometheus |
 | clusterSize | int | `3` | The number of nodes in the relay cluster |
