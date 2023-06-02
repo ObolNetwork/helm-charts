@@ -51,12 +51,12 @@ kubectl -n charon-relay get pods
 
 ## Deploy HAProxy
 
-Retrieve the relay nodes public IPs and update the `backend relays` section in the haproxy `values.yaml` with them
+Retrieve the relay nodes public IPs then update the `backend relays` section in the haproxy `values.yaml`
 ```console
 kubectl -n charon-relay get svc --no-headers=true -o "custom-columns=NAME:.metadata.name,IP:.status.loadBalancer.ingress[*].ip" | awk '/relay/{print $2}'
 ```
 
-Create values.yaml to override haproxy configuration with the relay nodes public IPs
+Create custom `values.yaml` to override haproxy configuration with the relay nodes public IPs
 ```yaml
 replicaCount: 3
 service:
