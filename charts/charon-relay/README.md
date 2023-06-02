@@ -79,7 +79,7 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | updateStrategy | string | `"RollingUpdate"` | Allows you to configure and disable automated rolling updates for containers, labels, resource request/limits, and annotations for the Pods in a StatefulSet. |
 
 # Prerequisites
-- An operational Kubernetes GKE cluster with these add-ons, nginx-ingress, external-dns, and cert-manager
+- An operational Kubernetes GKE cluster with these add-ons, nginx-ingress, external-dns, and cert-manager with let'sEncrypt issuer
 - A valid public domain name (i.e obol.tech)
 
 # Deployment Architecture
@@ -94,30 +94,81 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 helm repo add obol https://obolnetwork.github.io/helm-charts
 helm repo update
 ```
-_See [helm repo](https://helm.sh/docs/helm/helm_repo/) for command documentation._
 
 ## Install the Chart
-To install the chart with the release name `charon-relay`:
+
+To install the chart with the release name `charon-relay`
 ```console
 helm upgrade --install charon-relay obol/charon-relay \
   --set='clusterSize=3' \
   --create-namespace \
   --namespace charon-relay
 ```
-  relay_name             = "relay-1"
-  cluster_size           = 3
-  primary_base_domain    = "example.com" # the relay domain: https://relay-1.example.com
-  haproxy_replicas_count = 3
 
 ## Cluster health check
-Ensure the charon node is up and healthy:
+
+Ensure the relay node is up and healthy
 ```console
-kubectl -n charon-relay
+kubectl -n charon-relay get pods
+```
+
+## Deploy HAProxy
+
+Retrieve the relay nodes public IPs and update the `backend relays` section in the haproxy `values.yaml` with them
+```console
+kubectl -n charon-relay get svc --no-headers=true -o "custom-columns=NAME:.metadata.name,IP:.status.loadBalancer.ingress[*].ip" | awk '/relay/{print $2}'
+```
+
+Create values.yaml to override haproxy configuration with the relay nodes public IPs
+```yaml
+replicaCount: 3
+service:
+  type: ClusterIP
+  externalTrafficPolicy: Local
+configuration: |-
+  global
+      log stdout format raw local0
+      maxconn 1024
+  defaults
+      log global
+      timeout client 60s
+      timeout connect 60s
+      timeout server 60s
+  frontend fe_main
+      bind :8080
+      default_backend relays
+  backend relays
+      mode http
+      balance hdr(Charon-Cluster)
+      server charon-relay-0 {charon-relay-0-IP}:3640 check inter 10s fall 12 rise 2
+      server charon-relay-1 {charon-relay-1-IP}:3640 check inter 10s fall 12 rise 2
+      server charon-relay-2 {charon-relay-2-IP}:3640 check inter 10s fall 12 rise 2
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt"
+    nginx.ingress.kubernetes.io/app-root: /enr
+    cert-manager.io/issue-temporary-certificate: "true"
+    acme.cert-manager.io/http01-edit-in-place: "true"
+  tls: true
+```
+
+Deploy the haproxy helm chart
+```console
+helm upgrade --install haproxy bitnami/haproxy \
+  --set='ingress.hostname=charon-relay.example.com' \
+  --create-namespace \
+  --namespace charon-relay \
+  -f values.yaml
 ```
 
 ## Uninstall the Chart
-To uninstall and delete the `charon-relay`:
+
+To uninstall and delete the `charon-relay` and `haproxy` charts
 ```console
-helm uninstall charon-relay
+helm uninstall charon-relay haproxy
 ```
-The command removes all the Kubernetes components associated with the chart and deletes the release.
+
+The command removes all the Kubernetes components associated with the chart and deletes the releases.
