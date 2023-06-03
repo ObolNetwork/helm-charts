@@ -1,0 +1,38 @@
+{{- if .Values.centralMonitoring.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: prometheus
+  name: prometheus
+  namespace: {{ $.Release.Namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+      - args:
+        - --config.file=/etc/prometheus/prometheus.yaml
+        image: prom/prometheus:latest
+        name: prometheus
+        ports:
+        - containerPort: 9090
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /etc/prometheus/prometheus.yaml
+          name: prometheus
+          subPath: prometheus.yaml
+      securityContext:
+        runAsUser: 0
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: prometheus
+        name: prometheus
+{{- end }}
