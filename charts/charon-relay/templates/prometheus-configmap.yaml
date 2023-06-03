@@ -14,6 +14,9 @@ data:
         authorization:
           credentials: {{ $.Values.centralMonitoring.token }}
     scrape_configs:
+      - job_name: prometheus
+        static_configs:
+          - targets: ['localhost:9090']
     {{- range $i := until (int .Values.clusterSize) }}
       - job_name: '{{ $.Release.Namespace }}-{{ $i }}'
         static_configs:
