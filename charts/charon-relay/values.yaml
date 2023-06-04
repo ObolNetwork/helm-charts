@@ -251,7 +251,7 @@ readinessProbe:
 # -- Central Monitoring
 centralMonitoring:
   # -- Specifies whether central monitoring should be enabled
-  enabled: true
+  enabled: false
   # -- https endpoint to obol central prometheus 
   promEndpoint: "https://vm.monitoring.gcp.obol.tech/write"
   # -- The authentication token to the central prometheus
