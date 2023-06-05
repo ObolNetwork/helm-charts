@@ -1,0 +1,19 @@
+{{- if .Values.centralMonitoring.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus
+data:
+  prometheus.yaml: |
+    global:
+      scrape_interval: 12s
+      evaluation_interval: 12s
+    remote_write:
+      - url: {{ $.Values.centralMonitoring.promEndpoint }}
+        authorization:
+          credentials: {{ $.Values.centralMonitoring.token }}
+    scrape_configs:
+      - job_name: '{{ include "release.name" . }}'
+        static_configs:
+          - targets: ['{{ include "release.name" . }}:3620']
+{{- end }}

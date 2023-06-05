@@ -9,7 +9,7 @@ clusterSize: 3
 image:
   repository: obolnetwork/charon
   pullPolicy: IfNotPresent
-  tag: v0.15.0
+  tag: v0.16.0
 
 # -- Credentials to fetch images from private registry
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
@@ -247,3 +247,12 @@ readinessProbe:
   periodSeconds: 3
   httpGet:
     path: /readyz
+
+# -- Central Monitoring
+centralMonitoring:
+  # -- Specifies whether central monitoring should be enabled
+  enabled: false
+  # -- https endpoint to obol central prometheus 
+  promEndpoint: "https://vm.monitoring.gcp.obol.tech/write"
+  # -- The authentication token to the central prometheus
+  token: ""

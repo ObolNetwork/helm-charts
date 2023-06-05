@@ -169,6 +169,16 @@ spec:
       volumes:
         - name: shared
           emptyDir: {}
-        - name: data
-          emptyDir: {}
+  volumeClaimTemplates:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+      storageClassName: {{ $.Values.storageClassName }}
 {{- end }}

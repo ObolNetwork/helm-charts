@@ -13,3 +13,9 @@
 {{- if not .Values.secrets.clusterlock }}
 {{- fail ".Values.secrets.clusterlock is required" }}
 {{- end }}
+
+{{- if .Values.centralMonitoring.enabled }}
+{{- if not .Values.centralMonitoring.token }}
+{{- fail ".Values.centralMonitoring.token is required" }}
+{{- end }}
+{{- end }}
