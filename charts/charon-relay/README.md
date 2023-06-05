@@ -2,7 +2,7 @@
 Charon Relay
 ===========
 
-![Version: 0.1.3](https://img.shields.io/badge/Version-0.1.3-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.15.0](https://img.shields.io/badge/AppVersion-0.15.0-informational?style=flat-square)
+![Version: 0.1.4](https://img.shields.io/badge/Version-0.1.4-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.16.0](https://img.shields.io/badge/AppVersion-0.16.0-informational?style=flat-square)
 
 Charon is an open-source Ethereum Distributed validator middleware written in golang. This chart deploys a libp2p relay server.
 
@@ -17,6 +17,10 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | affinity | object | `{}` | Affinity for pod assignment # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity # # Example: # affinity: #   podAntiAffinity: #     requiredDuringSchedulingIgnoredDuringExecution: #     - labelSelector: #         matchExpressions: #         - key: app.kubernetes.io/name #           operator: In #           values: #           - charon #       topologyKey: kubernetes.io/hostname # |
+| centralMonitoring | object | `{"enabled":false,"promEndpoint":"https://vm.monitoring.gcp.obol.tech/write","token":""}` | Central Monitoring |
+| centralMonitoring.enabled | bool | `false` | Specifies whether central monitoring should be enabled |
+| centralMonitoring.promEndpoint | string | `"https://vm.monitoring.gcp.obol.tech/write"` | https endpoint to obol central prometheus  |
+| centralMonitoring.token | string | `""` | The authentication token to the central prometheus |
 | clusterSize | int | `3` | The number of nodes in the relay cluster |
 | config.autoP2pKey | string | `"true"` | Automatically create a p2pkey (secp256k1 private key used for p2p authentication and ENR) if none found in data directory. (default true) |
 | config.httpAddress | string | `"0.0.0.0:3640"` | Listening address (ip and port) for the relay http server serving runtime ENR. (default "127.0.0.1:3640") |
@@ -35,7 +39,7 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | config.p2pTcpAddress | string | `"0.0.0.0:3610"` | Comma-separated list of listening TCP addresses (ip and port) for libP2P traffic. Empty default doesn't bind to local port therefore only supports outgoing connections. |
 | containerSecurityContext | object | See `values.yaml` | The security context for containers |
 | fullnameOverride | string | `""` | Provide a name to substitute for the full names of resources |
-| image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v0.15.0"}` | Charon image ropsitory, pull policy, and tag version |
+| image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v0.16.0"}` | Charon image ropsitory, pull policy, and tag version |
 | imagePullSecrets | list | `[]` | Credentials to fetch images from private registry # ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ |
 | initContainerImage | string | `"bitnami/kubectl:latest"` | Init container image |
 | livenessProbe | object | `{"enabled":true,"httpGet":{"path":"/livez"},"initialDelaySeconds":10,"periodSeconds":5}` | Configure liveness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ |
@@ -74,12 +78,15 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | tolerations | object | `{}` | Tolerations for pod assignment # ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/ |
 | updateStrategy | string | `"RollingUpdate"` | Allows you to configure and disable automated rolling updates for containers, labels, resource request/limits, and annotations for the Pods in a StatefulSet. |
 
-# How to use this chart
+# Prerequisites
+- An operational Kubernetes GKE cluster with these add-ons, nginx-ingress, external-dns, and cert-manager with let'sEncrypt issuer
+- A valid public domain name (i.e obol.tech)
 
-A charon public relay composed of the following infrastructure containers:
-- HAProxy (reverse proxy) in front of the charon relay nodes
-- The haproxy uses the `cluster-name` to establish a sticky session between the charon cluster nodes and the relay server
-- One or more charon instances started in relay mode and deployed as Kubernetes statefulsets.
+# Deployment Architecture
+- HAProxy, to establish a header-base sticky session between the charon DV nodes and the relay server
+- Charon nodes, running in relay mode and deployed as statefulsets
+
+# How to use this chart
 
 ## Add Obol's Helm Charts
 
@@ -87,15 +94,10 @@ A charon public relay composed of the following infrastructure containers:
 helm repo add obol https://obolnetwork.github.io/helm-charts
 helm repo update
 ```
-_See [helm repo](https://helm.sh/docs/helm/helm_repo/) for command documentation._
-
-## Prerequisites
-- A valid domain (i.e obol.tech)
-- An operational Kubernetes cluster (This chart supports GKE only)
-- Kubernetes add-ons: nginx-ingress, external-dns, and cert-manager.
 
 ## Install the Chart
-To install the chart with the release name `charon-relay`:
+
+To install the chart with the release name `charon-relay`
 ```console
 helm upgrade --install charon-relay obol/charon-relay \
   --set='clusterSize=3' \
@@ -104,14 +106,69 @@ helm upgrade --install charon-relay obol/charon-relay \
 ```
 
 ## Cluster health check
-Ensure the charon node is up and healthy:
+
+Ensure the relay node is up and healthy
 ```console
-kubectl -n charon-relay
+kubectl -n charon-relay get pods
+```
+
+## Deploy HAProxy
+
+Retrieve the relay nodes public IPs then update the `backend relays` section in the haproxy `values.yaml`
+```console
+kubectl -n charon-relay get svc --no-headers=true -o "custom-columns=NAME:.metadata.name,IP:.status.loadBalancer.ingress[*].ip" | awk '/relay/{print $2}'
+```
+
+Create custom `values.yaml` to override haproxy configuration with the relay nodes public IPs
+```yaml
+replicaCount: 3
+service:
+  type: ClusterIP
+  externalTrafficPolicy: Local
+configuration: |-
+  global
+      log stdout format raw local0
+      maxconn 1024
+  defaults
+      log global
+      timeout client 60s
+      timeout connect 60s
+      timeout server 60s
+  frontend fe_main
+      bind :8080
+      default_backend relays
+  backend relays
+      mode http
+      balance hdr(Charon-Cluster)
+      server charon-relay-0 {charon-relay-0-IP}:3640 check inter 10s fall 12 rise 2
+      server charon-relay-1 {charon-relay-1-IP}:3640 check inter 10s fall 12 rise 2
+      server charon-relay-2 {charon-relay-2-IP}:3640 check inter 10s fall 12 rise 2
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt"
+    nginx.ingress.kubernetes.io/app-root: /enr
+    cert-manager.io/issue-temporary-certificate: "true"
+    acme.cert-manager.io/http01-edit-in-place: "true"
+  tls: true
+```
+
+Deploy the haproxy helm chart
+```console
+helm upgrade --install haproxy bitnami/haproxy \
+  --set='ingress.hostname=charon-relay.example.com' \
+  --create-namespace \
+  --namespace charon-relay \
+  -f values.yaml
 ```
 
 ## Uninstall the Chart
-To uninstall and delete the `charon-relay`:
+
+To uninstall and delete the `charon-relay` and `haproxy` charts
 ```console
-helm uninstall charon-relay
+helm uninstall charon-relay haproxy
 ```
-The command removes all the Kubernetes components associated with the chart and deletes the release.
+
+The command removes all the Kubernetes components associated with the chart and deletes the releases.
