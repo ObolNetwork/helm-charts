@@ -56,7 +56,7 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | extraVolumes | list | `[]` | Additional volumes |
 | fullnameOverride | string | `""` | Provide a name to substitute for the full names of resources |
 | httpPort | int | `3600` | HTTP Port |
-| image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v0.16.0"}` | Charon image ropsitory, pull policy, and tag version |
+| image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v0.17.0"}` | Charon image ropsitory, pull policy, and tag version |
 | imagePullSecrets | list | `[]` | Credentials to fetch images from private registry # ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ |
 | initContainers | list | `[]` | Additional init containers |
 | jaegerPort | int | `6831` | Jaeger Port |
