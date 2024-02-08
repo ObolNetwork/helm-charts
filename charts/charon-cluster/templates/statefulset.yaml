@@ -171,8 +171,6 @@ spec:
             - mountPath: /charon
               name: cluster-lock
             {{- range untilStep 0 (.Values.clusterSize | int) 1 }}
-            - mountPath: /charon/{{$root.Release.Name}}-{{ . }}/validator_keys
-              name: {{$root.Release.Name}}-{{ . }}-validators
             - mountPath: /charon/{{$root.Release.Name}}-{{ . }}
               name: {{$root.Release.Name}}-{{ . }}-private-key
             {{- end }}
@@ -187,11 +185,6 @@ spec:
             - secret:
                 name: {{ .Values.secrets.clusterlock }}
         {{- range untilStep 0 (.Values.clusterSize | int) 1 }}
-        - name: {{$root.Release.Name}}-{{ . }}-validators
-          projected:
-            sources:
-            - secret:
-                name: {{$root.Release.Name}}-{{ . }}-{{$root.Values.secrets.validatorKeys}}
         - name: {{$root.Release.Name}}-{{ . }}-private-key
           projected:
             sources:
