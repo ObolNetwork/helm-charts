@@ -228,6 +228,7 @@ config:
 
 # -- Kubernetes secrets names
 secrets:
+  enabled: true
   # -- validators keys
   validatorKeys: "validator-keys"
   # -- charon enr private key
