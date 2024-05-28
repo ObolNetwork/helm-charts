@@ -116,5 +116,10 @@ spec:
             sources:
             - secret:
                 name: {{ .Values.secrets.clusterlock }}
+      {{- else }}
+        - name: cluster-lock
+          emptyDir: {}
+        - name: charon-enr-private-key
+          emptyDir: {}
       {{- end }}
 
