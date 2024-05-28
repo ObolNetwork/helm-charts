@@ -80,6 +80,9 @@ spec:
             - containerPort: {{ .Values.p2pPort }}
               name: p2p-tcp
               protocol: TCP
+            - containerPort: {{ .Values.p2pPortUDP }}
+              name: p2p-udp
+              protocol: UDP
             - containerPort: {{ .Values.monitoringPort }}
               name: monitoring
               protocol: TCP

@@ -139,6 +139,8 @@ p2pPort: 3610
 # -- Monitoring Port
 monitoringPort: 3620
 
+p2pPortUDP: 3630
+
 # -- Jaeger Port
 jaegerPort: 6831
 

@@ -15,6 +15,10 @@ spec:
       targetPort: p2p-tcp
       protocol: TCP
       name: p2p-tcp
+    - port: {{ .Values.p2pPortUDP }}
+      targetPort: p2p-udp
+      protocol: UDP
+      name: p2p-udp
     - port: {{ .Values.monitoringPort }}
       targetPort: monitoring
       protocol: TCP
