@@ -27,6 +27,10 @@ spec:
         - mountPath: /etc/prometheus/prometheus.yaml
           name: prometheus
           subPath: prometheus.yaml
+        {{- with .Values.centralMonitoring.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
       securityContext:
         runAsUser: 0
       volumes:
