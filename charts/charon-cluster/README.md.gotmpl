@@ -28,11 +28,17 @@ A distributed validator cluster is composed of the following containers:
 ![Distributed Validator Cluster](https://github.com/ObolNetwork/charon-distributed-validator-cluster/blob/main/DVCluster.png?raw=true)
 
 ## Prerequisites
-You have the followin charon artifacts created as k8s secrets per each charon node:
+You have the following charon artifacts created as k8s secrets per each charon node:
 - `<cluster-name>-<node-index>-validators` i.e `charon-cluster-0-validators`
 - `<cluster-name>-<node-index>-charon-enr-private-key` i.e `charon-cluster-0-charon-enr-private-key`
 The cluster lock is a single secret for the whole cluster:
 - `cluster-lock`
+
+e.g. with node0:
+```console
+kubectl create secret generic charon-enr-private-key --from-file=cluster/node0/charon-enr-private-key
+kubectl create secret generic cluster-lock --from-file=node0/cluster-lock.json
+kubectl create secret generic validator-keys --from-file=keystore-0.json=cluster/node0/validator_keys/keystore-0.json --from-file=keystore-0.txt=cluster/node0/validator_keys/keystore-0.txt
 
 List of secrets for a cluster `charon-cluster` with 4 nodes are:
 ```console
