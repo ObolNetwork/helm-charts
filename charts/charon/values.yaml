@@ -6,7 +6,7 @@
 image:
   repository: obolnetwork/charon
   pullPolicy: IfNotPresent
-  tag: v0.19.1
+  tag: v1.0.0
 
 # -- Credentials to fetch images from private registry
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
