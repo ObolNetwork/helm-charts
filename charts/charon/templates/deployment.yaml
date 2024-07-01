@@ -112,7 +112,7 @@ spec:
       {{- if .Values.extraVolumes -}}
         {{ toYaml .Values.extraVolumes | nindent 8 }}
       {{- end }}
-      {{- if .Values.secrets.enabled -}}
+      {{- if .Values.secrets.enabled }}
         - name: charon-enr-private-key
           projected:
             sources:
@@ -129,4 +129,3 @@ spec:
         - name: charon-enr-private-key
           emptyDir: {}
       {{- end }}
-
