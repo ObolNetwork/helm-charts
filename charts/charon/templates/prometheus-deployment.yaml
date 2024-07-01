@@ -3,17 +3,17 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: prometheus
-  name: prometheus
+    app: {{ include "release.name" . }}-prometheus
+  name: {{ include "release.name" . }}-prometheus
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: prometheus
+      app: {{ include "release.name" . }}-prometheus
   template:
     metadata:
       labels:
-        app: prometheus
+        app: {{ include "release.name" . }}-prometheus
     spec:
       containers:
       - args:
