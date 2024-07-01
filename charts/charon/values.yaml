@@ -308,4 +308,11 @@ centralMonitoring:
   promEndpoint: "https://vm.monitoring.gcp.obol.tech/write"
   # -- The authentication token to the central prometheus
   token: ""
-  
+  resources:
+    {}
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
