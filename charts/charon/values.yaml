@@ -139,7 +139,24 @@ p2pPort: 3610
 # -- Monitoring Port
 monitoringPort: 3620
 
-p2pPortUDP: 3630
+## When p2pNodePort is enabled, your P2P port will be exposed via service type NodePort.
+## This will generate a service for each replica, with a port binding via NodePort.
+## This is useful if you want to expose and announce your node to the Internet.
+##
+p2pNodePort:
+  ## @param p2pNodePort.enabled Expose P2P port via NodePort
+  ##
+  enabled: false
+  ## @param p2pNodePort.annotations
+  ##
+  annotations: {}
+  ## @param p2pNodePort.type
+  ## Options: NodePort, LoadBalancer
+  type: NodePort
+  ## @param p2pNodePort.startAt The ports allocation will start from this value
+  ##
+  port: 32000
+
 
 # -- Jaeger Port
 jaegerPort: 6831

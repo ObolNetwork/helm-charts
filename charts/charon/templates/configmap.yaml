@@ -62,7 +62,7 @@ data:
   CHARON_P2P_RELAYS: {{ .Values.config.p2pRelays | quote }}
   {{- end }}
   {{- if .Values.config.p2pTcpAddress }}
-  CHARON_P2P_TCP_ADDRESS: {{ .Values.config.p2pTcpAddress }}:{{ .Values.p2pPort }}
+  CHARON_P2P_TCP_ADDRESS: {{ .Values.config.p2pTcpAddress }}:{{ .Values.p2pPort.port }}
   {{- end }}
   {{- if .Values.config.privateKeyFile }}
   CHARON_PRIVATE_KEY_FILE: {{ .Values.config.privateKeyFile | quote }}

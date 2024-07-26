@@ -81,10 +81,10 @@ spec:
             - containerPort: {{ .Values.httpPort }}
               name: validator-api
               protocol: TCP
-            - containerPort: {{ .Values.p2pPort }}
+            - containerPort: {{ .Values.p2pPort.port }}
               name: p2p-tcp
               protocol: TCP
-            - containerPort: {{ .Values.p2pPortUDP }}
+            - containerPort: {{ .Values.p2pPort.port }}
               name: p2p-udp
               protocol: UDP
             - containerPort: {{ .Values.monitoringPort }}
