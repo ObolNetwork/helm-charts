@@ -220,9 +220,6 @@ config:
   # -- The DNS hostname advertised by libp2p. This may be used to advertise an external DNS.
   p2pExternalHostname: ""
 
-  # -- The IP address advertised by libp2p. This may be used to advertise an external IP.
-  p2pExternalIp: ""
-
   # -- Comma-separated list of libp2p relay URLs or multiaddrs. (default [https://0.relay.obol.tech/enr])
   p2pRelays: "https://0.relay.obol.tech/enr"
 
