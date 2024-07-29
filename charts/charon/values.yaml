@@ -152,7 +152,7 @@ p2pPort:
   ## @param p2pPort.type
   ## Options: NodePort, LoadBalancer, ClusterIP
   type: NodePort
-  ## @param p2pNodePort.startAt The ports allocation will start from this value
+  ## @param p2pNodePort.nodePort The port allocation will be set to this value
   ##
   nodePort: 32000
   ## @param p2pPort.port The default P2P port for charon service
