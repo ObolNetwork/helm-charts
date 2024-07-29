@@ -8,6 +8,11 @@ image:
   pullPolicy: IfNotPresent
   tag: v0.19.1
 
+initImage:
+  repository: "bitnami/kubectl"
+  tag: "1.30.3"
+  pullPolicy: IfNotPresent
+
 # -- Credentials to fetch images from private registry
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
