@@ -78,6 +78,13 @@ spec:
             - name: scripts-init
               mountPath: /scripts
       containers:
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           command:
             - sh
             - -ac
@@ -101,13 +108,6 @@ spec:
           envFrom:
           - configMapRef:
               name: {{ include "release.name" . }}
-          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
-          name: {{ .Chart.Name }}
-          {{- with .Values.containerSecurityContext }}
-          securityContext:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
           {{- if .Values.livenessProbe.enabled }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
