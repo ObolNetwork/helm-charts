@@ -2,7 +2,7 @@
 Charon
 ===========
 
-![Version: 0.3.2](https://img.shields.io/badge/Version-0.3.2-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.19.1](https://img.shields.io/badge/AppVersion-0.19.1-informational?style=flat-square)
+![Version: 0.3.4](https://img.shields.io/badge/Version-0.3.4-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.0.0](https://img.shields.io/badge/AppVersion-1.0.0-informational?style=flat-square)
 
 Charon is an open-source Ethereum Distributed validator middleware written in golang.
 
@@ -56,7 +56,7 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | extraVolumes | list | `[]` | Additional volumes |
 | fullnameOverride | string | `""` | Provide a name to substitute for the full names of resources |
 | httpPort | int | `3600` | HTTP Port |
-| image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v0.19.1"}` | Charon image ropsitory, pull policy, and tag version |
+| image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.0.0"}` | Charon image ropsitory, pull policy, and tag version |
 | imagePullSecrets | list | `[]` | Credentials to fetch images from private registry # ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ |
 | initContainers | list | `[]` | Additional init containers |
 | jaegerPort | int | `6831` | Jaeger Port |
@@ -112,10 +112,17 @@ A distributed validator node is a machine running:
 ![Distributed Validator Node](https://github.com/ObolNetwork/charon-distributed-validator-node/blob/main/DVNode.png?raw=true)
 
 ## Prerequisites
-You have the followin charon node artifacts created as k8s secrets:
-- `validator-keys`
+You have the following charon node artifacts created as k8s secrets:
+- `validator-keys` (with keystore-0.json and keystore-0.txt)
 - `charon-enr-private-key`
 - `cluster-lock`
+
+e.g.:
+```console
+kubectl create secret generic charon-enr-private-key --from-file=.charon/charon-enr-private-key
+kubectl create secret generic cluster-lock --from-file=.charon/cluster-lock.json
+kubectl create secret generic validator-keys --from-file=keystore-0.json=.charon/validator_keys/keystore-0.json --from-file=keystore-0.txt=.charon/validator_keys/keystore-0.txt
+```
 
 ## Add Obol's Helm Charts
 ```console
