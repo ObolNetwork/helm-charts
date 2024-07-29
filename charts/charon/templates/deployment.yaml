@@ -86,19 +86,18 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           command:
-            - sh
-            - -ac
-            - >
+            - /bin/sh
+            - -c
+            - |
               {{- if ne .Values.p2pPort.type "ClusterIP" }}
               . /env/init-nodeport
               {{- end }}
-              charon 
-              run
-            {{- if eq .Values.p2pPort.type "ClusterIp" }}
+              exec charon run \
+              {{- if eq .Values.p2pPort.type "ClusterIP" }}
               --p2p-tcp-address=$POD_IP:{{ .Values.p2pPort.port }}
-            {{- else }}
+              {{- else }}
               --p2p-tcp-address=$EXTERNAL_IP:$EXTERNAL_PORT
-            {{- end }}
+              {{- end }}
           env:
           - name: KUBERNETES_CLUSTER_DOMAIN
             value: {{ .Values.kubernetesClusterDomain }}
