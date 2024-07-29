@@ -88,11 +88,11 @@ spec:
           command:
             - /bin/sh
             - -c
-            - |
+            - >
               {{- if ne .Values.p2pPort.type "ClusterIP" }}
               . /env/init-nodeport
               {{- end }}
-              exec charon run \
+              exec charon run
               {{- if eq .Values.p2pPort.type "ClusterIP" }}
               --p2p-tcp-address={{ .Values.config.p2pTcpAddress }}:{{ .Values.p2pPort.port }}
               {{- else }}
