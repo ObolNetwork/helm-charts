@@ -96,7 +96,7 @@ spec:
               {{- if eq .Values.p2pPort.type "ClusterIP" }}
               --p2p-tcp-address=$POD_IP:{{ .Values.p2pPort.port }}
               {{- else }}
-              --p2p-tcp-address=$EXTERNAL_IP:$EXTERNAL_PORT
+              --p2p-tcp-address=$EXTERNAL_IP:{{ .Values.p2pPort.nodePort }}
               {{- end }}
           env:
           - name: KUBERNETES_CLUSTER_DOMAIN
