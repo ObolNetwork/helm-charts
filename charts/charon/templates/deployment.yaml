@@ -48,7 +48,6 @@ spec:
       {{- if .Values.initContainers }}
         {{- tpl (toYaml .Values.initContainers | nindent 8) $ }}
       {{- end }}
-      {{- if eq .Values.p2pPort.type "NodePort" }}
         - name: init
           image: "{{ .Values.initImage.repository }}:{{ .Values.initImage.tag }}"
           imagePullPolicy: {{ .Values.initImage.pullPolicy }}
@@ -78,19 +77,20 @@ spec:
               mountPath: /env
             - name: scripts-init
               mountPath: /scripts
-      {{- end }}
       containers:
           command:
             - sh
             - -ac
             - >
+              {{- if ne .Values.p2pPort.type "ClusterIP" }}
               . /env/init-nodeport
+              {{- end }}
               exec /usr/local/bin/charon
               run
-            {{- if or (eq .Values.p2pPort.type "NodePort") (eq .Values.p2pPort.type "LoadBalancer") }}
-              --p2p-tcp-address=$EXTERNAL_IP:$EXTERNAL_PORT
-            {{- else }}
+            {{- if eq .Values.p2pPort.type "ClusterIp" }}
               --p2p-tcp-address=$POD_IP:{{ .Values.p2pPort.port }}
+            {{- else }}
+              --p2p-tcp-address=$EXTERNAL_IP:$EXTERNAL_PORT
             {{- end }}
           env:
           - name: KUBERNETES_CLUSTER_DOMAIN
