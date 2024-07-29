@@ -92,7 +92,7 @@ spec:
               {{- if ne .Values.p2pPort.type "ClusterIP" }}
               . /env/init-nodeport
               {{- end }}
-              exec /usr/local/bin/charon
+              exec charon 
               run
             {{- if eq .Values.p2pPort.type "ClusterIp" }}
               --p2p-tcp-address=$POD_IP:{{ .Values.p2pPort.port }}
