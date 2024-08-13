@@ -161,7 +161,7 @@ config:
   featureSetEnable: ""
 
   # -- Listening address for jaeger tracing.
-  jaegerAddress: "jaeger:6831"
+  jaegerAddress: ""
 
   # -- Service name used for jaeger tracing. (default "charon")
   jaegerService: "charon"
