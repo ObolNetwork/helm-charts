@@ -27,7 +27,7 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | config.featureSet | string | `"stable"` | Minimum feature set to enable by default: alpha, beta, or stable. Warning: modify at own risk. (default "stable") |
 | config.featureSetDisable | string | `""` | Comma-separated list of features to disable, overriding the default minimum feature set. |
 | config.featureSetEnable | string | `""` | Comma-separated list of features to enable, overriding the default minimum feature set. |
-| config.jaegerAddress | string | `"jaeger:6831"` | Listening address for jaeger tracing. |
+| config.jaegerAddress | string | `""` | Listening address for jaeger tracing. |
 | config.jaegerService | string | `"charon"` | Service name used for jaeger tracing. (default "charon") |
 | config.logFormat | string | `"json"` | Log format; console, logfmt or json (default "console") |
 | config.logLevel | string | `"info"` | Log level; debug, info, warn or error (default "info") |
