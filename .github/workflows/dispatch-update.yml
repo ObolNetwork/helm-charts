@@ -1,0 +1,56 @@
+name: Dispatch Update Version
+
+on:
+  repository_dispatch:
+    types: [update-version]
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout this repository
+        uses: actions/checkout@v4
+
+      - name: Extract tag name
+        run: echo "TAG_NAME=${{ github.event.client_payload.tag }}" >> $GITHUB_ENV
+
+      - name: Update Helm chart versions
+        run: |
+          TAG_NAME="${{ env.TAG_NAME#v }}"
+
+          increment_version() {
+            echo "$1" | awk -F. '{printf "%d.%d.%d", $1, $2, $3+1}'
+          }
+
+          # Update charon-cluster Chart.yaml
+          CHART_CLUSTER_VERSION=$(grep '^version:' charts/charon-cluster/Chart.yaml | awk '{print $2}')
+          NEW_CHART_CLUSTER_VERSION=$(increment_version $CHART_CLUSTER_VERSION)
+          sed -i "s/^version: .*/version: ${NEW_CHART_CLUSTER_VERSION}/" charts/charon-cluster/Chart.yaml
+          sed -i "s/^appVersion: .*/appVersion: \"${TAG_NAME}\"/" charts/charon-cluster/Chart.yaml
+
+          # Update charon-cluster values.yaml
+          sed -i "/tag:/s/v[0-9.]*$/v${TAG_NAME}/" charts/charon-cluster/values.yaml
+
+          # Update charon Chart.yaml
+          CHART_VERSION=$(grep '^version:' charts/charon/Chart.yaml | awk '{print $2}')
+          NEW_CHART_VERSION=$(increment_version $CHART_VERSION)
+          sed -i "s/^version: .*/version: ${NEW_CHART_VERSION}/" charts/charon/Chart.yaml
+          sed -i "s/^appVersion: .*/appVersion: \"${TAG_NAME}\"/" charts/charon/Chart.yaml
+
+          # Update charon values.yaml
+          sed -i "/tag:/s/v[0-9.]*$/v${TAG_NAME}/" charts/charon/values.yaml
+
+          # Commit and push changes
+          git checkout -b update-version-${{ env.TAG_NAME }}
+          git add .
+          git commit -m "Update version to ${TAG_NAME}"
+          git push origin update-version-${{ env.TAG_NAME }}
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: main
+          head: update-version-${{ env.TAG_NAME }}
+          title: "Update version to ${{ env.TAG_NAME }}"
+          body: "Automatically generated PR to update version to ${{ env.TAG_NAME }}"
