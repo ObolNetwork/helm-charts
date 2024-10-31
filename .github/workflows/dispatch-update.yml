@@ -16,7 +16,7 @@ jobs:
 
       - name: Update Helm chart versions
         run: |
-          TAG_NAME="${{ env.TAG_NAME#v }}"
+          TAG_NAME="$(echo "${TAG_NAME}" | sed 's/^v//')"
 
           increment_version() {
             echo "$1" | awk -F. '{printf "%d.%d.%d", $1, $2, $3+1}'
