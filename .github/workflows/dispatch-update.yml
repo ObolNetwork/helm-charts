@@ -37,17 +37,14 @@ jobs:
           # Update charon and charon-cluster values.yaml
           sed -i -E "/tag:/s/v\.?[0-9]+\.[0-9]+\.[0-9]+[a-zA-Z0-9\-]*/v${TAG_NAME}/" charts/charon-cluster/values.yaml charts/charon/values.yaml
 
-          # Commit and push changes
-          git checkout -b update-version-${{ env.TAG_NAME }}
-          git add .
-          git commit -m "Update version to ${TAG_NAME}"
-          git push origin update-version-${{ env.TAG_NAME }}
-
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: main
-          head: update-version-${{ env.TAG_NAME }}
+          branch: update-version-${{ env.TAG_NAME }}
           title: "Update version to ${{ env.TAG_NAME }}"
           body: "Automatically generated PR to update version to ${{ env.TAG_NAME }}"
+          commit-message: "Update version to ${{ env.TAG_NAME }}"
+          author-name: "obol-platform"
+          author-email: "platform@obol.tech"
