@@ -112,7 +112,7 @@ jobs:
           CLUSTER_LOCK: ${{ secrets.CLUSTER_LOCK }}
         run: |
           kubectl create secret generic cluster-lock \
-            --from-file=cluster-lock.json="$CLUSTER_LOCK"
+            --from-literal=cluster-lock.json="$CLUSTER_LOCK"
 
       - name: Create charon-enr-private-key Secret
         env:
