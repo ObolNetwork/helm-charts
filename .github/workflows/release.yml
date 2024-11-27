@@ -7,9 +7,179 @@ on:
       - main
 
 jobs:
+  fetch-versions:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Get latest Kubernetes patch versions
+        id: set-matrix
+        run: |
+          declare -a versions=("v1.31" "v1.30" "v1.29" "v1.28")
+
+          matrix=$(jq -n '[]')
+
+          for version in "${versions[@]}"; do
+            latest=$(curl -s https://api.github.com/repos/kubernetes/kubernetes/releases \
+              | jq -r --arg v "$version" '[.[] | select(.tag_name | startswith($v) and (contains("-") | not)) | .tag_name] | sort_by(split(".")[1] | tonumber) | last')
+            if [[ -n "$latest" ]]; then
+              matrix=$(echo "$matrix" | jq --arg version "$latest" '. + [{kubernetes_version: $version}]')
+            fi
+          done
+
+          matrix=$(echo "$matrix" | jq -c '{include: .}')
+
+          echo "Generated matrix:"
+          echo "$matrix"
+
+          # Set the output
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+
+  test:
+    needs: fetch-versions
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{fromJson(needs.fetch-versions.outputs.matrix)}}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up kind
+        uses: helm/kind-action@v1.10.0
+        with:
+          node_image: "kindest/node:${{ matrix.kubernetes_version }}"
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4.2.0
+        with:
+          version: latest
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Install MetalLB
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.7/config/manifests/metallb-native.yaml
+
+      - name: Create MetalLB Secret
+        run: |
+          kubectl create secret generic -n metallb-system memberlist \
+            --from-literal=secretkey="$(openssl rand -base64 128)"
+
+      - name: Wait for MetalLB webhook
+        run: |
+          echo "Waiting for MetalLB webhook to be ready..."
+          kubectl wait --namespace metallb-system \
+            --for=condition=Available deployment/controller \
+            --timeout=180s
+
+      - name: Configure MetalLB IP Address Pool
+        run: |
+          subnet=$(docker network inspect kind | jq -r '.[].IPAM.Config[].Subnet | select(contains(":") | not)')
+          address_first_octets=$(echo "${subnet}" | awk -F. '{printf "%s.%s",$1,$2}')
+          address_range="${address_first_octets}.255.200-${address_first_octets}.255.250"
+
+          echo "Configuring MetalLB with address range: ${address_range}"
+
+          kubectl apply -f - <<EOF
+          apiVersion: metallb.io/v1beta1
+          kind: IPAddressPool
+          metadata:
+            namespace: metallb-system
+            name: kube-services
+          spec:
+            addresses:
+            - ${address_range}
+          ---
+          apiVersion: metallb.io/v1beta1
+          kind: L2Advertisement
+          metadata:
+            name: kube-services
+            namespace: metallb-system
+          spec:
+            ipAddressPools:
+            - kube-services
+          EOF
+
+      - name: Install Prometheus Operator
+        run: |
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo update
+          helm install prometheus prometheus-community/kube-prometheus-stack
+
+      - name: Create cluster-lock Secret
+        env:
+          CLUSTER_LOCK: ${{ secrets.CLUSTER_LOCK }}
+        run: |
+          kubectl create secret generic cluster-lock \
+            --from-file=cluster-lock.json="$CLUSTER_LOCK"
+
+      - name: Create charon-enr-private-key Secret
+        env:
+          CHARON_ENR_PRIVATE_KEY: ${{ secrets.CHARON_CLUSTER_0_CHARON_ENR_PRIVATE_KEY }}
+        run: |
+          echo "Creating secret charon-enr-private-key ..."
+
+          kubectl create secret generic charon-enr-private-key \
+            --from-literal=charon-enr-private-key="$CHARON_ENR_PRIVATE_KEY"
+
+          echo "Secret charon-enr-private-key created"
+
+      - name: Create charon-enr-private-key Secrets
+        env:
+          NODE_COUNT: 4
+          CHARON_CLUSTER_0_CHARON_ENR_PRIVATE_KEY: ${{ secrets.CHARON_CLUSTER_0_CHARON_ENR_PRIVATE_KEY }}
+          CHARON_CLUSTER_1_CHARON_ENR_PRIVATE_KEY: ${{ secrets.CHARON_CLUSTER_1_CHARON_ENR_PRIVATE_KEY }}
+          CHARON_CLUSTER_2_CHARON_ENR_PRIVATE_KEY: ${{ secrets.CHARON_CLUSTER_2_CHARON_ENR_PRIVATE_KEY }}
+          CHARON_CLUSTER_3_CHARON_ENR_PRIVATE_KEY: ${{ secrets.CHARON_CLUSTER_3_CHARON_ENR_PRIVATE_KEY }}
+        run: |
+          for i in $(seq 0 $((NODE_COUNT - 1))); do
+            echo "Creating charon-enr-private-key for node $i..."
+
+            ENR_SECRET_VAR="CHARON_CLUSTER_${i}_CHARON_ENR_PRIVATE_KEY"
+            ENR_SECRET_VALUE="${!ENR_SECRET_VAR}"
+
+            kubectl create secret generic charon-cluster-${i}-charon-enr-private-key \
+              --from-literal=charon-enr-private-key="$ENR_SECRET_VALUE"
+
+            echo "Secret charon-cluster-${i}-charon-enr-private-key created"
+          done
+
+      - name: Create validator-keys Secret
+        env:
+          VALIDATOR_KEYSTORE_0_JSON: ${{ secrets.VALIDATOR_KEYSTORE_0_JSON }}
+          VALIDATOR_KEYSTORE_0_TXT: ${{ secrets.VALIDATOR_KEYSTORE_0_TXT }}
+        run: |
+          echo "Creating secret validator-keys ..."
+
+          kubectl create secret generic validator-keys \
+            --from-literal=keystore-0.json="$VALIDATOR_KEYSTORE_0_JSON" \
+            --from-literal=keystore-0.txt="$VALIDATOR_KEYSTORE_0_TXT"
+
+          echo "Secret validator-keys created"
+
+      - name: Lint and install charon-relay
+        run: |
+          helm lint charts/charon-relay
+          helm install charon-relay charts/charon-relay --wait
+
+      - name: Lint and install charon-cluster
+        run: |
+          helm lint charts/charon-cluster --values .github/helm-ci-values/values-charon-cluster.yaml
+          helm install charon-cluster charts/charon-cluster --values .github/helm-ci-values/values-charon-cluster.yaml --wait
+
+      - name: Lint and install charon
+        run: |
+          helm lint charts/charon --values .github/helm-ci-values/values-charon.yaml
+          helm install charon charts/charon --values .github/helm-ci-values/values-charon.yaml --wait
+
+      - name: Cleanup
+        run: kind delete cluster
+
   release:
     # depending on default permission settings for your org (contents being read-only or read-write for workloads), you will have to add permissions
     # see: https://docs.github.com/en/actions/security-guides/automatic-token-authentication#modifying-the-permissions-for-the-github_token
+    needs: test
     permissions:
       contents: write
     runs-on: ubuntu-latest
