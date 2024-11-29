@@ -48,6 +48,10 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      initContainers:
+      {{- if .Values.initContainers }}
+        {{- tpl (toYaml .Values.initContainers | nindent 8) $ }}
+      {{- end }}
       containers:
         - command:
             - sh
@@ -144,6 +148,10 @@ spec:
                 fieldPath: metadata.name
           - name: KUBERNETES_CLUSTER_DOMAIN
             value: {{ .Values.kubernetesClusterDomain }}
+          {{- if .Values.envFrom }}
+          envFrom:
+            {{- tpl (toYaml .Values.envFrom | nindent 12) $ }}
+          {{- end }}
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           name: {{ .Chart.Name }}
           {{- with .Values.containerSecurityContext }}

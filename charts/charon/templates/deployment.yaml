@@ -62,6 +62,9 @@ spec:
           envFrom:
           - configMapRef:
               name: {{ include "release.name" . }}
+          {{- if .Values.envFrom }}
+          {{- tpl (toYaml .Values.envFrom | nindent 10) $ }}
+          {{- end }}
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           name: {{ .Chart.Name }}
           {{- with .Values.containerSecurityContext }}
