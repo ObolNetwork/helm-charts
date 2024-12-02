@@ -48,6 +48,10 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      initContainers:
+      {{- if .Values.initContainers }}
+        {{- tpl (toYaml .Values.initContainers | nindent 8) $ }}
+      {{- end }}
       containers:
         - command:
             - sh
