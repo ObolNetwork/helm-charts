@@ -2,6 +2,31 @@ apiVersion: v1
 entries:
   charon:
   - apiVersion: v2
+    appVersion: 1.2.0
+    created: "2024-12-09T18:02:37.425660382Z"
+    description: Charon is an open-source Ethereum Distributed validator middleware
+      written in golang.
+    digest: 830cf8f52e0d5ae215fba8aac56091a6b7e5ac4c4cc8f904f03d343f9633abb9
+    home: https://obol.tech/
+    icon: https://raw.githubusercontent.com/ObolNetwork/charon/main/docs/images/charonlogo.svg
+    keywords:
+    - ethereum
+    - blockchain
+    - obol
+    - charon
+    - dvt
+    - node
+    maintainers:
+    - email: devops@obol.tech
+      name: Eth2DevOps
+    name: charon
+    sources:
+    - https://github.com/ObolNetwork/charon
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/charon-0.3.6/charon-0.3.6.tgz
+    version: 0.3.6
+  - apiVersion: v2
     appVersion: 1.1.1
     created: "2024-09-26T13:17:47.618192074Z"
     description: Charon is an open-source Ethereum Distributed validator middleware
@@ -395,6 +420,31 @@ entries:
     - https://github.com/ObolNetwork/helm-charts/releases/download/charon-0.1.0/charon-0.1.0.tgz
     version: 0.1.0
   charon-cluster:
+  - apiVersion: v2
+    appVersion: 1.2.0
+    created: "2024-12-09T18:02:37.610418203Z"
+    description: Charon is an open-source Ethereum Distributed validator middleware
+      written in golang. This chart deploys a full Charon cluster.
+    digest: 3679aca54c1f72d3d0fd48142538966aa42a99573b91161569b5ff6f383089c5
+    home: https://obol.tech/
+    icon: https://raw.githubusercontent.com/ObolNetwork/charon/main/docs/images/charonlogo.svg
+    keywords:
+    - ethereum
+    - blockchain
+    - obol
+    - charon
+    - dvt
+    - cluster
+    maintainers:
+    - email: devops@obol.tech
+      name: Eth2DevOps
+    name: charon-cluster
+    sources:
+    - https://github.com/ObolNetwork/charon
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/charon-cluster-0.2.5/charon-cluster-0.2.5.tgz
+    version: 0.2.5
   - apiVersion: v2
     appVersion: 1.1.1
     created: "2024-09-26T13:17:47.875996315Z"
@@ -996,4 +1046,4 @@ entries:
     urls:
     - https://github.com/ObolNetwork/helm-charts/releases/download/charon-relay-0.1.0/charon-relay-0.1.0.tgz
     version: 0.1.0
-generated: "2024-09-26T13:17:47.876261229Z"
+generated: "2024-12-09T18:02:37.610706508Z"
