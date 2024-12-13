@@ -1,18 +1,12 @@
-# Default values for charon cluster.
+# Default values for charon.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
-
-# -- The number of charon nodes in the cluster. Minimum is 4
-clusterSize: 4
-
-# -- Cluster threshold required for signature reconstruction. Defaults to ceil(n*2/3) if zero. Warning, non-default values decrease security.
-clusterThreshold: 3
 
 # -- Charon image ropsitory, pull policy, and tag version
 image:
   repository: obolnetwork/charon
   pullPolicy: IfNotPresent
-  tag: v1.2.0
+  tag: v1.1.1
 
 # -- Credentials to fetch images from private registry
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
@@ -65,7 +59,7 @@ rbac:
   name: ""
   # -- Required ClusterRole rules
   clusterRules:
-    # --  Required to obtain the nodes external IP
+    # -- Required to obtain the nodes external IP
     - apiGroups: [""]
       resources:
       - "nodes"
@@ -83,27 +77,6 @@ rbac:
       - "get"
       - "list"
       - "watch"
-
-# -- Charon service ports
-service:
-  # -- Headless service to create DNS for each statefulset instance
-  clusterIP: None
-  ports:
-    validatorApi:
-      name: validator-api
-      port: 3600
-      protocol: TCP
-      targetPort: 3600
-    p2pTcp:
-      name: p2p-tcp
-      port: 3610
-      protocol: TCP
-      targetPort: 3610
-    monitoring:
-      name: monitoring
-      port: 3620
-      protocol: TCP
-      targetPort: 3620
 
 # -- Pod resources limits and requests
 resources: {}
@@ -147,20 +120,33 @@ affinity: {}
 ## ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/
 priorityClassName: ""
 
-# -- Enable pod disruption budget
+service:
+  # -- Service type
+  type: ClusterIP
+
+# -- Enable and configure pod disruption budget
 ## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb
 podDisruptionBudget:
-  minAvailable: ""
-  enabled: true
+  enabled: false
+  maxUnavailable: 1
 
-# -- allows you to configure and disable automated rolling updates for containers, labels, resource request/limits, and annotations for the Pods in a StatefulSet.
-updateStrategy: RollingUpdate
+# -- HTTP Port
+httpPort: 3600
+
+# -- Engine Port (Auth Port)
+p2pPort: 3610
+
+# -- Monitoring Port
+monitoringPort: 3620
+
+# -- Jaeger Port
+jaegerPort: 6831
 
 ## Charon command line options
 ## ref: https://docs.obol.tech/docs/charon/charon_cli_reference
 config:
   # -- Comma separated list of one or more beacon node endpoint URLs.
-  beaconNodeEndpoints: ""
+  beaconNodeEndpoints: "https://ethereum-beacon-api.publicnode.com"
   
   # -- Enables the builder api. Will only produce builder blocks. Builder API must also be enabled on the validator client. Beacon node must be connected to a builder-relay to access the builder network.
   builderApi: ""
@@ -174,14 +160,14 @@ config:
   # -- Comma-separated list of features to enable, overriding the default minimum feature set.
   featureSetEnable: ""
 
-  # --  Listening address for jaeger tracing.
-  jaegerAddress: "jaeger:6831"
+  # -- Listening address for jaeger tracing.
+  jaegerAddress: ""
 
-  # -- Service name used for jaeger tracing.
-  jaegerService: ""
+  # -- Service name used for jaeger tracing. (default "charon")
+  jaegerService: "charon"
 
   # -- The path to the cluster lock file defining distributed validator cluster. (default ".charon/cluster-lock.json")
-  LockFile: "/charon/cluster-lock.json"
+  LockFile: "/charon/cluster-lock/cluster-lock.json"
 
   # -- Log format; console, logfmt or json (default "console")
   logFormat: "json"
@@ -189,14 +175,14 @@ config:
   # -- Log level; debug, info, warn or error (default "info")
   logLevel: "info"
 
-  # --  Enables sending of logfmt structured logs to these Loki log aggregation server addresses. This is in addition to normal stderr logs.
+  # -- Enables sending of logfmt structured logs to these Loki log aggregation server addresses. This is in addition to normal stderr logs.
   lokiAddresses: ""
   
-  # -- Service label sent with logs to Loki.
-  lokiService: ""
+  # -- Service label sent with logs to Loki. (default "charon")
+  lokiService: "charon"
 
   # -- Listening address (ip and port) for the monitoring API (prometheus, pprof). (default "127.0.0.1:3620")
-  monitoringAddress: "0.0.0.0:3620"
+  monitoringAddress: "0.0.0.0"
 
   # -- Disables cluster definition and lock file verification.
   noVerify: false
@@ -210,17 +196,20 @@ config:
   # -- Disables TCP port reuse for outgoing libp2p connections.
   p2pDisableReuseport: ""
   
-  # --  The DNS hostname advertised by libp2p. This may be used to advertise an external DNS.
+  # -- The DNS hostname advertised by libp2p. This may be used to advertise an external DNS.
   p2pExternalHostname: ""
 
   # -- The IP address advertised by libp2p. This may be used to advertise an external IP.
   p2pExternalIp: ""
 
   # -- Comma-separated list of libp2p relay URLs or multiaddrs. (default [https://0.relay.obol.tech/enr])
-  p2pRelays: ""
+  p2pRelays: "https://0.relay.obol.tech/enr"
 
   # -- Comma-separated list of listening TCP addresses (ip and port) for libP2P traffic. Empty default doesn't bind to local port therefore only supports outgoing connections.
-  p2pTcpAddress: "0.0.0.0:3610"
+  p2pTcpAddress: "0.0.0.0"
+
+  # -- The path to the charon enr private key file. (default ".charon/charon-enr-private-key")
+  privateKeyFile: "/charon/charon-enr-private-key/charon-enr-private-key"
 
   # -- Enables an internal mock beacon node for running a simnet.
   simnetBeaconMock: ""
@@ -235,25 +224,43 @@ config:
   syntheticBlockProposals: ""
   
   # -- Listening address (ip and port) for validator-facing traffic proxying the beacon-node API. (default "127.0.0.1:3600")
-  validatorApiAddress: "0.0.0.0:3600"
-
-  # -- If enabled, it will set p2pExternalHostname value to the pod name and enable direct connection between cluster nodes
-  directConnectionEnabled: "true"
+  validatorApiAddress: "0.0.0.0"
 
 # -- Kubernetes secrets names
 secrets:
   # -- validators keys
-  validatorKeys: "validators"
+  validatorKeys: "validator-keys"
   # -- charon enr private key
   enrPrivateKey: "charon-enr-private-key"
   # -- charon cluster lock
   clusterlock: "cluster-lock"
 
+# -- Additional init containers
+initContainers: []
+# - name: my-init-container
+#   image: busybox:latest
+#   command: ['sh', '-c', 'echo hello']
+
+# -- Additional containers
+extraContainers: []
+
+# -- Additional volumes
+extraVolumes: []
+
+# -- Additional volume mounts
+extraVolumeMounts: []
+
+# -- Additional ports. Useful when using extraContainers
+extraPorts: []
+
+# -- Additional env variables
+extraEnv: []
+
 # -- Prometheus Service Monitor
 ## ref: https://github.com/coreos/prometheus-operator
 serviceMonitor:
   # -- If true, a ServiceMonitor CRD is created for a prometheus operator. https://github.com/coreos/prometheus-operator
-  enabled: true
+  enabled: false
   # -- Path to scrape
   path: /metrics
   # -- Alternative namespace for ServiceMonitor
@@ -273,24 +280,6 @@ serviceMonitor:
   # -- ServiceMonitor relabelings
   relabelings: []
 
-# -- Configure liveness probes
-## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
-livenessProbe:
-  enabled: false
-  initialDelaySeconds: 10
-  periodSeconds: 5
-  httpGet:
-    path: /livez
-
-# -- Configure readiness probes
-## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
-readinessProbe:
-  enabled: false
-  initialDelaySeconds: 5
-  periodSeconds: 3
-  httpGet:
-    path: /readyz
-
 # -- Central Monitoring
 centralMonitoring:
   # -- Specifies whether central monitoring should be enabled
@@ -299,3 +288,4 @@ centralMonitoring:
   promEndpoint: "https://vm.monitoring.gcp.obol.tech/write"
   # -- The authentication token to the central prometheus
   token: ""
+  
