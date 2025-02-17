@@ -42,7 +42,7 @@ jobs:
       matrix: ${{fromJson(needs.fetch-versions.outputs.matrix)}}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up kind
         uses: helm/kind-action@v1.10.0
@@ -185,7 +185,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
