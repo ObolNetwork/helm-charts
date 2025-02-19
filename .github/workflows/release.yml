@@ -20,10 +20,25 @@ jobs:
           matrix=$(jq -n '[]')
 
           for version in "${versions[@]}"; do
-            latest=$(curl -s https://api.github.com/repos/kubernetes/kubernetes/releases \
-              | jq -r --arg v "$version" '[.[] | select(.tag_name | startswith($v) and (contains("-") | not)) | .tag_name] | sort_by(split(".")[1] | tonumber) | last')
-            if [[ -n "$latest" ]]; then
+            releases=$(curl -s https://api.github.com/repos/kubernetes/kubernetes/releases | jq -r --arg v "$version" '
+              [.[] | select(.tag_name | startswith($v) and (contains("-") | not)) | .tag_name]')
+
+            # Check if we got valid results
+            if [[ -z "$releases" || "$releases" == "null" || "$releases" == "[]" ]]; then
+              echo "No valid releases found for $version, skipping..."
+              continue
+            fi
+
+            # Find the latest version by sorting correctly
+            latest=$(echo "$releases" | jq -r '
+              map(select(. != null))
+              | sort_by( (split(".")[1] | tonumber), (split(".")[2] | tonumber) )
+              | last')
+
+            if [[ -n "$latest" && "$latest" != "null" ]]; then
               matrix=$(echo "$matrix" | jq --arg version "$latest" '. + [{kubernetes_version: $version}]')
+            else
+              echo "No valid latest version found for $version, skipping..."
             fi
           done
 
