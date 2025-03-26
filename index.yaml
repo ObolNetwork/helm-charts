@@ -1046,4 +1046,23 @@ entries:
     urls:
     - https://github.com/ObolNetwork/helm-charts/releases/download/charon-relay-0.1.0/charon-relay-0.1.0.tgz
     version: 0.1.0
-generated: "2024-12-09T18:02:37.610706508Z"
+  helios:
+  - apiVersion: v2
+    appVersion: 0.8.3
+    created: "2025-03-26T10:29:16.094647598Z"
+    description: A Helm chart for Helios - a trustless, efficient, and portable Ethereum
+      light client
+    digest: 1730838025d3701647b6c5470b9075a17f7a1007593dc959efa9da82c84d8088
+    keywords:
+    - ethereum
+    - light-client
+    - blockchain
+    maintainers:
+    - name: obol-tech
+      url: https://github.com/obol-tech
+    name: helios
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/helios-0.1.0/helios-0.1.0.tgz
+    version: 0.1.0
+generated: "2025-03-26T10:29:16.094752285Z"
