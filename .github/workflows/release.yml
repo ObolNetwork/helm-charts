@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - ci
 
 jobs:
   fetch-versions:
@@ -16,38 +17,26 @@ jobs:
         id: set-matrix
         run: |
           declare -a versions=("v1.31" "v1.30" "v1.29" "v1.28")
-
           matrix=$(jq -n '[]')
 
           for version in "${versions[@]}"; do
-            releases=$(curl -s https://api.github.com/repos/kubernetes/kubernetes/releases | jq -r --arg v "$version" '
-              [.[] | select(.tag_name | startswith($v) and (contains("-") | not)) | .tag_name]')
+            tags=$(curl -s "https://registry.hub.docker.com/v2/repositories/kindest/node/tags?page_size=100" \
+              | jq -r '.results[].name' \
+              | grep --color=never "^$version" \
+              | grep --color=never -v '-' \
+              | sort -V)
 
-            # Check if we got valid results
-            if [[ -z "$releases" || "$releases" == "null" || "$releases" == "[]" ]]; then
-              echo "No valid releases found for $version, skipping..."
-              continue
-            fi
+            latest=$(echo "$tags" | tail -n 1)
 
-            # Find the latest version by sorting correctly
-            latest=$(echo "$releases" | jq -r '
-              map(select(. != null))
-              | sort_by( (split(".")[1] | tonumber), (split(".")[2] | tonumber) )
-              | last')
-
-            if [[ -n "$latest" && "$latest" != "null" ]]; then
+            if [[ -n "$latest" ]]; then
               matrix=$(echo "$matrix" | jq --arg version "$latest" '. + [{kubernetes_version: $version}]')
             else
-              echo "No valid latest version found for $version, skipping..."
+              echo "No valid tag found for $version, skipping..."
             fi
           done
 
           matrix=$(echo "$matrix" | jq -c '{include: .}')
-
-          echo "Generated matrix:"
-          echo "$matrix"
-
-          # Set the output
+          echo "Generated matrix: $matrix"
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
 
   test:
@@ -173,20 +162,38 @@ jobs:
 
           echo "Secret validator-keys created"
 
-      - name: Lint and install charon-relay
+      - name: Lint and install all Helm charts
         run: |
-          helm lint charts/charon-relay
-          helm install charon-relay charts/charon-relay --wait
+          skip_file=".github/helm-ci-values/skip-charts.txt"
+          skip_list=()
 
-      - name: Lint and install charon-cluster
-        run: |
-          helm lint charts/charon-cluster --values .github/helm-ci-values/values-charon-cluster.yaml
-          helm install charon-cluster charts/charon-cluster --values .github/helm-ci-values/values-charon-cluster.yaml --wait
+          if [[ -f "$skip_file" ]]; then
+            mapfile -t skip_list < "$skip_file"
+          fi
 
-      - name: Lint and install charon
-        run: |
-          helm lint charts/charon --values .github/helm-ci-values/values-charon.yaml
-          helm install charon charts/charon --values .github/helm-ci-values/values-charon.yaml --wait
+          for chart_path in charts/*/; do
+            chart=$(basename "$chart_path")
+            values_file=".github/helm-ci-values/values-$chart.yaml"
+
+            if printf '%s\n' "${skip_list[@]}" | grep -qx "$chart"; then
+              echo "Skipping $chart (listed in $skip_file)"
+              continue
+            fi
+
+            if [[ -f "$values_file" ]]; then
+              values_flag="--values $values_file"
+              echo "Using values file for $chart: $values_file"
+            else
+              values_flag=""
+              echo "No values file found for $chart, installing without custom values"
+            fi
+
+            echo "Linting $chart..."
+            helm lint "$chart_path" $values_flag
+
+            echo "Installing $chart..."
+            helm install "$chart" "$chart_path" $values_flag --wait
+          done
 
       - name: Cleanup
         run: kind delete cluster
@@ -216,5 +223,7 @@ jobs:
 
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.7.0
+        with:
+          skip_existing: true
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
