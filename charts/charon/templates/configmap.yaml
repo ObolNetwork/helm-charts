@@ -61,9 +61,6 @@ data:
   {{- if .Values.config.p2pRelays }}
   CHARON_P2P_RELAYS: {{ .Values.config.p2pRelays | quote }}
   {{- end }}
-  {{- if .Values.config.p2pTcpAddress }}
-  CHARON_P2P_TCP_ADDRESS: {{ .Values.config.p2pTcpAddress }}:{{ .Values.p2pPort }}
-  {{- end }}
   {{- if .Values.config.privateKeyFile }}
   CHARON_PRIVATE_KEY_FILE: {{ .Values.config.privateKeyFile | quote }}
   {{- end }}
@@ -82,3 +79,22 @@ data:
   {{- if .Values.config.validatorApiAddress }}
   CHARON_VALIDATOR_API_ADDRESS: {{ .Values.config.validatorApiAddress }}:{{ .Values.httpPort }}
   {{- end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "release.name" . }}-init
+  labels:
+  {{- include "charon.labels" . | nindent 4 }}
+data:
+  init.sh: |
+    #!/bin/sh
+    echo "Namespace: ${POD_NAMESPACE} Pod: ${POD_NAME}";
+  {{- if eq .Values.p2pPort.type "LoadBalancer" }}
+      until [ -n "$(kubectl -n ${POD_NAMESPACE} get svc/${POD_NAME} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')" ]; do echo "Waiting for load balancer to get an IP" && sleep 10; done;
+      export EXTERNAL_IP=$(kubectl -n ${POD_NAMESPACE} get svc/${POD_NAME} -o jsonpath='{.status.loadBalancer.ingress[0].ip}');
+  {{- else if eq .Values.p2pPort.type "NodePort" }}
+      export EXTERNAL_IP=$(kubectl get nodes "${NODE_NAME}" -o jsonpath='{.status.addresses[?(@.type=="ExternalIP")].address}');
+  {{- end }}
+      echo "EXTERNAL_IP=$EXTERNAL_IP"     >> /env/init-nodeport;
+      cat /env/init-nodeport;
