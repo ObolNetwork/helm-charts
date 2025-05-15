@@ -49,9 +49,39 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       initContainers:
-      {{- if .Values.initContainers }}
-        {{- tpl (toYaml .Values.initContainers | nindent 8) $ }}
-      {{- end }}
+        - name: dkg-sidecar
+          image: "{{ .Values.charon.dkgSidecar.image.repository }}:{{ .Values.charon.dkgSidecar.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.charon.dkgSidecar.image.pullPolicy }}
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+          command:
+            - "/bin/sh"
+            - "-c"
+            - |
+              apt-get update && apt-get install -y --no-install-recommends jq && \
+              echo "Orchestrator Script: Starting dkg-sidecar.sh with Operator: '{{ .Values.charon.operatorAddress }}' and ENR file: '/enr-from-job/enr.txt'" && \
+              /script/dkg-sidecar.sh '{{ .Values.charon.operatorAddress }}' /enr-from-job/enr.txt
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          volumeMounts:
+            - name: cluster-poller-script
+              mountPath: /script
+              readOnly: true
+            - name: enr-data
+              mountPath: /enr-from-job
+              readOnly: true
+            - name: charon-data
+              mountPath: /charon-data
+          resources:
+            {{- toYaml .Values.charon.dkgSidecar.resources | nindent 12 }}
       containers:
         - command:
             - sh
@@ -59,6 +89,7 @@ spec:
             - >
               exec /usr/local/bin/charon run
               --beacon-node-endpoints={{ .Values.config.beaconNodeEndpoints }}
+              --lock-file=/charon-data/cluster-lock.json
               {{- if .Values.config.builderApi }}
               --builder-api={{ .Values.config.builderApi }}
               {{- end }}
@@ -79,9 +110,6 @@ spec:
               {{- else }}
               --jaeger-service="${NODE_NAME}"
               {{- end }}
-              {{- if .Values.config.LockFile }}
-              --lock-file={{ .Values.config.LockFile }}
-              {{- end }}
               {{- if .Values.config.logFormat }}
               --log-format={{ .Values.config.logFormat }}
               {{- end }}
@@ -97,9 +125,11 @@ spec:
               --loki-service="${NODE_NAME}"
               {{- end }}
               {{- if .Values.config.monitoringAddress }}
-              --monitoring-address={{ .Values.config.monitoringAddress }}
+              --monitoring-address=0.0.0.0:{{ .Values.config.charonInternalMonitoringPort }}
               {{- end }}
-              --no-verify
+              {{- if .Values.config.noVerify }}
+              --no-verify={{ .Values.config.noVerify }}
+              {{- end }}
               {{- if .Values.config.p2pAllowlist }}
               --p2p-allowlist={{ .Values.config.p2pAllowlist }}
               {{- end }}
@@ -153,13 +183,20 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.ports.p2pTcp.targetPort }}
+              name: p2p-tcp
+              protocol: TCP
+            - containerPort: {{ .Values.config.charonInternalMonitoringPort }}
+              name: monitoring
+              protocol: TCP
         {{- if or .Values.livenessProbe.enabled }}
           livenessProbe:
             initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
             httpGet:
               path: {{ .Values.livenessProbe.httpGet.path }}
-              port: {{ .Values.service.ports.monitoring.port }}
+              port: {{ .Values.config.charonInternalMonitoringPort }}
         {{- end }}
         {{- if or .Values.readinessProbe.enabled }}
           readinessProbe:
@@ -167,7 +204,7 @@ spec:
             periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
             httpGet:
               path: {{ .Values.readinessProbe.httpGet.path }}
-              port: {{ .Values.service.ports.monitoring.port }}
+              port: {{ .Values.config.charonInternalMonitoringPort }}
         {{- end }}  
           volumeMounts:
             - mountPath: /charon
@@ -176,6 +213,9 @@ spec:
             - name: charon-enr-key
               mountPath: "{{ .Values.charon.config.privateKeyFile }}"
               subPath: "{{ include "charon.enrSecretDataKey" . }}" # Mount the specific key file, not the whole secret dir
+            - name: charon-data
+              mountPath: /charon-data
+              readOnly: true
           {{- with .Values.resources }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
@@ -186,6 +226,7 @@ spec:
             sources:
             - secret:
                 name: {{ .Values.secrets.clusterlock }}
+                optional: true
         # Volume for the shared ENR private key
         - name: charon-enr-key
           secret:
@@ -193,3 +234,40 @@ spec:
             items:
               - key: {{ include "charon.enrSecretDataKey" . }}
                 path: {{ include "charon.enrSecretDataKey" . }} # Ensure the file in the volume has the name of the data key
+        - name: cluster-poller-script
+          configMap:
+            name: {{ include "charon.fullname" . }}-dkg-sidecar-script
+            defaultMode: 0755 # Make poll.sh executable
+        - name: enr-data
+          secret:
+            secretName: {{ include "charon.enrSecretName" . }}
+            items:
+              - key: public-enr
+                path: enr.txt
+        {{- if not .Values.persistence.enabled }}
+        # If persistence is disabled, use an emptyDir for charon-data.
+        # Note: DKG artifacts will be lost if the pod restarts.
+        - name: charon-data
+          emptyDir: {}
+        {{- end }}
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: charon-data
+        {{- with .Values.persistence.annotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      spec:
+        accessModes: {{ .Values.persistence.accessModes | toYaml | nindent 10 }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size | quote }}
+        {{- if .Values.persistence.storageClassName }}
+        {{- if (eq "-" .Values.persistence.storageClassName) }}
+        storageClassName: ""
+        {{- else }}
+        storageClassName: "{{ .Values.persistence.storageClassName }}"
+        {{- end }}
+        {{- end }}
+  {{- end }}
