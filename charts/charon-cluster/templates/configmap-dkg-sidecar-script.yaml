@@ -1,0 +1,11 @@
+{{- if .Values.charon.dkgSidecar.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "charon.fullname" . }}-dkg-sidecar-script
+  labels:
+    {{- include "charon.labels" . | nindent 4 }}
+data:
+  dkg-sidecar.sh: |-
+{{ tpl ( .Files.Get "scripts/dkg-sidecar.sh" ) . | indent 4 }}
+{{- end }}

@@ -16,7 +16,7 @@ erigon:
 lighthouse:
   enabled: true
   extraArgs:
-    - --execution-endpoint=http://test-charon-cluster-erigon:8551
+    - --execution-endpoint=https://hoodi.beaconstate.info
     - --network=hoodi
   # Add any lighthouse specific default values here if needed in the future
 
@@ -252,6 +252,9 @@ config:
   # -- Enables additional synthetic block proposal duties. Used for testing of rare duties.
   syntheticBlockProposals: ""
   
+  # -- Specific internal monitoring port for Charon container to avoid sidecar conflicts.
+  charonInternalMonitoringPort: 3625
+  
   # -- Listening address (ip and port) for validator-facing traffic proxying the beacon-node API. (default "127.0.0.1:3600")
   validatorApiAddress: "0.0.0.0:3600"
 
@@ -259,6 +262,46 @@ config:
   directConnectionEnabled: "true"
 
 charon:
+  # -- The Ethereum address of this operator. This MUST be provided by the user.
+  operatorAddress: ""
+  # -- Configuration for the Orchestrator init container
+  # This init container handles polling for signed cluster definitions and will later manage the DKG process.
+  dkgSidecar:
+    enabled: true
+    image:
+      # -- Image repository for the poller (must include sh, curl, jq, and eventually charon CLI for DKG)
+      # This should be an image containing sh, curl, jq, and the charon CLI.
+      repository: "obolnetwork/charon"
+      # -- Image tag for the poller
+      # Defaults to .Chart.AppVersion if not specified, ensuring consistency with the main charon image version.
+      tag: "v1.4.2"
+      # -- Image pull policy
+      pullPolicy: IfNotPresent
+    # -- Initial delay in seconds before the first retry of a polling cycle.
+    initialRetryDelaySeconds: 10
+    # -- Maximum delay in seconds for exponential backoff between polling cycles.
+    maxRetryDelaySeconds: 300
+    # -- Factor by which the retry delay increases after each polling cycle (e.g., 2 for doubling).
+    retryDelayFactor: 2
+    # -- Delay in seconds between polling retries
+    retryDelaySeconds: 10
+    # -- Page limit for API calls when fetching cluster definitions
+    pageLimit: 10
+    # -- API endpoint for the Obol network to fetch cluster definitions
+    apiEndpoint: "https://api.obol.tech"
+    # -- Resources for the cluster poller init container
+    resources: {}
+     #  requests:
+     #    cpu: 50m
+     #    memory: 64Mi
+     #  limits:
+     #    cpu: 100m
+     #    memory: 128Mi
+
+  enrJob:
+    # -- Enable or disable the Kubernetes Job that generates/manages the ENR.
+    enabled: true
+
   # --- Configuration for a single, shared ENR for the entire Charon cluster ---
   enr:
     # -- Provide the shared ENR private key directly (hex format, e.g., 0x...). 
@@ -306,6 +349,59 @@ secrets:
   enrPrivateKey: "charon-enr-private-key" # Suffix if per-pod ENRs were used; less relevant now for shared. 
   # -- Name or suffix for the charon cluster lock secret
   clusterlock: "cluster-lock"
+
+# -- Persistence configuration for DKG artifacts and charon data
+persistence:
+  # -- Enable persistence using a PersistentVolumeClaim.
+  enabled: true
+  # -- Storage class for the PVC. If undefined or null, the default storage class will be used.
+  # storageClassName: "" # e.g., "standard", "gp2"
+  # -- Access modes for the PVC. Must be a list. Default: ["ReadWriteOnce"].
+  accessModes:
+    - ReadWriteOnce
+  # -- Size of the PVC.
+  size: 1Gi
+  # -- Optional: Annotations for the PVC
+  # annotations: {}
+  #   key: value
+
+# -- Node selector for pod assignment
+# Ref: https://kubernetes.io/docs/user-guide/node-selection/
+nodeSelector: {}
+
+# -- Tolerations for pod assignment
+## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+tolerations: {}
+
+# -- Affinity for pod assignment
+## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+##
+## Example:
+## affinity:
+##   podAntiAffinity:
+##     requiredDuringSchedulingIgnoredDuringExecution:
+##     - labelSelector:
+##         matchExpressions:
+##         - key: app.kubernetes.io/name
+##           operator: In
+##           values:
+##           - charon
+##       topologyKey: kubernetes.io/hostname
+##
+affinity: {}
+
+# -- Used to assign priority to pods
+## ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/
+priorityClassName: ""
+
+# -- Enable pod disruption budget
+## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb
+podDisruptionBudget:
+  minAvailable: ""
+  enabled: true
+
+# -- allows you to configure and disable automated rolling updates for containers, labels, resource request/limits, and annotations for the Pods in a StatefulSet.
+updateStrategy: RollingUpdate
 
 # -- Prometheus Service Monitor
 ## ref: https://github.com/coreos/prometheus-operator

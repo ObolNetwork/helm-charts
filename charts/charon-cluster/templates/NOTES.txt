@@ -1,49 +1,66 @@
-{{- define "charon.notes" -}}
-{{- if .Values.charon.enr.generate.enabled -}}
-{{- $secretName := include "charon.enrSecretName" . -}}
-{{- $namespace := .Release.Namespace -}}
-{{- $secret := lookup "v1" "Secret" $namespace $secretName -}}
+{{- define "charon.clusterNotes" -}}
+Your Obol Charon cluster node "{{ template "charon.fullname" . }}" has been deployed.
 
-{{- if $secret -}}
-  {{- $publicEnrBase64 := index $secret.data "public-enr" -}}
-  {{- if $publicEnrBase64 -}}
-    {{- $publicEnr := $publicEnrBase64 | b64dec -}}
+1. ENR (Ethereum Node Record) Configuration:
+{{- if .Values.charon.enrJob.enabled }}
+   The ENR generation job is ENABLED.
+   An ENR has been automatically generated (or derived from a provided private key if `charon.config.privateKeyFile` was used by the job logic and the key existed before the job's first run).
 
-Your Charon cluster ENR has been generated.
+   To retrieve the public ENR string:
+   A. Check the logs of the ENR generation job:
+      kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ template "charon.name" . }},app.kubernetes.io/instance={{ .Release.Name }},component=enr-job
+      (Look for a line like "INFO: Public ENR String: enr:-...")
 
-Public ENR:
-{{ $publicEnr | indent 2 }}
+   B. Get it from the 'public-enr' key in the Secret '{{ template "charon.enrSecretName" . }}':
+      kubectl get secret -n {{ .Release.Namespace }} {{ template "charon.enrSecretName" . }} -o jsonpath='{.data.public-enr}' | base64 --decode
+      echo ""
 
-Please submit this Public ENR to the Obol Launchpad as part of your cluster acceptance flow.
+   **IMPORTANT ACTION REQUIRED:** You **MUST** take this public ENR string and submit it during the cluster formation process on the Obol Launchpad (https://launchpad.obol.tech/) for the operator address '{{ .Values.charon.operatorAddress }}'.
 
-You can also retrieve the ENR at any time by running:
-kubectl get secret {{ $secretName }} -n {{ $namespace }} -o jsonpath='{.data.public-enr}' | base64 --decode
+{{- else }}
+   The ENR generation job is DISABLED (.Values.charon.enrJob.enabled is false).
+   The orchestration process requires the public ENR of this Charon node to be present in the Kubernetes Secret named '{{ template "charon.enrSecretName" . }}' under the data key 'public-enr'.
 
-  {{- else -}}
-WARNING: The ENR generation job seems to have completed, but the 'public-enr' key was not found in the secret '{{ $secretName }}'.
-Please check the job logs:
-kubectl logs -n {{ $namespace }} -l job-name={{ template "charon.fullname" . }}-enr-job
-  {{- end -}}
-{{- else -}}
-The ENR generation job is expected to create a secret named '{{ $secretName }}' but it was not found.
-This might be a timing issue if the chart just installed, or the job may have failed.
+   **IMPORTANT ACTION REQUIRED:**
+   You **MUST** manually ensure that the Secret '{{ template "charon.enrSecretName" . }}' in namespace '{{ .Release.Namespace }}' exists and contains a key 'public-enr' with your desired public ENR string, base64 encoded.
 
-Please check the job status and logs:
-kubectl get job -n {{ $namespace }} {{ template "charon.fullname" . }}-enr-job
-kubectl logs -n {{ $namespace }} -l job-name={{ template "charon.fullname" . }}-enr-job
+   Example to create/update the secret with your ENR (replace 'enr:-YourActualENRStringHere'):
+   kubectl create secret generic {{ template "charon.enrSecretName" . }} -n {{ .Release.Namespace }} \
+     --from-literal=public-enr=$(echo -n 'enr:-YourActualENRStringHere' | base64) \
+     --dry-run=client -o yaml | kubectl apply -f -
 
-If the job is still running or pending, the ENR will be available once it completes successfully.
+   The public ENR from this secret ('public-enr' key) is what the orchestrator will use. This ENR **MUST** be the one you submit to the Obol Launchpad for operator address '{{ .Values.charon.operatorAddress }}'.
+
+   Note: If `charon.config.enr` is set in your `values.yaml`, it is NOT automatically used by this orchestration process when the ENR job is disabled. The orchestrator relies solely on the 'public-enr' key in the Secret mentioned above.
+
+{{- end }}
+
+2. Cluster Orchestration Process:
+   The Charon node includes an orchestrator init container. This orchestrator will:
+   a. Use the ENR (obtained as described in step 1) to identify this node.
+   b. Poll the Obol API ({{ .Values.charon.dkgSidecar.apiEndpoint }}) for a cluster definition associated with operator '{{ .Values.charon.operatorAddress }}' where this node's ENR is registered and signed by your operator.
+   c. Wait for that cluster definition to be fully signed by ALL participating operators.
+   d. Once fully signed, it will initiate the DKG (Distributed Key Generation) process using 'charon dkg'. DKG artifacts (like 'cluster-lock.json') will be stored in '/charon-data/'.
+   e. After successful DKG, the main Charon node will start using the generated '/charon-data/cluster-lock.json'.
+
+   Monitor the orchestrator logs:
+     kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ template "charon.name" . }},app.kubernetes.io/instance={{ .Release.Name }} -c dkg-sidecar -f
+
+3. Charon Node Status:
+   Once orchestration is complete, the main Charon container ('{{ .Chart.Name }}') will start.
+   Monitor its logs:
+     kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ template "charon.name" . }},app.kubernetes.io/instance={{ .Release.Name }} -c {{ .Chart.Name }} -f
+
+   {{- if .Values.persistence.enabled }}
+   Persistence is ENABLED.
+   DKG artifacts and other Charon data are stored in a PersistentVolumeClaim, which should persist across pod restarts.
+   PVC Name: charon-data-{{ template "charon.fullname" . }}-0 (for StatefulSet pod 0)
+   {{- else}}
+   WARNING: Persistence is DISABLED (.Values.persistence.enabled is false).
+   DKG artifacts and Charon data will be stored in an emptyDir volume and will be LOST if the pod restarts. It is STRONGLY recommended to enable persistence for any non-testing deployment.
+   {{- end }}
+
+For troubleshooting and more details, refer to the Obol Network documentation: https://docs.obol.tech/
 {{- end -}}
-{{- else if .Values.charon.enr.existingSecret.name -}}
-Your Charon cluster is configured to use an existing ENR secret: {{ .Values.charon.enr.existingSecret.name }}
-Ensure this secret contains the correct ENR private key and that your cluster is registered with the Obol Network.
-{{- else if .Values.charon.enr.privateKey -}}
-Your Charon cluster is configured to use a directly provided ENR private key.
-Ensure your cluster is registered with the Obol Network using the corresponding public ENR.
-{{- else -}}
-Charon ENR configuration is not explicitly set for generation, existing secret, or direct key.
-Please review your 'values.yaml' under 'charon.enr'.
-{{- end -}}
-{{- end -}}
 
-{{- template "charon.notes" . -}}
+{{- include "charon.clusterNotes" . }}
