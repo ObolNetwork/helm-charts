@@ -1,0 +1,114 @@
+{{- if and .Values.charon.enr.generate.enabled (not .Values.charon.enr.privateKey) (not .Values.charon.enr.existingSecret.name) -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "charon.fullname" . }}-enr-job
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "charon.labels" . | nindent 4 }}
+    app.kubernetes.io/component: enr-job
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5" # After RBAC, before main statefulset
+    "helm.sh/hook-delete-policy": "before-hook-creation"
+{{- if .Values.charon.enr.generate.annotations }}
+    {{- toYaml .Values.charon.enr.generate.annotations | nindent 4 }}
+{{- end }}
+spec:
+  template:
+    metadata:
+      name: {{ include "charon.fullname" . }}-enr-job-pod
+      labels:
+        {{- include "charon.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: enr-job-pod
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ include "charon.fullname" . }}-enr-job # Service account with secret permissions
+      volumes:
+        - name: enr-data
+          emptyDir: {}
+      containers:
+        - name: charon-key-generator
+          image: "{{ .Values.charon.enr.generate.image.repository }}:{{ .Values.charon.enr.generate.image.tag }}"
+          imagePullPolicy: {{ .Values.charon.enr.generate.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              echo "Generating ENR private key and public ENR..."
+              # 'charon create enr' writes private key to 'charon-enr-private-key' in --data-dir
+              # and prints public ENR string (and a log line) to stdout.
+              # Capture all stdout to a file.
+              charon create enr --data-dir /enr-output > /enr-output/enr_public_string
+
+              # Ensure private key file exists and public ENR string file was created
+              if [ ! -f "/enr-output/charon-enr-private-key" ] || [ ! -s "/enr-output/enr_public_string" ]; then
+                echo "ERROR: ENR private key file not found or public ENR string file is empty."
+                ls -l /enr-output
+                exit 1
+              fi
+
+              # Make the private key readable by the kubectl-secret-creator container
+              chmod 644 /enr-output/charon-enr-private-key
+
+              echo "ENR private key file and public ENR string file generated successfully in /enr-output."
+              ls -l /enr-output # For debugging
+          volumeMounts:
+            - name: enr-data
+              mountPath: /enr-output
+        - name: kubectl-secret-creator
+          image: "{{ .Values.charon.enr.generate.kubectlImage.repository }}:{{ .Values.charon.enr.generate.kubectlImage.tag }}"
+          imagePullPolicy: {{ .Values.charon.enr.generate.kubectlImage.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              echo "Waiting for ENR key files in /enr-input..."
+              # Wait for the private key file and the public ENR string file
+              while [ ! -f /enr-input/charon-enr-private-key ] || [ ! -f /enr-input/enr_public_string ]; do
+                echo "Waiting for /enr-input/charon-enr-private-key and /enr-input/enr_public_string..."
+                ls -l /enr-input # For debugging
+                sleep 2
+              done
+              echo "ENR key files found."
+
+              PRIVATE_KEY=$(cat /enr-input/charon-enr-private-key)
+              PUBLIC_ENR=$(cat /enr-input/enr_public_string)
+
+              # Further sanitize PUBLIC_ENR: 'charon create enr' output includes a log line like "Created ENR private key: ..." FIRST,
+              # and THEN the "enr:-..." string. We only want the "enr:-..." part.
+              # Grep for the line starting with 'enr:'
+              PUBLIC_ENR_CLEANED=$(echo "$PUBLIC_ENR" | grep '^enr:')
+
+              if [ -z "$PRIVATE_KEY" ] || [ -z "$PUBLIC_ENR_CLEANED" ]; then
+                echo "ERROR: Private key or cleaned public ENR is empty."
+                echo "Original Private Key Content: $(cat /enr-input/charon-enr-private-key)"
+                echo "Original Public ENR Content from file: $(cat /enr-input/enr_public_string)"
+                echo "Cleaned Public ENR: $PUBLIC_ENR_CLEANED"
+                exit 1
+              fi
+
+              SECRET_NAME="{{ include "charon.enrSecretName" . }}"
+              NAMESPACE="{{ .Release.Namespace }}"
+
+              echo "Creating/updating secret '$SECRET_NAME' in namespace '$NAMESPACE'..."
+              
+              # Using kubectl create secret generic with --dry-run and kubectl apply for idempotency
+              kubectl create secret generic "${SECRET_NAME}" \
+                --namespace="${NAMESPACE}" \
+                --from-literal=private-key="${PRIVATE_KEY}" \
+                --from-literal=public-enr="${PUBLIC_ENR_CLEANED}" \
+                --dry-run=client -o yaml | kubectl apply -f -
+
+              echo "Secret '$SECRET_NAME' created/updated successfully."
+          volumeMounts:
+            - name: enr-data
+              mountPath: /enr-input
+      {{- with .Values.charon.enr.generate.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  backoffLimit: 3 # Number of retries before considering the job failed
+{{- end }}
