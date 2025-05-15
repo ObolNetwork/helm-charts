@@ -91,3 +91,14 @@ Return the data key for the ENR private key within the shared secret.
 {{- define "charon.enrSecretDataKey" -}}
 {{- .Values.charon.enr.existingSecret.dataKey | default "private-key" -}}
 {{- end -}}
+
+{{/*
+Create the name of the service account to use for tests
+*/}}
+{{- define "charon.serviceAccountNameTest" -}}
+{{- if and (.Values.serviceAccount.enabled) (.Values.serviceAccount.nameTest) }}
+{{- default .Values.serviceAccount.nameTest }}
+{{- else }}
+{{- printf "%s-test" (include "charon.fullname" .) }}
+{{- end -}}
+{{- end -}}
