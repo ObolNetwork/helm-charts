@@ -1,0 +1,49 @@
+{{- define "charon.notes" -}}
+{{- if .Values.charon.enr.generate.enabled -}}
+{{- $secretName := include "charon.enrSecretName" . -}}
+{{- $namespace := .Release.Namespace -}}
+{{- $secret := lookup "v1" "Secret" $namespace $secretName -}}
+
+{{- if $secret -}}
+  {{- $publicEnrBase64 := index $secret.data "public-enr" -}}
+  {{- if $publicEnrBase64 -}}
+    {{- $publicEnr := $publicEnrBase64 | b64dec -}}
+
+Your Charon cluster ENR has been generated.
+
+Public ENR:
+{{ $publicEnr | indent 2 }}
+
+Please submit this Public ENR to the Obol Launchpad as part of your cluster acceptance flow.
+
+You can also retrieve the ENR at any time by running:
+kubectl get secret {{ $secretName }} -n {{ $namespace }} -o jsonpath='{.data.public-enr}' | base64 --decode
+
+  {{- else -}}
+WARNING: The ENR generation job seems to have completed, but the 'public-enr' key was not found in the secret '{{ $secretName }}'.
+Please check the job logs:
+kubectl logs -n {{ $namespace }} -l job-name={{ template "charon.fullname" . }}-enr-job
+  {{- end -}}
+{{- else -}}
+The ENR generation job is expected to create a secret named '{{ $secretName }}' but it was not found.
+This might be a timing issue if the chart just installed, or the job may have failed.
+
+Please check the job status and logs:
+kubectl get job -n {{ $namespace }} {{ template "charon.fullname" . }}-enr-job
+kubectl logs -n {{ $namespace }} -l job-name={{ template "charon.fullname" . }}-enr-job
+
+If the job is still running or pending, the ENR will be available once it completes successfully.
+{{- end -}}
+{{- else if .Values.charon.enr.existingSecret.name -}}
+Your Charon cluster is configured to use an existing ENR secret: {{ .Values.charon.enr.existingSecret.name }}
+Ensure this secret contains the correct ENR private key and that your cluster is registered with the Obol Network.
+{{- else if .Values.charon.enr.privateKey -}}
+Your Charon cluster is configured to use a directly provided ENR private key.
+Ensure your cluster is registered with the Obol Network using the corresponding public ENR.
+{{- else -}}
+Charon ENR configuration is not explicitly set for generation, existing secret, or direct key.
+Please review your 'values.yaml' under 'charon.enr'.
+{{- end -}}
+{{- end -}}
+
+{{- template "charon.notes" . -}}

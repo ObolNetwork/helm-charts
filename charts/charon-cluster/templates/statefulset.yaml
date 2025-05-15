@@ -125,7 +125,7 @@ spec:
               {{- if .Values.config.p2pTcpAddress }}
               --p2p-tcp-address={{ .Values.config.p2pTcpAddress }}
               {{- end }}
-              --private-key-file="/charon/${NODE_NAME}/charon-enr-private-key"
+              --private-key-file="{{ .Values.charon.config.privateKeyFile }}"
               {{- if .Values.config.simnetBeaconMock }}
               --simnet-beacon-mock={{ .Values.config.simnetBeaconMock }}
               {{- end }}
@@ -174,10 +174,10 @@ spec:
           volumeMounts:
             - mountPath: /charon
               name: cluster-lock
-            {{- range untilStep 0 (.Values.clusterSize | int) 1 }}
-            - mountPath: /charon/{{$root.Release.Name}}-{{ . }}
-              name: {{$root.Release.Name}}-{{ . }}-private-key
-            {{- end }}
+            # Mount for the shared ENR private key
+            - name: charon-enr-key
+              mountPath: "{{ .Values.charon.config.privateKeyFile }}"
+              subPath: "{{ include "charon.enrSecretDataKey" . }}" # Mount the specific key file, not the whole secret dir
           {{- with .Values.resources }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
@@ -188,10 +188,10 @@ spec:
             sources:
             - secret:
                 name: {{ .Values.secrets.clusterlock }}
-        {{- range untilStep 0 (.Values.clusterSize | int) 1 }}
-        - name: {{$root.Release.Name}}-{{ . }}-private-key
-          projected:
-            sources:
-            - secret:
-                name: {{$root.Release.Name}}-{{ . }}-{{$root.Values.secrets.enrPrivateKey}}
-        {{- end }}
+        # Volume for the shared ENR private key
+        - name: charon-enr-key
+          secret:
+            secretName: {{ include "charon.enrSecretName" . }}
+            items:
+              - key: {{ include "charon.enrSecretDataKey" . }}
+                path: {{ include "charon.enrSecretDataKey" . }} # Ensure the file in the volume has the name of the data key
