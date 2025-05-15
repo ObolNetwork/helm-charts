@@ -1,0 +1,78 @@
+{{- if .Values.charon.enr.privateKey }}
+# NOTE: This test assumes that when it runs, the Helm release was configured with
+# charon.enr.privateKey set to a known value. 
+# For example, during 'helm install/upgrade', you might use:
+# --set charon.enr.privateKey="0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+# The test below will then verify this specific key.
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ .Release.Name }}-test-provided-enr"
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+  labels:
+    {{- include "charon.labels" . | nindent 4 }}
+    app.kubernetes.io/component: test
+spec:
+  serviceAccountName: "{{ .Release.Name }}-test-runner"
+  restartPolicy: Never
+  containers:
+    - name: test-enr-job-completion-provided
+      image: bitnami/kubectl:latest
+      command:
+        - /bin/sh
+        - -ec
+        - |
+          echo "INFO: Checking ENR generation job status (provided key scenario)..."
+          JOB_NAME="{{ template "charon.fullname" . }}-enr-job"
+          if ! kubectl wait --for=condition=complete job/$JOB_NAME --timeout=120s -n {{ .Release.Namespace }}; then
+            echo "ERROR: Job $JOB_NAME did not complete successfully (provided key)."
+            kubectl logs job/$JOB_NAME -n {{ .Release.Namespace }} --tail=50
+            exit 1
+          fi
+          echo "INFO: ENR generation job $JOB_NAME completed successfully (provided key)."
+
+    - name: test-enr-secret-content-provided
+      image: bitnami/kubectl:latest
+      env:
+        - name: EXPECTED_PRIVATE_KEY
+          value: "{{ .Values.charon.enr.privateKey | trimPrefix "0x" }}"
+      command:
+        - /bin/sh
+        - -ec
+        - |
+          echo "INFO: Checking ENR secret content (provided key scenario)..."
+          SECRET_NAME="{{ template "charon.enrSecretName" . }}"
+          
+          # Fetch the private key from the secret and decode it
+          ACTUAL_PRIVATE_KEY_B64=$(kubectl get secret $SECRET_NAME -n {{ .Release.Namespace }} -o jsonpath='{.data.private-key}')
+          if [ -z "$ACTUAL_PRIVATE_KEY_B64" ]; then
+            echo "ERROR: Private key not found in secret $SECRET_NAME"
+            exit 1
+          fi
+          # The key in the secret is hex, then base64 encoded by Kubernetes.
+          # The .Values.charon.enr.privateKey is raw hex.
+          # So, we decode the secret's value (which is base64 of hex) and compare with the raw hex from values.
+          DECODED_PRIVATE_KEY=$(echo "$ACTUAL_PRIVATE_KEY_B64" | base64 --decode)
+
+          echo "INFO: Expected Private Key (from values, 0x trimmed): $EXPECTED_PRIVATE_KEY"
+          echo "INFO: Decoded Private Key (from secret): $DECODED_PRIVATE_KEY"
+
+          if [ "$DECODED_PRIVATE_KEY" != "$EXPECTED_PRIVATE_KEY" ]; then
+            echo "ERROR: Provided private key in secret $SECRET_NAME does not match expected value."
+            echo "Expected: $EXPECTED_PRIVATE_KEY"
+            echo "Got (decoded from secret): $DECODED_PRIVATE_KEY"
+            exit 1
+          fi
+          echo "INFO: Private key in secret $SECRET_NAME matches provided value."
+
+          if ! kubectl get secret $SECRET_NAME -n {{ .Release.Namespace }} -o jsonpath='{.data.public-enr}' | grep -v '^$'; then
+            echo "ERROR: Public ENR not found or empty in secret $SECRET_NAME (provided key)."
+            exit 1
+          fi
+          echo "INFO: Found non-empty public-enr in secret $SECRET_NAME (provided key)."
+          echo "INFO: Provided ENR test passed."
+{{- end }}

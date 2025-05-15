@@ -2,12 +2,12 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "release.name" . }}
+  name: {{ include "charon.fullname" . }}
   labels:
     {{- include "charon.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.clusterSize }}
-  serviceName: {{ include "release.name" . }}
+  serviceName: {{ include "charon.fullname" . }}
   updateStrategy:
     type: {{ .Values.updateStrategy }}
   selector:
@@ -99,9 +99,7 @@ spec:
               {{- if .Values.config.monitoringAddress }}
               --monitoring-address={{ .Values.config.monitoringAddress }}
               {{- end }}
-              {{- if .Values.config.noVerify }}
-              --no-verify={{ .Values.config.noVerify }}
-              {{- end }}
+              --no-verify
               {{- if .Values.config.p2pAllowlist }}
               --p2p-allowlist={{ .Values.config.p2pAllowlist }}
               {{- end }}

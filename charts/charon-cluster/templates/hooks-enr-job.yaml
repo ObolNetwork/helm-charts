@@ -1,4 +1,4 @@
-{{- if and .Values.charon.enr.generate.enabled (not .Values.charon.enr.privateKey) (not .Values.charon.enr.existingSecret.name) -}}
+{{- if and .Values.charon.enr.generate.enabled (not .Values.charon.enr.existingSecret.name) -}}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -29,31 +29,55 @@ spec:
           emptyDir: {}
       containers:
         - name: charon-key-generator
-          image: "{{ .Values.charon.enr.generate.image.repository }}:{{ .Values.charon.enr.generate.image.tag }}"
-          imagePullPolicy: {{ .Values.charon.enr.generate.image.pullPolicy }}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
             - /bin/sh
             - -c
             - |
               set -e
-              echo "Generating ENR private key and public ENR..."
-              # 'charon create enr' writes private key to 'charon-enr-private-key' in --data-dir
-              # and prints public ENR string (and a log line) to stdout.
-              # Capture all stdout to a file.
-              charon create enr --data-dir /enr-output > /enr-output/enr_public_string
-
-              # Ensure private key file exists and public ENR string file was created
-              if [ ! -f "/enr-output/charon-enr-private-key" ] || [ ! -s "/enr-output/enr_public_string" ]; then
-                echo "ERROR: ENR private key file not found or public ENR string file is empty."
-                ls -l /enr-output
-                exit 1
+              mkdir -p /enr-output
+              if [ -n "{{ .Values.charon.enr.privateKey }}" ]; then
+                echo "INFO: Using provided ENR private key."
+                # Remove 0x prefix and write to the default location within data-dir
+                echo "{{ .Values.charon.enr.privateKey | trimPrefix "0x" }}" > /enr-output/charon-enr-private-key
+                echo "INFO: Deriving public ENR from provided private key using 'charon enr --data-dir /enr-output' ..."
+                # 'charon enr --data-dir' will read the key from /enr-output/charon-enr-private-key
+                PUBLIC_ENR_STRING=$(charon enr --data-dir /enr-output)
+              else
+                echo "INFO: No private key provided, generating new ENR private key and public ENR using 'charon create enr --data-dir /enr-output' ..."
+                # 'charon create enr --data-dir' will generate the private key file in /enr-output
+                # and output the public ENR string to stdout.
+                PUBLIC_ENR_STRING=$(charon create enr --data-dir /enr-output)
+                # Ensure the generated private key is readable by the next container
+                if [ -f "/enr-output/charon-enr-private-key" ]; then
+                  echo "INFO: Setting permissions on generated /enr-output/charon-enr-private-key"
+                  chmod 644 /enr-output/charon-enr-private-key
+                else
+                  echo "ERROR: Expected private key /enr-output/charon-enr-private-key not found after generation."
+                  exit 1 # or handle error appropriately
+                fi
               fi
 
-              # Make the private key readable by the kubectl-secret-creator container
-              chmod 644 /enr-output/charon-enr-private-key
+              echo "INFO: Public ENR String: ${PUBLIC_ENR_STRING}"
+              # The PUBLIC_ENR_STRING might contain log lines from charon, extract just the ENR string.
+              # A common pattern is that the ENR string itself is on the last line or is prefixed.
+              # Assuming ENR is the last non-empty line of output, or adjust if charon's output is different.
+              # A simple way: filter for 'enr:' prefix.
+              CLEAN_PUBLIC_ENR_STRING=$(echo "${PUBLIC_ENR_STRING}" | grep '^enr:' | tail -n 1)
+              if [ -z "${CLEAN_PUBLIC_ENR_STRING}" ]; then
+                echo "ERROR: Could not extract clean ENR string from output: ${PUBLIC_ENR_STRING}"
+                exit 1
+              fi
+              echo "${CLEAN_PUBLIC_ENR_STRING}" > /enr-output/enr_public_string
 
-              echo "ENR private key file and public ENR string file generated successfully in /enr-output."
-              ls -l /enr-output # For debugging
+              # Ensure the private key file is present and not empty
+              if [ ! -s "/enr-output/charon-enr-private-key" ]; then
+                echo "ERROR: charon-enr-private-key not found or empty in /enr-output."
+                ls -l /enr-output # For debugging
+                exit 1
+              fi
+              echo "INFO: ENR private key and public string prepared in /enr-output."
           volumeMounts:
             - name: enr-data
               mountPath: /enr-output
