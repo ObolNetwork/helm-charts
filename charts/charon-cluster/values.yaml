@@ -178,7 +178,7 @@ updateStrategy: RollingUpdate
 ## ref: https://docs.obol.tech/docs/charon/charon_cli_reference
 config:
   # -- Comma separated list of one or more beacon node endpoint URLs.
-  beaconNodeEndpoints: ""
+  beaconNodeEndpoints: "http://localhost:9999" # Placeholder, replace with actual beacon node endpoint
   
   # -- Enables the builder api. Will only produce builder blocks. Builder API must also be enabled on the validator client. Beacon node must be connected to a builder-relay to access the builder network.
   builderApi: ""
@@ -272,11 +272,8 @@ charon:
       # -- Image repository for the poller (must include sh, curl, jq, and eventually charon CLI for DKG)
       # This should be an image containing sh, curl, jq, and the charon CLI.
       repository: "obolnetwork/charon"
-      # -- Image tag for the poller
-      # Defaults to .Chart.AppVersion if not specified, ensuring consistency with the main charon image version.
       tag: "v1.4.2"
-      # -- Image pull policy
-      pullPolicy: IfNotPresent
+      pullPolicy: "IfNotPresent"
     # -- Initial delay in seconds before the first retry of a polling cycle.
     initialRetryDelaySeconds: 10
     # -- Maximum delay in seconds for exponential backoff between polling cycles.
@@ -297,6 +294,9 @@ charon:
      #  limits:
      #    cpu: 100m
      #    memory: 128Mi
+    # -- Service account settings for test pods
+    serviceAccount:
+      create: true # Whether to specify the test service account for test pods
 
   enrJob:
     # -- Enable or disable the Kubernetes Job that generates/manages the ENR.
@@ -454,3 +454,31 @@ centralMonitoring:
   promEndpoint: "https://vm.monitoring.gcp.obol.tech/write"
   # -- The authentication token to the central prometheus
   token: ""
+
+# -- Configuration for running Helm tests.
+# These values are typically only used when `helm test` is run.
+tests:
+  # -- The operator address to use for DKG sidecar tests.
+  # This should be a valid Ethereum address (0x...).
+  dkgSidecar:
+    enabled: true
+    operatorAddress: "0x3D1f0598943239806A251899016EAf4920d4726d"
+    podEnrToFind: "enr:-Ku4QEXAMPLEOPERATORAENRFROMTHEMOCKAPISERVERPLEASEMODIFYPREVIOUSVALUE"
+    mockApi:
+      port: 3001
+      image:
+        pullPolicy: Always # Or Always, Never as needed
+    # -- Service account settings for test pods
+    serviceAccount:
+      create: true # Whether to specify the test service account for test pods
+    # -- Host network setting for dkgSidecar test pods
+    hostNetwork: false
+    # -- Configuration for the 'FRESH' state test
+    freshState:
+      enabled: true
+      # -- Mock ENR value to be used by the fresh state test ConfigMap.
+      # Replace with a valid ENR string if your test specifically requires one for the FRESH state mock.
+      mockEnr: "enr:-Ku4QEXAMPLEOPERATORAENRFROMTHEMOCKAPISERVERPLEASEMODIFYPREVIOUSVALUE" 
+
+# -- Configuration for the DKG Mock API Server used in tests.
+# This is relevant if you are using the mock server deployment included in this chart for testing.

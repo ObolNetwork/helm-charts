@@ -59,7 +59,7 @@ spec:
             - "/bin/sh"
             - "-c"
             - |
-              apt-get update && apt-get install -y --no-install-recommends jq && \
+              apt-get update && apt-get install -y --no-install-recommends jq bc && \
               echo "Orchestrator Script: Starting dkg-sidecar.sh with Operator: '{{ .Values.charon.operatorAddress }}' and ENR file: '/enr-from-job/enr.txt'" && \
               /script/dkg-sidecar.sh '{{ .Values.charon.operatorAddress }}' /enr-from-job/enr.txt
           env:
