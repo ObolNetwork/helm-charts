@@ -8,8 +8,15 @@ set -e
 OPERATOR_ADDRESS="$1"
 ENR_FILE_PATH="$2"
 OUTPUT_FILE_DEFINITION="/charon-data/cluster-definition.json"
-# Ensure API_ENDPOINT_BASE uses the dkgSidecar values path
-API_ENDPOINT_BASE="{{ .Values.charon.dkgSidecar.apiEndpoint }}/v1/definition/operator/${OPERATOR_ADDRESS}"
+
+# Use API_ENDPOINT from env var if set, otherwise default to Helm value
+if [ -n "$API_ENDPOINT" ]; then
+  API_ENDPOINT_BASE="${API_ENDPOINT}/v1/definition/operator/${OPERATOR_ADDRESS}"
+else
+  # This line will be templated by Helm if API_ENDPOINT is not set in the environment
+  API_ENDPOINT_BASE="{{ .Values.charon.dkgSidecar.apiEndpoint }}/v1/definition/operator/${OPERATOR_ADDRESS}"
+fi
+
 INITIAL_RETRY_DELAY={{ .Values.charon.dkgSidecar.initialRetryDelaySeconds }}
 MAX_RETRY_DELAY={{ .Values.charon.dkgSidecar.maxRetryDelaySeconds }}
 RETRY_DELAY_FACTOR={{ .Values.charon.dkgSidecar.retryDelayFactor }}
@@ -54,6 +61,10 @@ while true; do
 
     RESPONSE=$(wget -qO- --header="Accept: application/json" --timeout=15 --tries=3 "$API_URL")
     WGET_EXIT_CODE=$?
+
+    echo "DEBUG: Raw API Response:"
+    echo "$RESPONSE"
+    echo "DEBUG: End of Raw API Response."
 
     if [ $WGET_EXIT_CODE -ne 0 ]; then
       echo "Warning: wget command failed on page $CURRENT_PAGE with exit code $WGET_EXIT_CODE for API call to $API_URL."

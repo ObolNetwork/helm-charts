@@ -1,0 +1,101 @@
+{{- if .Values.tests.dkgSidecar.freshState.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-enr-content-test
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "helm.sh/hook-weight": "-5" # Ensure this CM is created before the Pod
+data:
+  enr.txt: |
+    {{ .Values.tests.dkgSidecar.freshState.mockEnr }}
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ .Release.Name }}-dkg-fresh-test"
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": hook-succeeded # Delete only on success
+    "helm.sh/hook-weight": "0" # Run before other tests if needed
+  labels:
+    app.kubernetes.io/name: {{ template "charon.name" . }}
+    helm.sh/chart: {{ template "charon.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/component: test
+    test-scenario: dkg-sidecar-fresh
+spec:
+  hostNetwork: {{ .Values.tests.dkgSidecar.hostNetwork }}
+  {{- if .Values.tests.dkgSidecar.serviceAccount.create }}
+  serviceAccountName: {{ template "charon.serviceAccountNameTest" . }}
+  {{- end }}
+  restartPolicy: Never
+  initContainers:
+    - name: dkg-sidecar-fresh-test
+      image: "{{ .Values.charon.dkgSidecar.image.repository }}:{{ .Values.charon.dkgSidecar.image.tag | default .Chart.AppVersion }}"
+      imagePullPolicy: {{ .Values.charon.dkgSidecar.image.pullPolicy }}
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+      command: ["/bin/sh", "-c", "apt-get update && apt-get install -y --no-install-recommends jq bc && /scripts/dkg-sidecar.sh \"$OPERATOR_ADDRESS\" \"$ENR_FILE_PATH\""]
+      env:
+        - name: CHARON_NODE_ID_DIR
+          value: {{ .Values.charon.dataDir | default "/charon-data" | quote }}
+        - name: API_ENDPOINT
+          value: "http://{{ .Release.Name }}-dkg-mock-api-service:{{ .Values.tests.dkgSidecar.mockApi.port }}"
+        - name: OPERATOR_ADDRESS
+          value: {{ .Values.charon.operatorAddress | quote }}
+        - name: ETH2_NETWORK
+          value: {{ .Values.charon.eth2Network | quote }}
+        - name: INITIAL_RETRY_INTERVAL_SECONDS
+          value: {{ .Values.charon.dkgSidecar.initialRetryDelaySeconds | default 5 | quote }}
+        - name: MAX_RETRY_INTERVAL_SECONDS
+          value: {{ .Values.charon.dkgSidecar.maxRetryIntervalSeconds | default 30 | quote }}
+        - name: BACKOFF_FACTOR
+          value: {{ .Values.charon.dkgSidecar.backoffFactor | default 2 | quote }}
+        - name: CREATE_ENR_IF_NOT_EXISTS
+          value: "false"
+        - name: ENR_FILE_PATH
+          value: "/enr-from-job/enr.txt"
+        - name: POD_ENR_TO_FIND
+          value: {{ .Values.tests.dkgSidecar.podEnrToFind | quote }}
+        - name: OUTPUT_DEFINITION_FILE
+          value: "/charon-data/cluster-definition.json" # Path in the test pod
+      volumeMounts:
+        - name: scripts
+          mountPath: /scripts
+        - name: charon-data
+          mountPath: {{ .Values.charon.dataDir | default "/charon-data" }}
+        - name: charon-enr-test-data
+          mountPath: /enr-from-job
+        - name: var-lib-apt
+          mountPath: /var/lib/apt
+        - name: var-cache-apt
+          mountPath: /var/cache/apt
+  containers:
+    - name: charon-dummy-success-check
+      image: busybox
+      command: ['sh', '-c', 'echo DKG sidecar init container completed (unexpected for infinite FRESH poll); exit 1']
+
+  volumes:
+    - name: scripts
+      configMap:
+        name: {{ printf "%s-dkg-sidecar-script" (include "charon.fullname" .) }}
+        defaultMode: 0755
+    - name: charon-data
+      emptyDir: {}
+    - name: charon-enr-test-data
+      configMap:
+        name: {{ .Release.Name }}-enr-content-test
+        items:
+        - key: enr.txt
+          path: enr.txt
+    - name: var-lib-apt
+      emptyDir: {}
+    - name: var-cache-apt
+      emptyDir: {}
+{{- end }}
