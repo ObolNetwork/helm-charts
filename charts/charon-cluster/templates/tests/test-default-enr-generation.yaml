@@ -1,4 +1,4 @@
-{{ if false }}
+{{- if and .Values.charon.enr.generate.enabled (not .Values.charon.enr.privateKey) (not .Values.charon.enr.existingSecret.name) }}
 apiVersion: v1
 kind: Pod
 metadata:
@@ -59,4 +59,4 @@ spec:
 
           echo "INFO: ENR secret $SECRET_NAME contains valid data."
           echo "INFO: Default ENR generation test passed."
-{{ end }}
+{{- end }}
