@@ -48,7 +48,7 @@ spec:
         - name: API_ENDPOINT
           value: "http://{{ .Release.Name }}-dkg-mock-api-service:{{ .Values.tests.dkgSidecar.mockApi.port }}"
         - name: OPERATOR_ADDRESS
-          value: {{ .Values.charon.operatorAddress | quote }}
+          value: {{ .Values.tests.dkgSidecar.operatorAddress | quote }}
         - name: ETH2_NETWORK
           value: {{ .Values.charon.eth2Network | quote }}
         - name: INITIAL_RETRY_INTERVAL_SECONDS
