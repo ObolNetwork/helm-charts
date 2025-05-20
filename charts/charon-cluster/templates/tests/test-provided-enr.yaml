@@ -17,7 +17,7 @@ metadata:
     {{- include "charon.labels" . | nindent 4 }}
     app.kubernetes.io/component: test
 spec:
-  serviceAccountName: "{{ .Release.Name }}-test-runner"
+  serviceAccountName: {{ template "charon.serviceAccountNameTest" . }}
   restartPolicy: Never
   containers:
     - name: test-enr-job-completion-provided
