@@ -8,4 +8,6 @@ metadata:
 data:
   dkg-sidecar.sh: |-
 {{ tpl ( .Files.Get "scripts/dkg-sidecar.sh" ) . | indent 4 }}
+  dkg-sidecar-wrapper.sh: |-
+{{ tpl ( .Files.Get "scripts/dkg-sidecar-wrapper.sh" ) . | indent 4 }}
 {{- end }}
