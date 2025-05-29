@@ -8,7 +8,7 @@ clusterSize: 4
 # -- Cluster threshold required for signature reconstruction. Defaults to ceil(n*2/3) if zero. Warning, non-default values decrease security.
 clusterThreshold: 3
 
-# -- Charon image ropsitory, pull policy, and tag version
+# -- Charon image repository, pull policy, and tag version
 image:
   repository: obolnetwork/charon
   pullPolicy: IfNotPresent
