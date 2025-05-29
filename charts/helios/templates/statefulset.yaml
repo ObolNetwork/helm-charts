@@ -26,9 +26,9 @@ spec:
           emptyDir: {}
         {{- end }}
       containers:
-        - name: helios
-          image: "silversurfer972/helios:latest"
-          imagePullPolicy: IfNotPresent
+        - name: {{ $.Chart.Name }}
+          image: {{ $.Values.image.repository }}:{{ $.Values.image.tag }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
