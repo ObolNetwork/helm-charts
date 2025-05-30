@@ -1298,6 +1298,24 @@ entries:
     version: 0.1.0
   helios:
   - apiVersion: v2
+    appVersion: 0.8.8
+    created: "2025-05-30T13:28:17.310451664Z"
+    description: A Helm chart for Helios - a trustless, efficient, and portable Ethereum
+      light client
+    digest: 82bf89417b98f534609ec425af6eafb2bdff9e6ced7ff0314501ef96ac34b0f0
+    keywords:
+    - ethereum
+    - light-client
+    - blockchain
+    maintainers:
+    - name: obol-tech
+      url: https://github.com/obol-tech
+    name: helios
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/helios-0.1.1/helios-0.1.1.tgz
+    version: 0.1.1
+  - apiVersion: v2
     appVersion: 0.8.3
     created: "2025-03-26T10:29:16.094647598Z"
     description: A Helm chart for Helios - a trustless, efficient, and portable Ethereum
@@ -1315,4 +1333,4 @@ entries:
     urls:
     - https://github.com/ObolNetwork/helm-charts/releases/download/helios-0.1.0/helios-0.1.0.tgz
     version: 0.1.0
-generated: "2025-05-12T13:59:03.22833059Z"
+generated: "2025-05-30T13:28:17.310577698Z"
