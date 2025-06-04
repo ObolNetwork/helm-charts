@@ -8,3 +8,9 @@
 
 .DS_Store
 *ignore*
+
+
+obol-api/
+charon-dkg-output/
+llmdocs/
+charon/
