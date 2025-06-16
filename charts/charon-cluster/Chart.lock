@@ -1,0 +1,9 @@
+dependencies:
+- name: erigon
+  repository: https://ethpandaops.github.io/ethereum-helm-charts
+  version: 1.0.12
+- name: lighthouse
+  repository: https://ethpandaops.github.io/ethereum-helm-charts
+  version: 1.1.5
+digest: sha256:3c42307bc6f30b0ab662cb390511a00a06f9f597d013f4cef357a4e340fc3b27
+generated: "2025-05-14T23:52:13.384478+04:00"
