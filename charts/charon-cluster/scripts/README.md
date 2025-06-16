@@ -78,6 +78,7 @@ The TypeScript implementation supports the following environment variables:
 - `PAGE_LIMIT`: API pagination limit (default: `10`)
 - `POD_NAME`: Kubernetes pod name (automatically set)
 - `POD_NAMESPACE`: Kubernetes namespace (automatically set)
+- `LOG_LEVEL`: Logging level - DEBUG, INFO, WARN, ERROR (default: `INFO`)
 
 ### API Polling Logic
 

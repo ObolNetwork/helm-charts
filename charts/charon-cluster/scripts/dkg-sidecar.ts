@@ -5,6 +5,51 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
 
+// Logger implementation
+enum LogLevel {
+  DEBUG = 0,
+  INFO = 1,
+  WARN = 2,
+  ERROR = 3
+}
+
+class Logger {
+  private level: LogLevel;
+  private prefix: string;
+
+  constructor(prefix: string = 'DKG-Sidecar') {
+    this.prefix = prefix;
+    const envLevel = process.env.LOG_LEVEL?.toUpperCase() || 'INFO';
+    this.level = LogLevel[envLevel as keyof typeof LogLevel] ?? LogLevel.INFO;
+  }
+
+  private log(level: LogLevel, levelStr: string, ...args: any[]): void {
+    if (level >= this.level) {
+      const timestamp = new Date().toISOString();
+      const message = args.map(arg => 
+        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+      ).join(' ');
+      console.log(`${timestamp} [${levelStr}] [${this.prefix}] ${message}`);
+    }
+  }
+
+  debug(...args: any[]): void {
+    this.log(LogLevel.DEBUG, 'DEBUG', ...args);
+  }
+
+  info(...args: any[]): void {
+    this.log(LogLevel.INFO, 'INFO', ...args);
+  }
+
+  warn(...args: any[]): void {
+    this.log(LogLevel.WARN, 'WARN', ...args);
+  }
+
+  error(...args: any[]): void {
+    this.log(LogLevel.ERROR, 'ERROR', ...args);
+  }
+}
+
 interface Config {
   operatorAddress: string;
   enrFilePath: string;
@@ -24,10 +69,12 @@ class DKGSidecar {
   private signer?: ethers.Signer;
   private podEnr!: string;
   private currentRetryDelay: number;
+  private logger: Logger;
 
   constructor(config: Config) {
     this.config = config;
     this.currentRetryDelay = config.initialRetryDelaySeconds;
+    this.logger = new Logger();
     
     // Initialize signer if private key is available
     if (config.privateKeyPath && fs.existsSync(config.privateKeyPath)) {
@@ -45,15 +92,17 @@ class DKGSidecar {
   }
 
   async run(): Promise<void> {
-    console.log('DKG Sidecar Script: Starting...');
-    console.log('Operator Address:', this.config.operatorAddress);
-    console.log('ENR File Path:', this.config.enrFilePath);
-    console.log('Output Definition File:', this.config.outputDefinitionFile);
-    console.log('API Endpoint:', this.config.apiEndpoint);
-    console.log('Initial Retry Delay:', this.config.initialRetryDelaySeconds, 'seconds');
-    console.log('Max Retry Delay:', this.config.maxRetryDelaySeconds, 'seconds');
-    console.log('Retry Delay Factor:', this.config.retryDelayFactor);
-    console.log('Page Limit:', this.config.pageLimit);
+    this.logger.info('Starting DKG Sidecar...');
+    this.logger.info('Configuration:');
+    this.logger.info('  Operator Address:', this.config.operatorAddress);
+    this.logger.info('  ENR File Path:', this.config.enrFilePath);
+    this.logger.info('  Output Definition File:', this.config.outputDefinitionFile);
+    this.logger.info('  API Endpoint:', this.config.apiEndpoint);
+    this.logger.debug('Retry Configuration:');
+    this.logger.debug('  Initial Retry Delay:', this.config.initialRetryDelaySeconds, 'seconds');
+    this.logger.debug('  Max Retry Delay:', this.config.maxRetryDelaySeconds, 'seconds');
+    this.logger.debug('  Retry Delay Factor:', this.config.retryDelayFactor);
+    this.logger.debug('  Page Limit:', this.config.pageLimit);
 
     // Validate operator address
     if (!this.config.operatorAddress || this.config.operatorAddress === 'null') {
@@ -69,22 +118,22 @@ class DKGSidecar {
     if (!this.podEnr) {
       throw new Error(`ERROR: ENR file ${this.config.enrFilePath} is empty.`);
     }
-    console.log('Pod ENR to find:', this.podEnr);
+    this.logger.info('Pod ENR loaded:', this.podEnr);
 
     // Check if cluster-lock already exists
     const clusterLockPath = path.join(this.config.dataDir, 'cluster-lock.json');
     if (fs.existsSync(clusterLockPath)) {
-      console.log('Cluster lock file already exists. Charon should start directly.');
+      this.logger.info('Cluster lock file already exists. Charon should start directly.');
       return;
     }
 
     // Check if cluster definition already exists
     if (fs.existsSync(this.config.outputDefinitionFile)) {
-      console.log('Cluster definition already exists. Proceeding to DKG...');
+      this.logger.info('Cluster definition already exists. Proceeding to DKG...');
       const definition = JSON.parse(fs.readFileSync(this.config.outputDefinitionFile, 'utf8'));
       const success = await this.processDKG(definition);
       if (success) {
-        console.log('DKG Sidecar Script: Orchestration complete.');
+        this.logger.info('DKG orchestration complete.');
         return;
       }
     }
@@ -92,30 +141,30 @@ class DKGSidecar {
     // Accept terms and conditions if we have a signer
     if (this.signer) {
       try {
-        console.log('Accepting Obol terms and conditions...');
+        this.logger.info('Accepting Obol terms and conditions...');
         await this.client.acceptObolLatestTermsAndConditions();
-        console.log('Terms and conditions accepted.');
+        this.logger.info('Terms and conditions accepted.');
       } catch (error) {
-        console.log('Could not accept terms and conditions:', error);
+        this.logger.warn('Could not accept terms and conditions:', error);
       }
     }
 
     // Start polling loop
     while (true) {
-      console.log(`Starting new polling cycle... (current delay before next cycle: ${this.currentRetryDelay}s)`);
+      this.logger.info(`Starting new polling cycle... (current delay before next cycle: ${this.currentRetryDelay}s)`);
       
       const foundDefinition = await this.pollForDefinition();
       
       if (foundDefinition) {
         const success = await this.processDKG(foundDefinition);
         if (success) {
-          console.log('DKG Sidecar Script: Orchestration complete.');
+          this.logger.info('DKG orchestration complete.');
           process.exit(0);
         }
       }
 
       // Sleep before next retry
-      console.log(`Polling cycle complete. Retrying in ${this.currentRetryDelay} seconds...`);
+      this.logger.info(`Polling cycle complete. Retrying in ${this.currentRetryDelay} seconds...`);
       await this.sleep(this.currentRetryDelay * 1000);
 
       // Apply backoff
@@ -131,25 +180,23 @@ class DKGSidecar {
 
     while (true) {
       try {
-        console.log(`Polling API for page ${currentPage}...`);
+        this.logger.debug(`Polling API for page ${currentPage}...`);
         
         // Fetch cluster definitions for the operator
         const response = await this.fetchClusterDefinitions(currentPage);
         
         if (!response || !response.cluster_definitions) {
-          console.log(`Warning: Empty or invalid response from API (Page ${currentPage}).`);
+          this.logger.warn(`Empty or invalid response from API (Page ${currentPage}).`);
           break;
         }
 
-        console.log('DEBUG: Raw API Response:');
-        console.log(JSON.stringify(response, null, 2));
-        console.log('DEBUG: End of Raw API Response.');
+        this.logger.debug('Raw API Response:', response);
 
         // Log all available definitions
         if (response.cluster_definitions.length > 0) {
-          console.log(`Found ${response.cluster_definitions.length} cluster definition(s) for operator ${this.config.operatorAddress}:`);
+          this.logger.info(`Found ${response.cluster_definitions.length} cluster definition(s) for operator ${this.config.operatorAddress}:`);
           response.cluster_definitions.forEach((def: any, index: number) => {
-            console.log(`  ${index + 1}. Config Hash: ${def.config_hash}, Name: ${def.name}, Created: ${def.timestamp}`);
+            this.logger.info(`  ${index + 1}. Config Hash: ${def.config_hash}, Name: ${def.name}, Created: ${def.timestamp}`);
           });
         }
 
@@ -157,8 +204,8 @@ class DKGSidecar {
         const candidateDefinition = this.findSignedDefinition(response.cluster_definitions);
         
         if (candidateDefinition) {
-          console.log(`Found candidate definition where our operator (${this.config.operatorAddress}) has signed our ENR on page ${currentPage}.`);
-          console.log(`Config Hash: ${candidateDefinition.config_hash}`);
+          this.logger.info(`Found candidate definition where our operator (${this.config.operatorAddress}) has signed our ENR on page ${currentPage}.`);
+          this.logger.info(`Config Hash: ${candidateDefinition.config_hash}`);
           
           // Try to accept the cluster definition if we haven't already and have a signer
           if (this.signer && candidateDefinition.config_hash) {
@@ -167,7 +214,7 @@ class DKGSidecar {
 
           // Check if all operators have signed
           if (this.isFullySigned(candidateDefinition)) {
-            console.log(`All ${candidateDefinition.operators.length} operators have signed. Definition ready for DKG!`);
+            this.logger.info(`All ${candidateDefinition.operators.length} operators have signed. Definition ready for DKG!`);
             
             // Fetch the full definition using SDK if we have config_hash
             if (candidateDefinition.config_hash) {
@@ -175,26 +222,26 @@ class DKGSidecar {
                 const fullDefinition = await this.client.getClusterDefinition(candidateDefinition.config_hash);
                 return fullDefinition;
               } catch (error) {
-                console.log('Could not fetch full definition via SDK, using current definition');
+                this.logger.debug('Could not fetch full definition via SDK, using current definition');
                 return candidateDefinition;
               }
             }
             
             return candidateDefinition;
           } else {
-            console.log('Not all operators in candidate have signed. Continuing search or will retry.');
+            this.logger.debug('Not all operators in candidate have signed. Continuing search or will retry.');
           }
         }
 
         // Check if there are more pages
         if (!response.has_next_page) {
-          console.log(`No fully signed definition for us found on page ${currentPage}, and no more pages available.`);
+          this.logger.debug(`No fully signed definition for us found on page ${currentPage}, and no more pages available.`);
           break;
         }
 
         currentPage++;
       } catch (error) {
-        console.error(`Error polling API on page ${currentPage}:`, error);
+        this.logger.error(`Error polling API on page ${currentPage}:`, error);
         break;
       }
     }
@@ -211,12 +258,12 @@ class DKGSidecar {
       // Check if we've already accepted (signed) the definition
       if (ourOperator && ourOperator.enr === this.podEnr && 
           ourOperator.enr_signature && ourOperator.config_signature) {
-        console.log('We have already accepted this cluster definition.');
+        this.logger.debug('We have already accepted this cluster definition.');
         return;
       }
 
       // Accept the definition
-      console.log('Accepting cluster definition...');
+      this.logger.info('Accepting cluster definition...');
       const operatorPayload: OperatorPayload = {
         enr: this.podEnr,
         version: definition.version || 'v1.10.0'
@@ -227,9 +274,9 @@ class DKGSidecar {
         definition.config_hash
       );
       
-      console.log('Successfully accepted cluster definition.');
+      this.logger.info('Successfully accepted cluster definition.');
     } catch (error) {
-      console.error('Error accepting cluster definition:', error);
+      this.logger.error('Error accepting cluster definition:', error);
     }
   }
 
@@ -247,7 +294,7 @@ class DKGSidecar {
       
       return await response.json();
     } catch (error) {
-      console.error('Error fetching cluster definitions:', error);
+      this.logger.error('Error fetching cluster definitions:', error);
       return null;
     }
   }
@@ -275,7 +322,7 @@ class DKGSidecar {
       op.config_signature && op.config_signature.length > 0
     ).length;
 
-    console.log(`Total operators in candidate: ${totalOperators}, Signed: ${signedOperators}`);
+    this.logger.debug(`Total operators in candidate: ${totalOperators}, Signed: ${signedOperators}`);
     return totalOperators > 0 && signedOperators === totalOperators;
   }
 
@@ -288,26 +335,26 @@ class DKGSidecar {
       }
       
       fs.writeFileSync(this.config.outputDefinitionFile, JSON.stringify(definition, null, 2));
-      console.log(`Fully signed cluster definition saved to ${this.config.outputDefinitionFile}.`);
+      this.logger.info(`Fully signed cluster definition saved to ${this.config.outputDefinitionFile}.`);
 
       // Run charon DKG
-      console.log('Proceeding to DKG process...');
+      this.logger.info('Proceeding to DKG process...');
       const dkgCommand = `charon dkg --definition-file="${this.config.outputDefinitionFile}" --data-dir="${this.config.dataDir}"`;
       
       try {
         execSync(dkgCommand, { stdio: 'inherit' });
-        console.log('DKG process completed successfully.');
+        this.logger.info('DKG process completed successfully.');
         return true;
       } catch (error: any) {
-        console.error(`ERROR: DKG process failed with exit code ${error.status || 'unknown'}.`);
+        this.logger.error(`DKG process failed with exit code ${error.status || 'unknown'}.`);
         
         // Clean up on failure
         fs.unlinkSync(this.config.outputDefinitionFile);
-        console.log(`Removed ${this.config.outputDefinitionFile}. Will retry entire process.`);
+        this.logger.warn(`Removed ${this.config.outputDefinitionFile}. Will retry entire process.`);
         return false;
       }
     } catch (error) {
-      console.error('Error processing DKG:', error);
+      this.logger.error('Error processing DKG:', error);
       return false;
     }
   }
@@ -339,10 +386,12 @@ async function main() {
 
   const sidecar = new DKGSidecar(config);
   
+  const logger = new Logger('Main');
+  
   try {
     await sidecar.run();
   } catch (error) {
-    console.error('Fatal error:', error);
+    logger.error('Fatal error:', error);
     process.exit(1);
   }
 }
