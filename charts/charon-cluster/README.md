@@ -12,20 +12,46 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 
 * <https://github.com/ObolNetwork/charon>
 
+## Requirements
+
+| Repository | Name | Version |
+|------------|------|---------|
+| https://ethpandaops.github.io/ethereum-helm-charts | erigon | 1.0.12 |
+| https://ethpandaops.github.io/ethereum-helm-charts | lighthouse | 1.1.5 |
+
 ## Values
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | affinity | object | `{}` | Affinity for pod assignment # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity # # Example: # affinity: #   podAntiAffinity: #     requiredDuringSchedulingIgnoredDuringExecution: #     - labelSelector: #         matchExpressions: #         - key: app.kubernetes.io/name #           operator: In #           values: #           - charon #       topologyKey: kubernetes.io/hostname # |
+| affinity | object | `{}` | Affinity for pod assignment # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity # # Example: # affinity: #   podAntiAffinity: #     requiredDuringSchedulingIgnoredDuringExecution: #     - labelSelector: #         matchExpressions: #         - key: app.kubernetes.io/name #           operator: In #           values: #           - charon #       topologyKey: kubernetes.io/hostname # |
 | centralMonitoring | object | `{"enabled":false,"promEndpoint":"https://vm.monitoring.gcp.obol.tech/write","token":""}` | Central Monitoring |
 | centralMonitoring.enabled | bool | `false` | Specifies whether central monitoring should be enabled |
 | centralMonitoring.promEndpoint | string | `"https://vm.monitoring.gcp.obol.tech/write"` | https endpoint to obol central prometheus  |
 | centralMonitoring.token | string | `""` | The authentication token to the central prometheus |
+| charon.config.privateKeyFile | string | `"/data/charon_shared_enr_private_key"` | Path within EACH Charon container where the SHARED ENR private key file will be mounted. |
+| charon.dkgSidecar | object | `{"apiEndpoint":"https://api.obol.tech","enabled":true,"image":{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.4.2"},"initialRetryDelaySeconds":10,"maxRetryDelaySeconds":300,"pageLimit":10,"resources":{},"retryDelayFactor":2,"retryDelaySeconds":10,"serviceAccount":{"create":true}}` | Configuration for the Orchestrator init container This init container handles polling for signed cluster definitions and will later manage the DKG process. |
+| charon.dkgSidecar.apiEndpoint | string | `"https://api.obol.tech"` | API endpoint for the Obol network to fetch cluster definitions |
+| charon.dkgSidecar.image.repository | string | `"obolnetwork/charon"` | Image repository for the poller (must include sh, curl, jq, and eventually charon CLI for DKG) This should be an image containing sh, curl, jq, and the charon CLI. |
+| charon.dkgSidecar.initialRetryDelaySeconds | int | `10` | Initial delay in seconds before the first retry of a polling cycle. |
+| charon.dkgSidecar.maxRetryDelaySeconds | int | `300` | Maximum delay in seconds for exponential backoff between polling cycles. |
+| charon.dkgSidecar.pageLimit | int | `10` | Page limit for API calls when fetching cluster definitions |
+| charon.dkgSidecar.resources | object | `{}` | Resources for the cluster poller init container |
+| charon.dkgSidecar.retryDelayFactor | int | `2` | Factor by which the retry delay increases after each polling cycle (e.g., 2 for doubling). |
+| charon.dkgSidecar.retryDelaySeconds | int | `10` | Delay in seconds between polling retries |
+| charon.dkgSidecar.serviceAccount | object | `{"create":true}` | Service account settings for test pods |
+| charon.enr.existingSecret | object | `{"dataKey":"private-key","name":""}` | Point to an existing Kubernetes secret that holds the shared ENR private key. If 'privateKey' above is not set and this 'existingSecret.name' is provided, 'generate' is ignored. |
+| charon.enr.generate | object | `{"enabled":true,"image":{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.4.2"},"kubectlImage":{"pullPolicy":"IfNotPresent","repository":"bitnami/kubectl","tag":"latest"}}` | Enable automatic generation of a shared ENR private key. This is active only if 'privateKey' and 'existingSecret.name' are NOT set. The generated key will be stored in a secret (e.g., "{{ .Release.Name }}-charon-enr-key")  with data keys 'private-key' (for the hex key) and 'public-enr' (for the ENR string). |
+| charon.enr.generate.kubectlImage | object | `{"pullPolicy":"IfNotPresent","repository":"bitnami/kubectl","tag":"latest"}` | Image to use for kubectl operations within the ENR generation job This image must contain a compatible kubectl binary. |
+| charon.enr.privateKey | string | `""` | Provide the shared ENR private key directly (hex format, e.g., 0x...).  If set, 'generate' and 'existingSecret' are ignored. |
+| charon.enrJob.enabled | bool | `true` | Enable or disable the Kubernetes Job that generates/manages the ENR. |
+| charon.operatorAddress | string | `""` | The Ethereum address of this operator. This MUST be provided by the user. |
 | clusterSize | int | `4` | The number of charon nodes in the cluster. Minimum is 4 |
 | clusterThreshold | int | `3` | Cluster threshold required for signature reconstruction. Defaults to ceil(n*2/3) if zero. Warning, non-default values decrease security. |
 | config.LockFile | string | `"/charon/cluster-lock.json"` | The path to the cluster lock file defining distributed validator cluster. (default ".charon/cluster-lock.json") |
-| config.beaconNodeEndpoints | string | `""` | Comma separated list of one or more beacon node endpoint URLs. |
+| config.beaconNodeEndpoints | string | `"http://localhost:9999"` | Comma separated list of one or more beacon node endpoint URLs. |
 | config.builderApi | string | `""` | Enables the builder api. Will only produce builder blocks. Builder API must also be enabled on the validator client. Beacon node must be connected to a builder-relay to access the builder network. |
+| config.charonInternalMonitoringPort | int | `3625` | Specific internal monitoring port for Charon container to avoid sidecar conflicts. |
 | config.directConnectionEnabled | string | `"true"` | If enabled, it will set p2pExternalHostname value to the pod name and enable direct connection between cluster nodes |
 | config.featureSet | string | `"stable"` | Minimum feature set to enable by default: alpha, beta, or stable. Warning: modify at own risk. (default "stable") |
 | config.featureSetDisable | string | `""` | Comma-separated list of features to disable, overriding the default minimum feature set. |
@@ -51,14 +77,29 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | config.syntheticBlockProposals | string | `""` | Enables additional synthetic block proposal duties. Used for testing of rare duties. |
 | config.validatorApiAddress | string | `"0.0.0.0:3600"` | Listening address (ip and port) for validator-facing traffic proxying the beacon-node API. (default "127.0.0.1:3600") |
 | containerSecurityContext | object | See `values.yaml` | The security context for containers |
+| erigon.enabled | bool | `true` |  |
+| erigon.extraArgs[0] | string | `"--chain=hoodi"` |  |
+| erigon.extraArgs[1] | string | `"--externalcl"` |  |
+| erigon.persistence.enabled | bool | `true` |  |
+| erigon.persistence.size | string | `"200Gi"` |  |
 | fullnameOverride | string | `""` | Provide a name to substitute for the full names of resources |
 | image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.4.3"}` | Charon image repository, pull policy, and tag version |
 | imagePullSecrets | list | `[]` | Credentials to fetch images from private registry # ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ |
+| lighthouse.enabled | bool | `true` |  |
+| lighthouse.extraArgs[0] | string | `"--execution-endpoint=https://hoodi.beaconstate.info"` |  |
+| lighthouse.extraArgs[1] | string | `"--network=hoodi"` |  |
 | livenessProbe | object | `{"enabled":false,"httpGet":{"path":"/livez"},"initialDelaySeconds":10,"periodSeconds":5}` | Configure liveness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ |
 | nameOverride | string | `""` | Provide a name in place of lighthouse for `app:` labels |
 | nodeSelector | object | `{}` | Node labels for pod assignment # ref: https://kubernetes.io/docs/user-guide/node-selection/ |
+| nodeSelector | object | `{}` | Node selector for pod assignment Ref: https://kubernetes.io/docs/user-guide/node-selection/ |
+| persistence | object | `{"accessModes":["ReadWriteOnce"],"enabled":true,"size":"1Gi"}` | Persistence configuration for DKG artifacts and charon data |
+| persistence.accessModes | list | `["ReadWriteOnce"]` | Access modes for the PVC. Must be a list. Default: ["ReadWriteOnce"]. |
+| persistence.enabled | bool | `true` | Enable persistence using a PersistentVolumeClaim. |
+| persistence.size | string | `"1Gi"` | Size of the PVC. |
 | podAnnotations | object | `{}` | Pod annotations |
 | podDisruptionBudget | object | `{"enabled":true,"minAvailable":""}` | Enable pod disruption budget # ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb |
+| podDisruptionBudget | object | `{"enabled":true,"minAvailable":""}` | Enable pod disruption budget # ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb |
+| priorityClassName | string | `""` | Used to assign priority to pods # ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/ |
 | priorityClassName | string | `""` | Used to assign priority to pods # ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/ |
 | rbac | object | `{"clusterRules":[{"apiGroups":[""],"resources":["nodes"],"verbs":["get","list","watch"]}],"enabled":true,"name":"","rules":[{"apiGroups":[""],"resources":["services"],"verbs":["get","list","watch"]}]}` | RBAC configuration. # ref: https://kubernetes.io/docs/reference/access-authn-authz/rbac/ |
 | rbac.clusterRules | list | `[{"apiGroups":[""],"resources":["nodes"],"verbs":["get","list","watch"]}]` | Required ClusterRole rules |
@@ -69,10 +110,10 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | rbac.rules[0] | object | `{"apiGroups":[""],"resources":["services"],"verbs":["get","list","watch"]}` | Required to get information about the serices nodePort. |
 | readinessProbe | object | `{"enabled":false,"httpGet":{"path":"/readyz"},"initialDelaySeconds":5,"periodSeconds":3}` | Configure readiness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ |
 | resources | object | `{}` | Pod resources limits and requests |
-| secrets | object | `{"clusterlock":"cluster-lock","enrPrivateKey":"charon-enr-private-key","validatorKeys":"validators"}` | Kubernetes secrets names |
-| secrets.clusterlock | string | `"cluster-lock"` | charon cluster lock |
-| secrets.enrPrivateKey | string | `"charon-enr-private-key"` | charon enr private key |
-| secrets.validatorKeys | string | `"validators"` | validators keys |
+| secrets | object | `{"clusterlock":"cluster-lock","enrPrivateKey":"charon-enr-private-key","validatorKeys":"validator-keys"}` | Kubernetes secrets names that might be used as suffixes or for other purposes. For the shared ENR, the secret name is either defined in 'charon.enr.existingSecret.name'  or generated by the ENR job (e.g., {{ .Release.Name }}-charon-enr-key). The 'enrPrivateKey' field below is NOT directly used for the shared ENR secret name in this model. |
+| secrets.clusterlock | string | `"cluster-lock"` | Name or suffix for the charon cluster lock secret |
+| secrets.enrPrivateKey | string | `"charon-enr-private-key"` | This field is less relevant for the SHARED ENR model. Retained for other potential uses or legacy compatibility. For shared ENR, see 'charon.enr' section above. |
+| secrets.validatorKeys | string | `"validator-keys"` | Suffix or name component for validator keys secrets (if applicable, distinct from ENR) |
 | securityContext | object | See `values.yaml` | The security context for pods |
 | service | object | `{"clusterIP":"None","ports":{"monitoring":{"name":"monitoring","port":3620,"protocol":"TCP","targetPort":3620},"p2pTcp":{"name":"p2p-tcp","port":3610,"protocol":"TCP","targetPort":3610},"validatorApi":{"name":"validator-api","port":3600,"protocol":"TCP","targetPort":3600}}}` | Charon service ports |
 | service.clusterIP | string | `"None"` | Headless service to create DNS for each statefulset instance |
@@ -80,9 +121,9 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | serviceAccount.annotations | object | `{}` | Annotations to add to the service account |
 | serviceAccount.enabled | bool | `true` | Specifies whether a service account should be created |
 | serviceAccount.name | string | `""` | The name of the service account to use. If not set and create is true, a name is generated using the default template |
-| serviceMonitor | object | `{"annotations":{},"enabled":true,"interval":"1m","labels":{},"namespace":null,"path":"/metrics","relabelings":[],"scheme":"http","scrapeTimeout":"30s","tlsConfig":{}}` | Prometheus Service Monitor # ref: https://github.com/coreos/prometheus-operator |
+| serviceMonitor | object | `{"annotations":{},"enabled":false,"interval":"1m","labels":{},"namespace":null,"path":"/metrics","relabelings":[],"scheme":"http","scrapeTimeout":"30s","tlsConfig":{}}` | Prometheus Service Monitor # ref: https://github.com/coreos/prometheus-operator |
 | serviceMonitor.annotations | object | `{}` | Additional ServiceMonitor annotations |
-| serviceMonitor.enabled | bool | `true` | If true, a ServiceMonitor CRD is created for a prometheus operator. https://github.com/coreos/prometheus-operator |
+| serviceMonitor.enabled | bool | `false` | If true, a ServiceMonitor CRD is created for a prometheus operator. https://github.com/coreos/prometheus-operator TODO: SWITCH BACK TO ON FOR PRODUCTION |
 | serviceMonitor.interval | string | `"1m"` | ServiceMonitor scrape interval |
 | serviceMonitor.labels | object | `{}` | Additional ServiceMonitor labels |
 | serviceMonitor.namespace | string | `nil` | Alternative namespace for ServiceMonitor |
@@ -91,7 +132,15 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | serviceMonitor.scheme | string | `"http"` | ServiceMonitor scheme |
 | serviceMonitor.scrapeTimeout | string | `"30s"` | ServiceMonitor scrape timeout |
 | serviceMonitor.tlsConfig | object | `{}` | ServiceMonitor TLS configuration |
+| tests | object | `{"dkgSidecar":{"enabled":true,"freshState":{"enabled":true,"mockEnr":"enr:-Ku4QEXAMPLEOPERATORAENRFROMTHEMOCKAPISERVERPLEASEMODIFYPREVIOUSVALUE"},"hostNetwork":false,"mockApi":{"image":{"pullPolicy":"Always"},"port":3001},"operatorAddress":"0x3D1f0598943239806A251899016EAf4920d4726d","podEnrToFind":"enr:-Ku4QEXAMPLEOPERATORAENRFROMTHEMOCKAPISERVERPLEASEMODIFYPREVIOUSVALUE","serviceAccount":{"create":true}}}` | Configuration for running Helm tests. These values are typically only used when `helm test` is run. |
+| tests.dkgSidecar | object | `{"enabled":true,"freshState":{"enabled":true,"mockEnr":"enr:-Ku4QEXAMPLEOPERATORAENRFROMTHEMOCKAPISERVERPLEASEMODIFYPREVIOUSVALUE"},"hostNetwork":false,"mockApi":{"image":{"pullPolicy":"Always"},"port":3001},"operatorAddress":"0x3D1f0598943239806A251899016EAf4920d4726d","podEnrToFind":"enr:-Ku4QEXAMPLEOPERATORAENRFROMTHEMOCKAPISERVERPLEASEMODIFYPREVIOUSVALUE","serviceAccount":{"create":true}}` | The operator address to use for DKG sidecar tests. This should be a valid Ethereum address (0x...). |
+| tests.dkgSidecar.freshState | object | `{"enabled":true,"mockEnr":"enr:-Ku4QEXAMPLEOPERATORAENRFROMTHEMOCKAPISERVERPLEASEMODIFYPREVIOUSVALUE"}` | Configuration for the 'FRESH' state test |
+| tests.dkgSidecar.freshState.mockEnr | string | `"enr:-Ku4QEXAMPLEOPERATORAENRFROMTHEMOCKAPISERVERPLEASEMODIFYPREVIOUSVALUE"` | Mock ENR value to be used by the fresh state test ConfigMap. Replace with a valid ENR string if your test specifically requires one for the FRESH state mock. |
+| tests.dkgSidecar.hostNetwork | bool | `false` | Host network setting for dkgSidecar test pods |
+| tests.dkgSidecar.serviceAccount | object | `{"create":true}` | Service account settings for test pods |
 | tolerations | object | `{}` | Tolerations for pod assignment # ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/ |
+| tolerations | object | `{}` | Tolerations for pod assignment # ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/ |
+| updateStrategy | string | `"RollingUpdate"` | allows you to configure and disable automated rolling updates for containers, labels, resource request/limits, and annotations for the Pods in a StatefulSet. |
 | updateStrategy | string | `"RollingUpdate"` | allows you to configure and disable automated rolling updates for containers, labels, resource request/limits, and annotations for the Pods in a StatefulSet. |
 
 # How to use this chart
