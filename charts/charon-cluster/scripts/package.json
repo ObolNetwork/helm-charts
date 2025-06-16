@@ -8,11 +8,11 @@
     "start": "node dkg-sidecar.js"
   },
   "dependencies": {
-    "@obolnetwork/obol-sdk": "^1.0.0",
+    "@obolnetwork/obol-sdk": "2.5.0",
     "ethers": "^6.0.0"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "22.15.23",
     "typescript": "^5.0.0"
   }
 }

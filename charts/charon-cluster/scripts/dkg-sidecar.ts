@@ -22,7 +22,7 @@ class DKGSidecar {
   private config: Config;
   private client: Client;
   private signer?: ethers.Signer;
-  private podEnr: string;
+  private podEnr!: string;
   private currentRetryDelay: number;
 
   constructor(config: Config) {

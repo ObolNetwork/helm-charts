@@ -269,8 +269,8 @@ charon:
   dkgSidecar:
     enabled: true
     image:
-      # -- Image repository for the poller (must include sh, curl, jq, and eventually charon CLI for DKG)
-      # This should be an image containing sh, curl, jq, and the charon CLI.
+      # -- Image repository for the DKG sidecar
+      # For now, using the standard charon image
       repository: "obolnetwork/charon"
       tag: "v1.4.2"
       pullPolicy: "IfNotPresent"
