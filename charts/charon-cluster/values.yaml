@@ -463,7 +463,6 @@ tests:
   dkgSidecar:
     enabled: true
     operatorAddress: "0x3D1f0598943239806A251899016EAf4920d4726d"
-    podEnrToFind: "enr:-Ku4QEXAMPLEOPERATORAENRFROMTHEMOCKAPISERVERPLEASEMODIFYPREVIOUSVALUE"
     mockApi:
       port: 3001
       image:
@@ -472,13 +471,7 @@ tests:
     serviceAccount:
       create: true # Whether to specify the test service account for test pods
     # -- Host network setting for dkgSidecar test pods
-    hostNetwork: false
-    # -- Configuration for the 'FRESH' state test
-    freshState:
-      enabled: true
-      # -- Mock ENR value to be used by the fresh state test ConfigMap.
-      # Replace with a valid ENR string if your test specifically requires one for the FRESH state mock.
-      mockEnr: "enr:-Ku4QEXAMPLEOPERATORAENRFROMTHEMOCKAPISERVERPLEASEMODIFYPREVIOUSVALUE" 
+    hostNetwork: false 
 
 # -- Configuration for the DKG Mock API Server used in tests.
 # This is relevant if you are using the mock server deployment included in this chart for testing.
