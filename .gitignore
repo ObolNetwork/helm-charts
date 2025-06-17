@@ -9,8 +9,11 @@
 .DS_Store
 *ignore*
 
+# Node.js dependencies
+node_modules/
+**/node_modules/
 
-obol-api/
-charon-dkg-output/
+# obol-api/
+# charon-dkg-output/
 llmdocs/
-charon/
+# charon/

@@ -56,12 +56,10 @@ spec:
             runAsUser: 0
             runAsGroup: 0
           command:
-            - "/bin/sh"
-            - "-c"
-            - |
-              apt-get update && apt-get install -y --no-install-recommends jq bc && \
-              echo "Orchestrator Script: Starting dkg-sidecar.sh with Operator: '{{ .Values.charon.operatorAddress }}' and ENR file: '/enr-from-job/enr.txt'" && \
-              /script/dkg-sidecar.sh '{{ .Values.charon.operatorAddress }}' /enr-from-job/enr.txt
+            - "node"
+            - "/app/dkg-sidecar.js"
+            - "{{ .Values.charon.operatorAddress }}"
+            - "/enr-from-job/enr.txt"
           env:
             - name: POD_NAME
               valueFrom:
@@ -71,15 +69,31 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: OUTPUT_DEFINITION_FILE
+              value: "/charon-data/cluster-definition.json"
+            - name: API_ENDPOINT
+              value: "{{ .Values.charon.dkgSidecar.apiEndpoint }}"
+            - name: INITIAL_RETRY_INTERVAL_SECONDS
+              value: "{{ .Values.charon.dkgSidecar.initialRetryDelaySeconds }}"
+            - name: MAX_RETRY_INTERVAL_SECONDS
+              value: "{{ .Values.charon.dkgSidecar.maxRetryDelaySeconds }}"
+            - name: BACKOFF_FACTOR
+              value: "{{ .Values.charon.dkgSidecar.retryDelayFactor }}"
+            - name: PAGE_LIMIT
+              value: "{{ .Values.charon.dkgSidecar.pageLimit }}"
+            - name: CHARON_NODE_ID_DIR
+              value: "/charon-data"
+            - name: CHARON_PRIVATE_KEY_FILE
+              value: "/charon-data/charon-enr-private-key"
           volumeMounts:
-            - name: cluster-poller-script
-              mountPath: /script
-              readOnly: true
             - name: enr-data
               mountPath: /enr-from-job
               readOnly: true
             - name: charon-data
               mountPath: /charon-data
+            - name: charon-enr-key
+              mountPath: /charon-data/charon-enr-private-key
+              subPath: "{{ include "charon.enrSecretDataKey" . }}"
           resources:
             {{- toYaml .Values.charon.dkgSidecar.resources | nindent 12 }}
       containers:
@@ -234,10 +248,6 @@ spec:
             items:
               - key: {{ include "charon.enrSecretDataKey" . }}
                 path: {{ include "charon.enrSecretDataKey" . }} # Ensure the file in the volume has the name of the data key
-        - name: cluster-poller-script
-          configMap:
-            name: {{ include "charon.fullname" . }}-dkg-sidecar-script
-            defaultMode: 0755 # Make poll.sh executable
         - name: enr-data
           secret:
             secretName: {{ include "charon.enrSecretName" . }}
