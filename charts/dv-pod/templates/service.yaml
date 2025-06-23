@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "release.name" . }}
+  labels:
+    {{- include "charon.labels" . | nindent 4 }}
+spec:
+  clusterIP: {{ .Values.service.clusterIP }}
+  ports:
+    - name: {{ .Values.service.ports.validatorApi.name }}
+      protocol: {{ .Values.service.ports.validatorApi.protocol }}
+      port: {{ .Values.service.ports.validatorApi.port }}
+      targetPort: {{ .Values.service.ports.validatorApi.targetPort }}
+    - name: {{ .Values.service.ports.p2pTcp.name }}
+      protocol: {{ .Values.service.ports.p2pTcp.protocol }}
+      port: {{ .Values.service.ports.p2pTcp.port }}
+      targetPort: {{ .Values.service.ports.p2pTcp.targetPort }}
+    - name: {{ .Values.service.ports.monitoring.name }}
+      protocol: {{ .Values.service.ports.monitoring.protocol }}
+      port: {{ .Values.service.ports.monitoring.port }}
+      targetPort: {{ .Values.service.ports.monitoring.targetPort }}
+  selector:
+    {{- include "charon.selectorLabels" . | nindent 4 }}
