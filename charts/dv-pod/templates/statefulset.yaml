@@ -1,0 +1,282 @@
+{{- $root := . -}}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "charon.fullname" . }}
+  labels:
+    {{- include "charon.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "charon.fullname" . }}
+  updateStrategy:
+    type: {{ .Values.updateStrategy }}
+  selector:
+    matchLabels:
+      {{- include "charon.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "charon.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with concat .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if or .Values.serviceAccount.enabled }}
+      serviceAccountName: {{ include "charon.serviceAccountName" . }}
+      {{- end }}
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName | quote }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.securityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      initContainers:
+        - name: dkg-sidecar
+          image: "{{ .Values.charon.dkgSidecar.image.repository }}:{{ .Values.charon.dkgSidecar.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.charon.dkgSidecar.image.pullPolicy }}
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+          command:
+            - "node"
+            - "/app/dkg-sidecar.js"
+            - "{{ .Values.charon.operatorAddress }}"
+            - "/enr-from-job/enr.txt"
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OUTPUT_DEFINITION_FILE
+              value: "/charon-data/cluster-definition.json"
+            - name: API_ENDPOINT
+              value: "{{ .Values.charon.dkgSidecar.apiEndpoint }}"
+            - name: INITIAL_RETRY_INTERVAL_SECONDS
+              value: "{{ .Values.charon.dkgSidecar.initialRetryDelaySeconds }}"
+            - name: MAX_RETRY_INTERVAL_SECONDS
+              value: "{{ .Values.charon.dkgSidecar.maxRetryDelaySeconds }}"
+            - name: BACKOFF_FACTOR
+              value: "{{ .Values.charon.dkgSidecar.retryDelayFactor }}"
+            - name: PAGE_LIMIT
+              value: "{{ .Values.charon.dkgSidecar.pageLimit }}"
+            - name: CHARON_NODE_ID_DIR
+              value: "/charon-data"
+            - name: CHARON_PRIVATE_KEY_FILE
+              value: "/charon-data/charon-enr-private-key"
+          volumeMounts:
+            - name: enr-data
+              mountPath: /enr-from-job
+              readOnly: true
+            - name: charon-data
+              mountPath: /charon-data
+            - name: charon-enr-key
+              mountPath: /charon-data/charon-enr-private-key
+              subPath: "{{ include "charon.enrSecretDataKey" . }}"
+          resources:
+            {{- toYaml .Values.charon.dkgSidecar.resources | nindent 12 }}
+      containers:
+        - command:
+            - sh
+            - -ac
+            - >
+              exec /usr/local/bin/charon run
+              --beacon-node-endpoints={{ .Values.config.beaconNodeEndpoints }}
+              --lock-file=/charon-data/cluster-lock.json
+              {{- if .Values.config.builderApi }}
+              --builder-api={{ .Values.config.builderApi }}
+              {{- end }}
+              {{- if .Values.config.featureSet }}
+              --feature-set={{ .Values.config.featureSet }}
+              {{- end }}
+              {{- if .Values.config.featureSetDisable }}
+              --feature-set-disable={{ .Values.config.featureSetDisable }}
+              {{- end }}
+              {{- if .Values.config.featureSetEnable }}
+              --feature-set-enable={{ .Values.config.featureSetEnable }}
+              {{- end }}
+              {{- if .Values.config.jaegerAddress }}
+              --jaeger-address={{ .Values.config.jaegerAddress }}
+              {{- end }}
+              {{- if .Values.config.jaegerService }}
+              --jaeger-service={{ .Values.config.jaegerService }}
+              {{- else }}
+              --jaeger-service="${NODE_NAME}"
+              {{- end }}
+              {{- if .Values.config.logFormat }}
+              --log-format={{ .Values.config.logFormat }}
+              {{- end }}
+              {{- if .Values.config.logLevel }}
+              --log-level={{ .Values.config.logLevel }}
+              {{- end }}
+              {{- if .Values.config.lokiAddresses }}
+              --loki-addresses={{ .Values.config.lokiAddresses }}
+              {{- end }}
+              {{- if .Values.config.lokiService }}
+              --loki-service={{ .Values.config.lokiService }}
+              {{- else }}
+              --loki-service="${NODE_NAME}"
+              {{- end }}
+              {{- if .Values.config.monitoringAddress }}
+              --monitoring-address=0.0.0.0:{{ .Values.config.charonInternalMonitoringPort }}
+              {{- end }}
+              {{- if .Values.config.noVerify }}
+              --no-verify={{ .Values.config.noVerify }}
+              {{- end }}
+              {{- if .Values.config.p2pAllowlist }}
+              --p2p-allowlist={{ .Values.config.p2pAllowlist }}
+              {{- end }}
+              {{- if .Values.config.p2pDenylist }}
+              --p2p-denylist={{ .Values.config.p2pDenylist }}
+              {{- end }}
+              {{- if .Values.config.p2pDisableReuseport }}
+              --p2p-disable-reuseport={{ .Values.config.p2pDisableReuseport }}
+              {{- end }}
+              {{- if .Values.config.directConnectionEnabled }}
+              --p2p-external-hostname="${NODE_NAME}"
+              {{- else }}
+              --p2p-external-hostname={{ .Values.config.p2pExternalHostname }}
+              {{- end }}
+              {{- if .Values.config.p2pExternalIp }}
+              --p2p-external-ip={{ .Values.config.p2pExternalIp }}
+              {{- end }}
+              {{- if .Values.config.p2pRelays }}
+              --p2p-relays={{ .Values.config.p2pRelays }}
+              {{- end }}
+              {{- if .Values.config.p2pTcpAddress }}
+              --p2p-tcp-address={{ .Values.config.p2pTcpAddress }}
+              {{- end }}
+              --private-key-file="{{ .Values.charon.config.privateKeyFile }}"
+              {{- if .Values.config.simnetBeaconMock }}
+              --simnet-beacon-mock={{ .Values.config.simnetBeaconMock }}
+              {{- end }}
+              {{- if .Values.config.simnetValidatorKeysDir }}
+              --simnet-validator-keys-dir={{ .Values.config.simnetValidatorKeysDir }}
+              {{- end }}
+              {{- if .Values.config.simnetValidatorMock }}
+              --simnet-validator-mock={{ .Values.config.simnetValidatorMock }}
+              {{- end }}
+              {{- if .Values.config.syntheticBlockProposals }}
+              --synthetic-block-proposals={{ .Values.config.syntheticBlockProposals }}
+              {{- end }}
+              {{- if .Values.config.validatorApiAddress }}
+              --validator-api-address={{ .Values.config.validatorApiAddress }}
+              {{- end }}
+          env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: KUBERNETES_CLUSTER_DOMAIN
+            value: {{ .Values.kubernetesClusterDomain }}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          name: {{ .Chart.Name }}
+          {{- with .Values.containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.ports.p2pTcp.targetPort }}
+              name: p2p-tcp
+              protocol: TCP
+            - containerPort: {{ .Values.config.charonInternalMonitoringPort }}
+              name: monitoring
+              protocol: TCP
+        {{- if or .Values.livenessProbe.enabled }}
+          livenessProbe:
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            httpGet:
+              path: {{ .Values.livenessProbe.httpGet.path }}
+              port: {{ .Values.config.charonInternalMonitoringPort }}
+        {{- end }}
+        {{- if or .Values.readinessProbe.enabled }}
+          readinessProbe:
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            httpGet:
+              path: {{ .Values.readinessProbe.httpGet.path }}
+              port: {{ .Values.config.charonInternalMonitoringPort }}
+        {{- end }}  
+          volumeMounts:
+            - mountPath: /charon
+              name: cluster-lock
+            # Mount for the shared ENR private key
+            - name: charon-enr-key
+              mountPath: "{{ .Values.charon.config.privateKeyFile }}"
+              subPath: "{{ include "charon.enrSecretDataKey" . }}" # Mount the specific key file, not the whole secret dir
+            - name: charon-data
+              mountPath: /charon-data
+              readOnly: true
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: cluster-lock
+          projected:
+            sources:
+            - secret:
+                name: {{ .Values.secrets.clusterlock }}
+                optional: true
+        # Volume for the shared ENR private key
+        - name: charon-enr-key
+          secret:
+            secretName: {{ include "charon.enrSecretName" . }}
+            items:
+              - key: {{ include "charon.enrSecretDataKey" . }}
+                path: {{ include "charon.enrSecretDataKey" . }} # Ensure the file in the volume has the name of the data key
+        - name: enr-data
+          secret:
+            secretName: {{ include "charon.enrSecretName" . }}
+            items:
+              - key: public-enr
+                path: enr.txt
+        {{- if not .Values.persistence.enabled }}
+        # If persistence is disabled, use an emptyDir for charon-data.
+        # Note: DKG artifacts will be lost if the pod restarts.
+        - name: charon-data
+          emptyDir: {}
+        {{- end }}
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: charon-data
+        {{- with .Values.persistence.annotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      spec:
+        accessModes: {{ .Values.persistence.accessModes | toYaml | nindent 10 }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size | quote }}
+        {{- if .Values.persistence.storageClassName }}
+        {{- if (eq "-" .Values.persistence.storageClassName) }}
+        storageClassName: ""
+        {{- else }}
+        storageClassName: "{{ .Values.persistence.storageClassName }}"
+        {{- end }}
+        {{- end }}
+  {{- end }}
