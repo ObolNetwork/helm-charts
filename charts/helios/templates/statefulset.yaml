@@ -54,11 +54,13 @@ spec:
             {{- if .Values.helios.fallback }}
             - "--fallback"
             - "{{ .Values.helios.fallback }}"
-            {{-end }}
+            {{- end }}
             {{- if .Values.helios.loadExternalFallback }}
             - "--load-external-fallback"
+            {{- end }}
+            {{- if .Values.helios.strictCheckpointAge }}
             - "--strict-checkpoint-age"
-            {{-end }}
+            {{- end }}
             {{- if .Values.helios.rpcPort }}
             - "--rpc-port"
             - "{{ .Values.helios.rpcPort }}"
