@@ -1299,6 +1299,24 @@ entries:
   helios:
   - apiVersion: v2
     appVersion: 0.9.0
+    created: "2025-06-26T17:01:04.092903266Z"
+    description: A Helm chart for Helios - a trustless, efficient, and portable Ethereum
+      light client
+    digest: 807733a22b16cf96836d2b8580d840cf87ba4219547bada06d8320f7aace10da
+    keywords:
+    - ethereum
+    - light-client
+    - blockchain
+    maintainers:
+    - name: DV Labs
+      url: https://dvlabs.tech
+    name: helios
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/helios-0.1.4/helios-0.1.4.tgz
+    version: 0.1.4
+  - apiVersion: v2
+    appVersion: 0.9.0
     created: "2025-06-26T13:52:53.278521555Z"
     description: A Helm chart for Helios - a trustless, efficient, and portable Ethereum
       light client
@@ -1369,4 +1387,4 @@ entries:
     urls:
     - https://github.com/ObolNetwork/helm-charts/releases/download/helios-0.1.0/helios-0.1.0.tgz
     version: 0.1.0
-generated: "2025-06-26T13:52:53.278683779Z"
+generated: "2025-06-26T17:01:04.093054129Z"
