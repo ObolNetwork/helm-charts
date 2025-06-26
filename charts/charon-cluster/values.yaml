@@ -2,24 +2,6 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-erigon:
-  enabled: true
-  extraArgs:
-    - --chain=hoodi
-    - --externalcl
-  persistence:
-    enabled: true
-    size: 200Gi
-    # storageClassName: "your-storage-class" # Uncomment and set if you have a specific storage class
-  # Add any erigon specific default values here if needed in the future
-
-lighthouse:
-  enabled: true
-  extraArgs:
-    - --execution-endpoint=https://hoodi.beaconstate.info
-    - --network=hoodi
-  # Add any lighthouse specific default values here if needed in the future
-
 # -- The number of charon nodes in the cluster. Minimum is 4
 clusterSize: 4
 
@@ -178,7 +160,7 @@ updateStrategy: RollingUpdate
 ## ref: https://docs.obol.tech/docs/charon/charon_cli_reference
 config:
   # -- Comma separated list of one or more beacon node endpoint URLs.
-  beaconNodeEndpoints: "http://localhost:9999" # Placeholder, replace with actual beacon node endpoint
+  beaconNodeEndpoints: ""
   
   # -- Enables the builder api. Will only produce builder blocks. Builder API must also be enabled on the validator client. Beacon node must be connected to a builder-relay to access the builder network.
   builderApi: ""
@@ -252,163 +234,26 @@ config:
   # -- Enables additional synthetic block proposal duties. Used for testing of rare duties.
   syntheticBlockProposals: ""
   
-  # -- Specific internal monitoring port for Charon container to avoid sidecar conflicts.
-  charonInternalMonitoringPort: 3625
-  
   # -- Listening address (ip and port) for validator-facing traffic proxying the beacon-node API. (default "127.0.0.1:3600")
   validatorApiAddress: "0.0.0.0:3600"
 
   # -- If enabled, it will set p2pExternalHostname value to the pod name and enable direct connection between cluster nodes
   directConnectionEnabled: "true"
 
-charon:
-  # -- The Ethereum address of this operator. This MUST be provided by the user.
-  operatorAddress: ""
-  # -- Configuration for the Orchestrator init container
-  # This init container handles polling for signed cluster definitions and will later manage the DKG process.
-  dkgSidecar:
-    enabled: true
-    image:
-      # -- Image repository for the DKG sidecar
-      # For now, using the standard charon image
-      repository: "obolnetwork/charon"
-      tag: "v1.4.2"
-      pullPolicy: "IfNotPresent"
-    # -- Initial delay in seconds before the first retry of a polling cycle.
-    initialRetryDelaySeconds: 10
-    # -- Maximum delay in seconds for exponential backoff between polling cycles.
-    maxRetryDelaySeconds: 300
-    # -- Factor by which the retry delay increases after each polling cycle (e.g., 2 for doubling).
-    retryDelayFactor: 2
-    # -- Delay in seconds between polling retries
-    retryDelaySeconds: 10
-    # -- Page limit for API calls when fetching cluster definitions
-    pageLimit: 10
-    # -- API endpoint for the Obol network to fetch cluster definitions
-    apiEndpoint: "https://api.obol.tech"
-    # -- Resources for the cluster poller init container
-    resources: {}
-     #  requests:
-     #    cpu: 50m
-     #    memory: 64Mi
-     #  limits:
-     #    cpu: 100m
-     #    memory: 128Mi
-    # -- Service account settings for test pods
-    serviceAccount:
-      create: true # Whether to specify the test service account for test pods
-
-  enrJob:
-    # -- Enable or disable the Kubernetes Job that generates/manages the ENR.
-    enabled: true
-
-  # --- Configuration for a single, shared ENR for the entire Charon cluster ---
-  enr:
-    # -- Provide the shared ENR private key directly (hex format, e.g., 0x...). 
-    # If set, 'generate' and 'existingSecret' are ignored.
-    privateKey: ""
-
-    # -- Point to an existing Kubernetes secret that holds the shared ENR private key.
-    # If 'privateKey' above is not set and this 'existingSecret.name' is provided, 'generate' is ignored.
-    existingSecret:
-      name: ""           # Name of the K8s secret (e.g., "my-cluster-enr-secret")
-      dataKey: "private-key" # Key in the secret's 'data' field holding the private key hex string.
-
-    # -- Enable automatic generation of a shared ENR private key.
-    # This is active only if 'privateKey' and 'existingSecret.name' are NOT set.
-    # The generated key will be stored in a secret (e.g., "{{ .Release.Name }}-charon-enr-key") 
-    # with data keys 'private-key' (for the hex key) and 'public-enr' (for the ENR string).
-    generate:
-      enabled: true
-      image:
-        repository: "obolnetwork/charon"
-        # Specify a stable tag, e.g., v1.4.2 or check for latest on Docker Hub
-        tag: "v1.4.2"
-        pullPolicy: "IfNotPresent"
-      # -- Image to use for kubectl operations within the ENR generation job
-      # This image must contain a compatible kubectl binary.
-      kubectlImage:
-        repository: "bitnami/kubectl"
-        tag: "latest" # Or a specific version like "1.27"
-        pullPolicy: "IfNotPresent"
-
-  # --- Charon application internal configuration (translates to CLI flags) ---
-  config:
-    # -- Path within EACH Charon container where the SHARED ENR private key file will be mounted.
-    privateKeyFile: "/data/charon_shared_enr_private_key"
-
-# -- Kubernetes secrets names that might be used as suffixes or for other purposes.
-# For the shared ENR, the secret name is either defined in 'charon.enr.existingSecret.name' 
-# or generated by the ENR job (e.g., {{ .Release.Name }}-charon-enr-key).
-# The 'enrPrivateKey' field below is NOT directly used for the shared ENR secret name in this model.
+# -- Kubernetes secrets names
 secrets:
-  # -- Suffix or name component for validator keys secrets (if applicable, distinct from ENR)
-  validatorKeys: "validator-keys"
-  # -- This field is less relevant for the SHARED ENR model. Retained for other potential uses or legacy compatibility.
-  # For shared ENR, see 'charon.enr' section above.
-  enrPrivateKey: "charon-enr-private-key" # Suffix if per-pod ENRs were used; less relevant now for shared. 
-  # -- Name or suffix for the charon cluster lock secret
+  # -- validators keys
+  validatorKeys: "validators"
+  # -- charon enr private key
+  enrPrivateKey: "charon-enr-private-key"
+  # -- charon cluster lock
   clusterlock: "cluster-lock"
-
-# -- Persistence configuration for DKG artifacts and charon data
-persistence:
-  # -- Enable persistence using a PersistentVolumeClaim.
-  enabled: true
-  # -- Storage class for the PVC. If undefined or null, the default storage class will be used.
-  # storageClassName: "" # e.g., "standard", "gp2"
-  # -- Access modes for the PVC. Must be a list. Default: ["ReadWriteOnce"].
-  accessModes:
-    - ReadWriteOnce
-  # -- Size of the PVC.
-  size: 1Gi
-  # -- Optional: Annotations for the PVC
-  # annotations: {}
-  #   key: value
-
-# -- Node selector for pod assignment
-# Ref: https://kubernetes.io/docs/user-guide/node-selection/
-nodeSelector: {}
-
-# -- Tolerations for pod assignment
-## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
-tolerations: {}
-
-# -- Affinity for pod assignment
-## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
-##
-## Example:
-## affinity:
-##   podAntiAffinity:
-##     requiredDuringSchedulingIgnoredDuringExecution:
-##     - labelSelector:
-##         matchExpressions:
-##         - key: app.kubernetes.io/name
-##           operator: In
-##           values:
-##           - charon
-##       topologyKey: kubernetes.io/hostname
-##
-affinity: {}
-
-# -- Used to assign priority to pods
-## ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/
-priorityClassName: ""
-
-# -- Enable pod disruption budget
-## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb
-podDisruptionBudget:
-  minAvailable: ""
-  enabled: true
-
-# -- allows you to configure and disable automated rolling updates for containers, labels, resource request/limits, and annotations for the Pods in a StatefulSet.
-updateStrategy: RollingUpdate
 
 # -- Prometheus Service Monitor
 ## ref: https://github.com/coreos/prometheus-operator
 serviceMonitor:
   # -- If true, a ServiceMonitor CRD is created for a prometheus operator. https://github.com/coreos/prometheus-operator
-  # TODO: SWITCH BACK TO ON FOR PRODUCTION
-  enabled: false
+  enabled: true
   # -- Path to scrape
   path: /metrics
   # -- Alternative namespace for ServiceMonitor
@@ -454,24 +299,3 @@ centralMonitoring:
   promEndpoint: "https://vm.monitoring.gcp.obol.tech/write"
   # -- The authentication token to the central prometheus
   token: ""
-
-# -- Configuration for running Helm tests.
-# These values are typically only used when `helm test` is run.
-tests:
-  # -- The operator address to use for DKG sidecar tests.
-  # This should be a valid Ethereum address (0x...).
-  dkgSidecar:
-    enabled: true
-    operatorAddress: "0x3D1f0598943239806A251899016EAf4920d4726d"
-    mockApi:
-      port: 3001
-      image:
-        pullPolicy: Always # Or Always, Never as needed
-    # -- Service account settings for test pods
-    serviceAccount:
-      create: true # Whether to specify the test service account for test pods
-    # -- Host network setting for dkgSidecar test pods
-    hostNetwork: false 
-
-# -- Configuration for the DKG Mock API Server used in tests.
-# This is relevant if you are using the mock server deployment included in this chart for testing.

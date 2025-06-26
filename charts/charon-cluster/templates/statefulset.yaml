@@ -2,12 +2,12 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "charon.fullname" . }}
+  name: {{ include "release.name" . }}
   labels:
     {{- include "charon.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.clusterSize }}
-  serviceName: {{ include "charon.fullname" . }}
+  serviceName: {{ include "release.name" . }}
   updateStrategy:
     type: {{ .Values.updateStrategy }}
   selector:
@@ -49,53 +49,9 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       initContainers:
-        - name: dkg-sidecar
-          image: "{{ .Values.charon.dkgSidecar.image.repository }}:{{ .Values.charon.dkgSidecar.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.charon.dkgSidecar.image.pullPolicy }}
-          securityContext:
-            runAsUser: 0
-            runAsGroup: 0
-          command:
-            - "node"
-            - "/app/dkg-sidecar.js"
-            - "{{ .Values.charon.operatorAddress }}"
-            - "/enr-from-job/enr.txt"
-          env:
-            - name: POD_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-            - name: POD_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-            - name: OUTPUT_DEFINITION_FILE
-              value: "/charon-data/cluster-definition.json"
-            - name: API_ENDPOINT
-              value: "{{ .Values.charon.dkgSidecar.apiEndpoint }}"
-            - name: INITIAL_RETRY_INTERVAL_SECONDS
-              value: "{{ .Values.charon.dkgSidecar.initialRetryDelaySeconds }}"
-            - name: MAX_RETRY_INTERVAL_SECONDS
-              value: "{{ .Values.charon.dkgSidecar.maxRetryDelaySeconds }}"
-            - name: BACKOFF_FACTOR
-              value: "{{ .Values.charon.dkgSidecar.retryDelayFactor }}"
-            - name: PAGE_LIMIT
-              value: "{{ .Values.charon.dkgSidecar.pageLimit }}"
-            - name: CHARON_NODE_ID_DIR
-              value: "/charon-data"
-            - name: CHARON_PRIVATE_KEY_FILE
-              value: "/charon-data/charon-enr-private-key"
-          volumeMounts:
-            - name: enr-data
-              mountPath: /enr-from-job
-              readOnly: true
-            - name: charon-data
-              mountPath: /charon-data
-            - name: charon-enr-key
-              mountPath: /charon-data/charon-enr-private-key
-              subPath: "{{ include "charon.enrSecretDataKey" . }}"
-          resources:
-            {{- toYaml .Values.charon.dkgSidecar.resources | nindent 12 }}
+      {{- if .Values.initContainers }}
+        {{- tpl (toYaml .Values.initContainers | nindent 8) $ }}
+      {{- end }}
       containers:
         - command:
             - sh
@@ -103,7 +59,6 @@ spec:
             - >
               exec /usr/local/bin/charon run
               --beacon-node-endpoints={{ .Values.config.beaconNodeEndpoints }}
-              --lock-file=/charon-data/cluster-lock.json
               {{- if .Values.config.builderApi }}
               --builder-api={{ .Values.config.builderApi }}
               {{- end }}
@@ -124,6 +79,9 @@ spec:
               {{- else }}
               --jaeger-service="${NODE_NAME}"
               {{- end }}
+              {{- if .Values.config.LockFile }}
+              --lock-file={{ .Values.config.LockFile }}
+              {{- end }}
               {{- if .Values.config.logFormat }}
               --log-format={{ .Values.config.logFormat }}
               {{- end }}
@@ -139,7 +97,7 @@ spec:
               --loki-service="${NODE_NAME}"
               {{- end }}
               {{- if .Values.config.monitoringAddress }}
-              --monitoring-address=0.0.0.0:{{ .Values.config.charonInternalMonitoringPort }}
+              --monitoring-address={{ .Values.config.monitoringAddress }}
               {{- end }}
               {{- if .Values.config.noVerify }}
               --no-verify={{ .Values.config.noVerify }}
@@ -167,7 +125,7 @@ spec:
               {{- if .Values.config.p2pTcpAddress }}
               --p2p-tcp-address={{ .Values.config.p2pTcpAddress }}
               {{- end }}
-              --private-key-file="{{ .Values.charon.config.privateKeyFile }}"
+              --private-key-file="/charon/${NODE_NAME}/charon-enr-private-key"
               {{- if .Values.config.simnetBeaconMock }}
               --simnet-beacon-mock={{ .Values.config.simnetBeaconMock }}
               {{- end }}
@@ -197,20 +155,13 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          ports:
-            - containerPort: {{ .Values.service.ports.p2pTcp.targetPort }}
-              name: p2p-tcp
-              protocol: TCP
-            - containerPort: {{ .Values.config.charonInternalMonitoringPort }}
-              name: monitoring
-              protocol: TCP
         {{- if or .Values.livenessProbe.enabled }}
           livenessProbe:
             initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
             httpGet:
               path: {{ .Values.livenessProbe.httpGet.path }}
-              port: {{ .Values.config.charonInternalMonitoringPort }}
+              port: {{ .Values.service.ports.monitoring.port }}
         {{- end }}
         {{- if or .Values.readinessProbe.enabled }}
           readinessProbe:
@@ -218,18 +169,15 @@ spec:
             periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
             httpGet:
               path: {{ .Values.readinessProbe.httpGet.path }}
-              port: {{ .Values.config.charonInternalMonitoringPort }}
+              port: {{ .Values.service.ports.monitoring.port }}
         {{- end }}  
           volumeMounts:
             - mountPath: /charon
               name: cluster-lock
-            # Mount for the shared ENR private key
-            - name: charon-enr-key
-              mountPath: "{{ .Values.charon.config.privateKeyFile }}"
-              subPath: "{{ include "charon.enrSecretDataKey" . }}" # Mount the specific key file, not the whole secret dir
-            - name: charon-data
-              mountPath: /charon-data
-              readOnly: true
+            {{- range untilStep 0 (.Values.clusterSize | int) 1 }}
+            - mountPath: /charon/{{$root.Release.Name}}-{{ . }}
+              name: {{$root.Release.Name}}-{{ . }}-private-key
+            {{- end }}
           {{- with .Values.resources }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
@@ -240,44 +188,10 @@ spec:
             sources:
             - secret:
                 name: {{ .Values.secrets.clusterlock }}
-                optional: true
-        # Volume for the shared ENR private key
-        - name: charon-enr-key
-          secret:
-            secretName: {{ include "charon.enrSecretName" . }}
-            items:
-              - key: {{ include "charon.enrSecretDataKey" . }}
-                path: {{ include "charon.enrSecretDataKey" . }} # Ensure the file in the volume has the name of the data key
-        - name: enr-data
-          secret:
-            secretName: {{ include "charon.enrSecretName" . }}
-            items:
-              - key: public-enr
-                path: enr.txt
-        {{- if not .Values.persistence.enabled }}
-        # If persistence is disabled, use an emptyDir for charon-data.
-        # Note: DKG artifacts will be lost if the pod restarts.
-        - name: charon-data
-          emptyDir: {}
+        {{- range untilStep 0 (.Values.clusterSize | int) 1 }}
+        - name: {{$root.Release.Name}}-{{ . }}-private-key
+          projected:
+            sources:
+            - secret:
+                name: {{$root.Release.Name}}-{{ . }}-{{$root.Values.secrets.enrPrivateKey}}
         {{- end }}
-  {{- if .Values.persistence.enabled }}
-  volumeClaimTemplates:
-    - metadata:
-        name: charon-data
-        {{- with .Values.persistence.annotations }}
-        annotations:
-          {{- toYaml . | nindent 10 }}
-        {{- end }}
-      spec:
-        accessModes: {{ .Values.persistence.accessModes | toYaml | nindent 10 }}
-        resources:
-          requests:
-            storage: {{ .Values.persistence.size | quote }}
-        {{- if .Values.persistence.storageClassName }}
-        {{- if (eq "-" .Values.persistence.storageClassName) }}
-        storageClassName: ""
-        {{- else }}
-        storageClassName: "{{ .Values.persistence.storageClassName }}"
-        {{- end }}
-        {{- end }}
-  {{- end }}

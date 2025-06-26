@@ -67,38 +67,3 @@ Create the name of the service account to use
 {{- default .Release.Name }}
 {{- end }}
 {{- end }}
-
-{{/*
-Determine the name of the shared ENR secret.
-This secret holds the single ENR private key for the entire cluster.
-Logic:
-1. If .Values.charon.enr.privateKey is set, the ENR job creates a predictable secret.
-2. Else if .Values.charon.enr.existingSecret.name is set, use that.
-3. Else if .Values.charon.enr.generate.enabled is true, the ENR job creates a predictable secret.
-4. Fallback to the predictable secret name (though hook conditions should prevent needing this directly for non-generation scenarios).
-*/}}
-{{- define "charon.enrSecretName" -}}
-{{- if or .Values.charon.enr.privateKey .Values.charon.enr.generate.enabled (not .Values.charon.enr.existingSecret.name) -}}
-{{- printf "%s-enr-key" (include "charon.fullname" .) -}}
-{{- else if .Values.charon.enr.existingSecret.name -}}
-{{- .Values.charon.enr.existingSecret.name -}}
-{{- end -}}
-{{- end -}}
-
-{{/*
-Return the data key for the ENR private key within the shared secret.
-*/}}
-{{- define "charon.enrSecretDataKey" -}}
-{{- .Values.charon.enr.existingSecret.dataKey | default "private-key" -}}
-{{- end -}}
-
-{{/*
-Create the name of the service account to use for tests
-*/}}
-{{- define "charon.serviceAccountNameTest" -}}
-{{- if and (.Values.serviceAccount.enabled) (.Values.serviceAccount.nameTest) }}
-{{- default .Values.serviceAccount.nameTest }}
-{{- else }}
-{{- printf "%s-test" (include "charon.fullname" .) }}
-{{- end -}}
-{{- end -}}
