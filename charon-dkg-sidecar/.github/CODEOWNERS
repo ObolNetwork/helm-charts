@@ -1,0 +1,16 @@
+# Default owners for everything in the repo
+* @ObolNetwork/devops @ObolNetwork/engineering
+
+# Docker and CI/CD related files
+Dockerfile @ObolNetwork/devops
+.dockerignore @ObolNetwork/devops
+.github/workflows/ @ObolNetwork/devops
+
+# TypeScript source code
+src/ @ObolNetwork/engineering
+*.ts @ObolNetwork/engineering
+*.js @ObolNetwork/engineering
+
+# Documentation
+*.md @ObolNetwork/engineering @ObolNetwork/devops
+LICENSE @ObolNetwork/legal
