@@ -1,0 +1,44 @@
+# Test values for charon-cluster
+charon:
+  # Test operator address - must match OPERATOR_A_ADDRESS in mock API
+  operatorAddress: "0x3D1f0598943239806A251899016EAf4920d4726d"
+  
+  # DKG sidecar configuration
+  dkgSidecar:
+    enabled: true
+    apiEndpoint: "http://test-charon-cluster-dkg-mock-api-service:3001"  # Point to mock API service
+    image:
+      repository: "charon-dkg-sidecar"
+      tag: "latest"
+      pullPolicy: "Never"  # Use Never since we're using a locally loaded image
+    # Faster polling for tests
+    initialRetryDelaySeconds: 2
+    maxRetryDelaySeconds: 10
+    retryDelayFactor: 2
+
+# Reduce cluster size for testing
+clusterSize: 2
+
+# Disable persistence for testing
+persistence:
+  enabled: false
+
+# Disable external dependencies for testing
+erigon:
+  enabled: false
+lighthouse:
+  enabled: false
+
+# Use a test beacon endpoint
+config:
+  beaconNodeEndpoints: "http://test-beacon:5052"
+
+# Test configuration
+tests:
+  dkgSidecar:
+    enabled: true
+    operatorAddress: "0x3D1f0598943239806A251899016EAf4920d4726d"
+    mockApi:
+      port: 3001
+      image:
+        pullPolicy: "Never"  # Use locally loaded image

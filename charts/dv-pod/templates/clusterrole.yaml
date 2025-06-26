@@ -1,0 +1,10 @@
+{{- if .Values.rbac.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "charon.serviceAccountName" . }}
+  labels:
+    {{- include "charon.labels" . | nindent 4 }}
+rules:
+{{- toYaml .Values.rbac.clusterRules | nindent 0 }}
+{{- end }}
