@@ -1,6 +1,6 @@
 # helios
 
-![Version: 0.1.2](https://img.shields.io/badge/Version-0.1.2-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.8.8](https://img.shields.io/badge/AppVersion-0.8.8-informational?style=flat-square)
+![Version: 0.1.3](https://img.shields.io/badge/Version-0.1.3-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.9.0](https://img.shields.io/badge/AppVersion-0.9.0-informational?style=flat-square)
 
 A Helm chart for Helios - a trustless, efficient, and portable Ethereum light client
 
@@ -8,7 +8,7 @@ A Helm chart for Helios - a trustless, efficient, and portable Ethereum light cl
 
 | Name | Email | Url |
 | ---- | ------ | --- |
-| obol-tech |  | <https://github.com/obol-tech> |
+| DV Labs |  | <https://dvlabs.tech> |
 
 ## Values
 
@@ -33,7 +33,7 @@ A Helm chart for Helios - a trustless, efficient, and portable Ethereum light cl
 | helios.strictCheckpointAge | bool | `false` |  |
 | image.pullPolicy | string | `"IfNotPresent"` |  |
 | image.repository | string | `"obolnetwork/helios"` |  |
-| image.tag | string | `"96f51e7"` |  |
+| image.tag | string | `"e10e753"` |  |
 | imagePullSecrets | list | `[]` |  |
 | ingress.annotations | object | `{}` |  |
 | ingress.className | string | `""` |  |
