@@ -30,7 +30,7 @@ spec:
         {{- include "dv-pod.labels" . | nindent 8 }}
     spec:
       {{- if .Values.tests.dkgSidecar.serviceAccount.create }}
-      serviceAccountName: {{ template "charon.serviceAccountNameTest" . }}
+      serviceAccountName: {{ template "dv-pod.serviceAccountNameTest" . }}
       {{- end }}
       containers:
         - name: dkg-mock-api

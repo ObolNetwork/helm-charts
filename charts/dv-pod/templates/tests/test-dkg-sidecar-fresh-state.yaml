@@ -9,8 +9,8 @@ metadata:
     "helm.sh/hook-delete-policy": hook-succeeded # Delete only on success
     "helm.sh/hook-weight": "0" # Run before other tests if needed
   labels:
-    app.kubernetes.io/name: {{ template "charon.name" . }}
-    helm.sh/chart: {{ template "charon.chart" . }}
+    app.kubernetes.io/name: {{ template "dv-pod.name" . }}
+    helm.sh/chart: {{ template "dv-pod.chart" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     app.kubernetes.io/component: test
@@ -18,7 +18,7 @@ metadata:
 spec:
   hostNetwork: {{ .Values.tests.dkgSidecar.hostNetwork }}
   {{- if .Values.tests.dkgSidecar.serviceAccount.create }}
-  serviceAccountName: {{ template "charon.serviceAccountNameTest" . }}
+  serviceAccountName: {{ template "dv-pod.serviceAccountNameTest" . }}
   {{- end }}
   restartPolicy: Never
   initContainers:
@@ -36,7 +36,7 @@ spec:
         - name: PUBLIC_ENR
           valueFrom:
             secretKeyRef:
-              name: {{ template "charon.enrSecretName" . }}
+              name: {{ template "dv-pod.enrSecretName" . }}
               key: public-enr
       volumeMounts:
         - name: enr-from-job
