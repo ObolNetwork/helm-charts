@@ -2,6 +2,19 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+erigon:
+  enabled: true
+  extraArgs:
+    - --chain=hoodi
+  # Add any erigon specific default values here if needed in the future
+
+lighthouse:
+  enabled: true
+  extraArgs:
+    - --execution-endpoint=http://test-charon-cluster-erigon:8551
+    - --network=hoodi
+  # Add any lighthouse specific default values here if needed in the future
+
 # -- The number of charon nodes in the cluster. Minimum is 4
 clusterSize: 4
 
