@@ -2,7 +2,23 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-# -- External services configuration (these are NOT managed by this chart)
+# Sub-chart configurations for execution and consensus layers
+erigon:
+  enabled: true
+  extraArgs:
+    - --chain=hoodi
+    - --beacon.api=beacon,builder,config,debug,node,validator,lighthouse
+  persistence:
+    enabled: true
+    size: 200Gi
+    # storageClassName: "your-storage-class" # Uncomment and set if you have a specific storage class
+  # Add any erigon specific default values here if needed in the future
+
+teku:
+  enabled: false
+  # Add any teku specific default values here if needed in the future
+
+# -- External services configuration (used when sub-charts are disabled)
 externalServices:
   # -- Execution layer endpoint URL (e.g., your Ethereum execution client)
   executionEndpoint: ""

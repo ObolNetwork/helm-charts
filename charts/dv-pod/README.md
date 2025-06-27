@@ -12,15 +12,20 @@ This chart deploys a single distributed validator (DV) pod that runs:
 - **Charon**: Distributed validator middleware that enables multiple operators to run a validator together
 - **Validator Client**: Your choice of Ethereum validator client (Lighthouse, Teku, Prysm, Nimbus, or Lodestar)
 
-The DV pod connects to external Ethereum execution and consensus layer endpoints, which are NOT managed by this chart.
+The chart can optionally deploy:
+- **Erigon**: Ethereum execution layer client (enabled by default for Hoodi testnet)
+- **Teku**: Ethereum consensus layer client (disabled by default)
+
+Or you can disable these and use external Ethereum execution and consensus layer endpoints.
 
 ## Prerequisites
 
 - Kubernetes 1.19+
 - Helm 3.0+
-- External Ethereum execution layer endpoint (e.g., Geth, Erigon, Besu)
-- External Ethereum consensus layer endpoint (e.g., Lighthouse, Teku, Prysm beacon node)
 - An operator address registered with the Obol Network
+- Either:
+  - Sufficient resources to run embedded Erigon/Teku (if enabled)
+  - OR external Ethereum execution and consensus layer endpoints
 
 ## Installation
 
@@ -47,7 +52,20 @@ helm install my-dv-pod obol/dv-pod \
 
 ### Key Configuration Options
 
-#### External Services
+#### Embedded Clients
+```yaml
+# Erigon (execution layer) - enabled by default
+erigon:
+  enabled: true
+  extraArgs:
+    - --chain=hoodi  # Default testnet
+
+# Teku (consensus layer) - disabled by default
+teku:
+  enabled: false
+```
+
+#### External Services (when embedded clients are disabled)
 ```yaml
 externalServices:
   executionEndpoint: ""  # Optional: execution layer endpoint
