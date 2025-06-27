@@ -63,4 +63,4 @@ Your Obol Charon cluster node "{{ template "charon.fullname" . }}" has been depl
 For troubleshooting and more details, refer to the Obol Network documentation: https://docs.obol.tech/
 {{- end -}}
 
-{{- include "charon.clusterNotes" . }}
+{{- include "dv-pod.clusterNotes" . }}

@@ -4,7 +4,7 @@ metadata:
   name: {{ template "charon.serviceAccountNameTest" . }}
   namespace: "{{ .Release.Namespace }}"
   labels:
-    {{- include "charon.labels" . | nindent 4 }}
+    {{- include "dv-pod.labels" . | nindent 4 }}
     app.kubernetes.io/component: test-rbac
   annotations:
     "helm.sh/hook": test
@@ -17,7 +17,7 @@ metadata:
   name: {{ template "charon.serviceAccountNameTest" . }}-role
   namespace: "{{ .Release.Namespace }}"
   labels:
-    {{- include "charon.labels" . | nindent 4 }}
+    {{- include "dv-pod.labels" . | nindent 4 }}
     app.kubernetes.io/component: test-rbac
   annotations:
     "helm.sh/hook": test
@@ -43,7 +43,7 @@ metadata:
   name: {{ template "charon.serviceAccountNameTest" . }}-rb
   namespace: "{{ .Release.Namespace }}"
   labels:
-    {{- include "charon.labels" . | nindent 4 }}
+    {{- include "dv-pod.labels" . | nindent 4 }}
     app.kubernetes.io/component: test-rbac
   annotations:
     "helm.sh/hook": test

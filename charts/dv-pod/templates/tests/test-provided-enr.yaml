@@ -14,7 +14,7 @@ metadata:
     "helm.sh/hook": test
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
   labels:
-    {{- include "charon.labels" . | nindent 4 }}
+    {{- include "dv-pod.labels" . | nindent 4 }}
     app.kubernetes.io/component: test
 spec:
   serviceAccountName: {{ template "charon.serviceAccountNameTest" . }}
