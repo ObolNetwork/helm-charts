@@ -2,16 +2,16 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: {{ template "charon.fullname" . }}-test-default-enr-v2
+  name: {{ template "dv-pod.fullname" . }}-test-default-enr-v2
   namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": test
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
   labels:
-    {{- include "charon.labels" . | nindent 4 }}
+    {{- include "dv-pod.labels" . | nindent 4 }}
     app.kubernetes.io/component: test
 spec:
-  serviceAccountName: {{ template "charon.serviceAccountNameTest" . }}
+  serviceAccountName: {{ template "dv-pod.serviceAccountNameTest" . }}
   restartPolicy: Never
   containers:
     - name: test-enr-job-completion
@@ -21,7 +21,7 @@ spec:
         - -ec
         - |
           echo "INFO: Checking ENR generation job status (default generation)..."
-          JOB_NAME="{{ template "charon.fullname" . }}-enr-job"
+          JOB_NAME="{{ template "dv-pod.fullname" . }}-enr-job"
           # Wait for job to complete or fail, fail script if job fails
           if ! kubectl wait --for=condition=complete job/$JOB_NAME --timeout=120s -n {{ .Release.Namespace }}; then
             echo "ERROR: Job $JOB_NAME did not complete successfully within timeout."
@@ -38,7 +38,7 @@ spec:
         - |
           echo "INFO: Checking ENR secret existence and content (default generation)..."
           # This test ALWAYS checks for the default generated secret name
-          SECRET_NAME="{{ template "charon.enrSecretName" . }}"
+          SECRET_NAME="{{ template "dv-pod.enrSecretName" . }}"
 
           if ! kubectl get secret $SECRET_NAME -n {{ .Release.Namespace }} >/dev/null 2>&1; then
             echo "ERROR: Secret $SECRET_NAME not found"
