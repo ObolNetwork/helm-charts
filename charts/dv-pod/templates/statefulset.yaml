@@ -289,6 +289,7 @@ spec:
             - --datadir=/validator-data
             - --monitoring-host=0.0.0.0
             - --monitoring-port=5064
+            - --distributed
             {{- range .Values.validatorClient.config.extraArgs }}
             - {{ . }}
             {{- end }}
