@@ -1,9 +1,10 @@
-# Default values for charon cluster.
+# Default values for dv-pod.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+# Sub-chart configurations for execution and consensus layers
 erigon:
-  enabled: true
+  enabled: false
   extraArgs:
     - --chain=hoodi
     - --beacon.api=beacon,builder,config,debug,node,validator,lighthouse
@@ -16,6 +17,38 @@ erigon:
 teku:
   enabled: false
   # Add any teku specific default values here if needed in the future
+
+
+# -- Validator client configuration
+validatorClient:
+  # -- Enable the validator client container
+  enabled: true
+  # -- Type of validator client to use
+  # Options: lighthouse, teku, nimbus, lodestar
+  type: "lighthouse"
+  
+  # -- Image configuration for validator client
+  image:
+    # Repository will be set based on the type selected
+    repository: ""
+    tag: ""
+    pullPolicy: IfNotPresent
+  
+  # -- Validator client specific configuration
+  config:
+    # -- Graffiti to include in proposed blocks
+    graffiti: "DV-Pod"
+    # -- Additional CLI arguments for the validator client
+    extraArgs: []
+  
+  # -- Resource limits and requests for validator client
+  resources: {}
+    # limits:
+    #   cpu: 1000m
+    #   memory: 2Gi
+    # requests:
+    #   cpu: 500m
+    #   memory: 1Gi
 
 # -- Charon image repository, pull policy, and tag version
 image:
@@ -168,8 +201,7 @@ updateStrategy: RollingUpdate
 ## Charon command line options
 ## ref: https://docs.obol.tech/docs/charon/charon_cli_reference
 config:
-  # -- Comma separated list of one or more beacon node endpoint URLs.
-  beaconNodeEndpoints: "http://localhost:9999" # Placeholder, replace with actual beacon node endpoint
+  # -- This value is deprecated. Use externalServices.consensusEndpoint instead.
   
   # -- Enables the builder api. Will only produce builder blocks. Builder API must also be enabled on the validator client. Beacon node must be connected to a builder-relay to access the builder network.
   builderApi: ""
@@ -231,17 +263,6 @@ config:
   # -- Comma-separated list of listening TCP addresses (ip and port) for libP2P traffic. Empty default doesn't bind to local port therefore only supports outgoing connections.
   p2pTcpAddress: "0.0.0.0:3610"
 
-  # -- Enables an internal mock beacon node for running a simnet.
-  simnetBeaconMock: ""
-  
-  # -- The directory containing the simnet validator key shares. (default ".charon/validator_keys")
-  simnetValidatorKeysDir: ""
-  
-  # -- Enables an internal mock validator client when running a simnet. Requires simnet-beacon-mock.
-  simnetValidatorMock: ""
-
-  # -- Enables additional synthetic block proposal duties. Used for testing of rare duties.
-  syntheticBlockProposals: ""
   
   # -- Specific internal monitoring port for Charon container to avoid sidecar conflicts.
   charonInternalMonitoringPort: 3625
@@ -254,16 +275,45 @@ config:
 
 charon:
   # -- The Ethereum address of this operator. This MUST be provided by the user.
-  operatorAddress: ""
-  # -- Configuration for the Orchestrator init container
-  # This init container handles polling for signed cluster definitions and will later manage the DKG process.
+  operatorAddress: ""  # Required - set your operator address here
+  
+  # -- External services configuration (used when sub-charts are disabled)
+  externalServices:
+    # -- Execution layer endpoint URL (e.g., your Ethereum execution client)
+    executionEndpoint: ""
+    # -- Consensus layer endpoint URL (e.g., your beacon node)
+    # This will be used by both Charon and the validator client
+    consensusEndpoint: "http://beacon-node:5052"
+    # -- Fallback consensus layer endpoints (optional)
+    # These will be used if the primary consensusEndpoint is unavailable
+    fallbackConsensusEndpoints: []
+    # Example:
+    # - "http://backup-beacon-1:5052"
+    # - "http://backup-beacon-2:5052"
+  # -- Configuration for the DKG Sidecar init container
+  # This init container orchestrates the Distributed Key Generation (DKG) process for Charon clusters.
+  #
+  # The sidecar has three operating modes:
+  # 1. If cluster-lock.json exists: Exits immediately (cluster already initialized)
+  # 2. If cluster-definition.json exists: Attempts DKG with the existing definition
+  # 3. If neither exists: Polls the Obol API for cluster invites and runs DKG when ready
+  #
+  # To provide a pre-existing cluster-lock and skip DKG:
+  # 1. Create a secret: kubectl create secret generic cluster-lock --from-file=cluster-lock.json
+  # 2. The sidecar will detect the lock file and exit, allowing Charon to start immediately
+  #
+  # To provide a cluster-definition without running DKG through the API:
+  # 1. Mount your cluster-definition.json in /charon-data/
+  # 2. The sidecar will run 'charon dkg' to generate the cluster-lock.json
+  #
+  # Note: When providing a pre-existing cluster-lock.json, you must also ensure
+  # the associated validator keys are available in the charon-data volume.
   dkgSidecar:
     enabled: true
     image:
       # -- Image repository for the DKG sidecar
-      # For now, using the standard charon image
-      repository: "obolnetwork/charon"
-      tag: "v1.4.2"
+      repository: "ghcr.io/obolnetwork/charon-dkg-sidecar"
+      tag: "v1.0.0"
       pullPolicy: "IfNotPresent"
     # -- Initial delay in seconds before the first retry of a polling cycle.
     initialRetryDelaySeconds: 10
@@ -293,21 +343,21 @@ charon:
     # -- Enable or disable the Kubernetes Job that generates/manages the ENR.
     enabled: true
 
-  # --- Configuration for a single, shared ENR for the entire Charon cluster ---
+  # --- Configuration for ENR management ---
   enr:
-    # -- Provide the shared ENR private key directly (hex format, e.g., 0x...). 
+    # -- Provide the ENR private key directly (hex format, e.g., 0x...). 
     # If set, 'generate' and 'existingSecret' are ignored.
     privateKey: ""
 
-    # -- Point to an existing Kubernetes secret that holds the shared ENR private key.
+    # -- Point to an existing Kubernetes secret that holds the ENR private key.
     # If 'privateKey' above is not set and this 'existingSecret.name' is provided, 'generate' is ignored.
     existingSecret:
-      name: ""           # Name of the K8s secret (e.g., "my-cluster-enr-secret")
+      name: ""           # Name of the K8s secret (e.g., "my-dv-pod-enr-secret")
       dataKey: "private-key" # Key in the secret's 'data' field holding the private key hex string.
 
-    # -- Enable automatic generation of a shared ENR private key.
+    # -- Enable automatic generation of an ENR private key.
     # This is active only if 'privateKey' and 'existingSecret.name' are NOT set.
-    # The generated key will be stored in a secret (e.g., "{{ .Release.Name }}-charon-enr-key") 
+    # The generated key will be stored in a secret (e.g., "{{ .Release.Name }}-dv-pod-enr-key") 
     # with data keys 'private-key' (for the hex key) and 'public-enr' (for the ENR string).
     generate:
       enabled: true
@@ -325,20 +375,19 @@ charon:
 
   # --- Charon application internal configuration (translates to CLI flags) ---
   config:
-    # -- Path within EACH Charon container where the SHARED ENR private key file will be mounted.
-    privateKeyFile: "/data/charon_shared_enr_private_key"
+    # -- Path within the Charon container where the ENR private key file will be mounted.
+    privateKeyFile: "/data/charon-enr-private-key"
 
 # -- Kubernetes secrets names that might be used as suffixes or for other purposes.
-# For the shared ENR, the secret name is either defined in 'charon.enr.existingSecret.name' 
-# or generated by the ENR job (e.g., {{ .Release.Name }}-charon-enr-key).
-# The 'enrPrivateKey' field below is NOT directly used for the shared ENR secret name in this model.
+# For the ENR, the secret name is either defined in 'charon.enr.existingSecret.name' 
+# or generated by the ENR job (e.g., {{ .Release.Name }}-dv-pod-enr-key).
 secrets:
-  # -- Suffix or name component for validator keys secrets (if applicable, distinct from ENR)
-  validatorKeys: "validator-keys"
-  # -- This field is less relevant for the SHARED ENR model. Retained for other potential uses or legacy compatibility.
-  # For shared ENR, see 'charon.enr' section above.
-  enrPrivateKey: "charon-enr-private-key" # Suffix if per-pod ENRs were used; less relevant now for shared. 
+  # -- Suffix for ENR private key secret (used internally by templates)
+  enrPrivateKey: "charon-enr-private-key"
   # -- Name or suffix for the charon cluster lock secret
+  # To skip the DKG process entirely, create a Kubernetes secret containing your cluster-lock.json:
+  # kubectl create secret generic cluster-lock --from-file=cluster-lock.json
+  # The DKG sidecar will detect this file and exit immediately, allowing Charon to start with the existing lock.
   clusterlock: "cluster-lock"
 
 # -- Persistence configuration for DKG artifacts and charon data

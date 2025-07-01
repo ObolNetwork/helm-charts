@@ -2,16 +2,16 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "charon.fullname" . }}
+  name: {{ include "dv-pod.fullname" . }}
   labels:
-    {{- include "charon.labels" . | nindent 4 }}
+    {{- include "dv-pod.labels" . | nindent 4 }}
 spec:
-  serviceName: {{ include "charon.fullname" . }}
+  serviceName: {{ include "dv-pod.fullname" . }}
   updateStrategy:
     type: {{ .Values.updateStrategy }}
   selector:
     matchLabels:
-      {{- include "charon.selectorLabels" . | nindent 6 }}
+      {{- include "dv-pod.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -19,14 +19,14 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "charon.selectorLabels" . | nindent 8 }}
+        {{- include "dv-pod.selectorLabels" . | nindent 8 }}
     spec:
       {{- with concat .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- if or .Values.serviceAccount.enabled }}
-      serviceAccountName: {{ include "charon.serviceAccountName" . }}
+      serviceAccountName: {{ include "dv-pod.serviceAccountName" . }}
       {{- end }}
       {{- if .Values.priorityClassName }}
       priorityClassName: {{ .Values.priorityClassName | quote }}
@@ -48,15 +48,24 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       initContainers:
+        # DKG Sidecar Init Container
+        # This container orchestrates the Distributed Key Generation (DKG) process for Charon clusters.
+        # 
+        # Behavior:
+        # 1. If /charon-data/cluster-lock.json exists: Exits immediately (cluster already initialized)
+        # 2. If /charon-data/cluster-definition.json exists but no cluster-lock.json: Runs DKG with existing definition
+        # 3. If neither exists: Polls Obol API for cluster invites and runs DKG when ready
+        #
+        # To skip this container entirely:
+        # - Create a secret with your cluster-lock.json and reference it in values.yaml
+        # - The container will detect the existing lock file and exit gracefully
         - name: dkg-sidecar
           image: "{{ .Values.charon.dkgSidecar.image.repository }}:{{ .Values.charon.dkgSidecar.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.charon.dkgSidecar.image.pullPolicy }}
           securityContext:
             runAsUser: 0
             runAsGroup: 0
-          command:
-            - "node"
-            - "/app/dkg-sidecar.js"
+          args:
             - "{{ .Values.charon.operatorAddress }}"
             - "/enr-from-job/enr.txt"
           env:
@@ -90,9 +99,16 @@ spec:
               readOnly: true
             - name: charon-data
               mountPath: /charon-data
+            {{- if .Values.secrets.clusterlock }}
+            # Mount pre-existing cluster-lock if provided
+            - name: cluster-lock
+              mountPath: /charon-data/cluster-lock.json
+              subPath: cluster-lock.json
+              readOnly: true
+            {{- end }}
             - name: charon-enr-key
               mountPath: /charon-data/charon-enr-private-key
-              subPath: "{{ include "charon.enrSecretDataKey" . }}"
+              subPath: "{{ include "dv-pod.enrSecretDataKey" . }}"
           resources:
             {{- toYaml .Values.charon.dkgSidecar.resources | nindent 12 }}
       containers:
@@ -101,7 +117,7 @@ spec:
             - -ac
             - >
               exec /usr/local/bin/charon run
-              --beacon-node-endpoints={{ .Values.config.beaconNodeEndpoints }}
+              --beacon-node-endpoints={{ .Values.config.beaconNodeEndpoints | default (include "dv-pod.beaconNodeEndpoints" .) }}
               --lock-file=/charon-data/cluster-lock.json
               {{- if .Values.config.builderApi }}
               --builder-api={{ .Values.config.builderApi }}
@@ -167,15 +183,6 @@ spec:
               --p2p-tcp-address={{ .Values.config.p2pTcpAddress }}
               {{- end }}
               --private-key-file="{{ .Values.charon.config.privateKeyFile }}"
-              {{- if .Values.config.simnetBeaconMock }}
-              --simnet-beacon-mock={{ .Values.config.simnetBeaconMock }}
-              {{- end }}
-              {{- if .Values.config.simnetValidatorKeysDir }}
-              --simnet-validator-keys-dir={{ .Values.config.simnetValidatorKeysDir }}
-              {{- end }}
-              {{- if .Values.config.simnetValidatorMock }}
-              --simnet-validator-mock={{ .Values.config.simnetValidatorMock }}
-              {{- end }}
               {{- if .Values.config.syntheticBlockProposals }}
               --synthetic-block-proposals={{ .Values.config.syntheticBlockProposals }}
               {{- end }}
@@ -220,12 +227,17 @@ spec:
               port: {{ .Values.config.charonInternalMonitoringPort }}
         {{- end }}  
           volumeMounts:
-            - mountPath: /charon
-              name: cluster-lock
+            {{- if .Values.secrets.clusterlock }}
+            # Mount cluster-lock secret if provided
+            - name: cluster-lock
+              mountPath: /charon-data/cluster-lock.json
+              subPath: cluster-lock.json
+              readOnly: true
+            {{- end }}
             # Mount for the shared ENR private key
             - name: charon-enr-key
               mountPath: "{{ .Values.charon.config.privateKeyFile }}"
-              subPath: "{{ include "charon.enrSecretDataKey" . }}" # Mount the specific key file, not the whole secret dir
+              subPath: "{{ include "dv-pod.enrSecretDataKey" . }}" # Mount the specific key file, not the whole secret dir
             - name: charon-data
               mountPath: /charon-data
               readOnly: true
@@ -233,6 +245,105 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- end }}
+        {{- if .Values.validatorClient.enabled }}
+        # Validator Client Container
+        - name: validator-client
+          {{- if eq .Values.validatorClient.type "lighthouse" }}
+          image: {{ .Values.validatorClient.image.repository | default "sigp/lighthouse" }}:{{ .Values.validatorClient.image.tag | default "v7.0.1" }}
+          command:
+            - lighthouse
+            - validator_client
+            - --beacon-nodes=http://localhost:3600
+            - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
+            - --datadir=/validator-data
+            - --init-slashing-protection
+            - --metrics
+            - --metrics-address=0.0.0.0
+            - --metrics-port=5064
+            - --distributed
+            {{- range .Values.validatorClient.config.extraArgs }}
+            - {{ . }}
+            {{- end }}
+          {{- else if eq .Values.validatorClient.type "teku" }}
+          image: {{ .Values.validatorClient.image.repository | default "consensys/teku" }}:{{ .Values.validatorClient.image.tag | default "25.6.0" }}
+          command:
+            - /opt/teku/bin/teku
+            - validator-client
+            - --network={{ .Values.validatorClient.config.network | default "auto" }}
+            - --beacon-node-api-endpoint=http://localhost:3600
+            - --validators-graffiti={{ .Values.validatorClient.config.graffiti | quote }}
+            - --data-path=/validator-data
+            - --metrics-enabled=true
+            - --metrics-host=0.0.0.0
+            - --metrics-port=5064
+            - --Xobol-dvt-integration-enabled=true
+            {{- range .Values.validatorClient.config.extraArgs }}
+            - {{ . }}
+            {{- end }}
+          {{- else if eq .Values.validatorClient.type "prysm" }}
+          image: {{ .Values.validatorClient.image.repository | default "gcr.io/prysmaticlabs/prysm/validator" }}:{{ .Values.validatorClient.image.tag | default "v5.1.2" }}
+          command:
+            - /app/cmd/validator/validator
+            - --beacon-rpc-provider=localhost:3600
+            - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
+            - --datadir=/validator-data
+            - --monitoring-host=0.0.0.0
+            - --monitoring-port=5064
+            {{- range .Values.validatorClient.config.extraArgs }}
+            - {{ . }}
+            {{- end }}
+          {{- else if eq .Values.validatorClient.type "nimbus" }}
+          image: {{ .Values.validatorClient.image.repository | default "statusim/nimbus-eth2" }}:{{ .Values.validatorClient.image.tag | default "multiarch-v25.6.0" }}
+          command:
+            - /home/user/nimbus-eth2/build/nimbus_validator_client
+            - --beacon-node=http://localhost:3600
+            - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
+            - --data-dir=/validator-data
+            - --metrics
+            - --metrics-address=0.0.0.0
+            - --metrics-port=5064
+            - --distributed
+            {{- range .Values.validatorClient.config.extraArgs }}
+            - {{ . }}
+            {{- end }}
+          {{- else if eq .Values.validatorClient.type "lodestar" }}
+          image: {{ .Values.validatorClient.image.repository | default "chainsafe/lodestar" }}:{{ .Values.validatorClient.image.tag | default "v1.31.0" }}
+          command:
+            - node
+            - /usr/app/packages/cli/bin/lodestar
+            - validator
+            - --beacon-nodes=http://localhost:3600
+            - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
+            - --dataDir=/validator-data
+            - --metrics=true
+            - --metrics.address=0.0.0.0
+            - --metrics.port=5064
+            - --distributed
+            {{- range .Values.validatorClient.config.extraArgs }}
+            - {{ . }}
+            {{- end }}
+          {{- end }}
+          imagePullPolicy: {{ .Values.validatorClient.image.pullPolicy }}
+          ports:
+            - containerPort: 5064
+              name: vc-metrics
+              protocol: TCP
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          volumeMounts:
+            - name: charon-data
+              mountPath: /charon-data
+              readOnly: true
+            - name: validator-data
+              mountPath: /validator-data
+          {{- with .Values.validatorClient.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        {{- end }}
       volumes:
         - name: cluster-lock
           projected:
@@ -243,13 +354,13 @@ spec:
         # Volume for the shared ENR private key
         - name: charon-enr-key
           secret:
-            secretName: {{ include "charon.enrSecretName" . }}
+            secretName: {{ include "dv-pod.enrSecretName" . }}
             items:
-              - key: {{ include "charon.enrSecretDataKey" . }}
-                path: {{ include "charon.enrSecretDataKey" . }} # Ensure the file in the volume has the name of the data key
+              - key: {{ include "dv-pod.enrSecretDataKey" . }}
+                path: {{ include "dv-pod.enrSecretDataKey" . }} # Ensure the file in the volume has the name of the data key
         - name: enr-data
           secret:
-            secretName: {{ include "charon.enrSecretName" . }}
+            secretName: {{ include "dv-pod.enrSecretName" . }}
             items:
               - key: public-enr
                 path: enr.txt
@@ -259,6 +370,9 @@ spec:
         - name: charon-data
           emptyDir: {}
         {{- end }}
+        # Volume for validator client data (uses emptyDir as validator keys are loaded from charon-data)
+        - name: validator-data
+          emptyDir: {}
   {{- if .Values.persistence.enabled }}
   volumeClaimTemplates:
     - metadata:

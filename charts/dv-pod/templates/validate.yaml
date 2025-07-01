@@ -1,10 +1,7 @@
-{{- if not .Values.config.beaconNodeEndpoints }}
-{{- fail ".Values.config.beaconNodeEndpoints is required" }}
+{{- if and (not .Values.config.beaconNodeEndpoints) (not .Values.charon.externalServices.consensusEndpoint) }}
+{{- fail "Either .Values.config.beaconNodeEndpoints or .Values.charon.externalServices.consensusEndpoint is required" }}
 {{- end }}
 
-{{- if not .Values.secrets.validatorKeys }}
-{{- fail ".Values.secrets.validatorKeys is required" }}
-{{- end }}
 
 {{- if not .Values.secrets.enrPrivateKey }}
 {{- fail ".Values.secrets.enrPrivateKey is required" }}
@@ -14,8 +11,8 @@
 {{- fail ".Values.secrets.clusterlock is required" }}
 {{- end }}
 
-{{- if not .Values.clusterThreshold }}
-{{- fail ".Values.clusterThreshold is required" }}
+{{- if and (not .Values.charon.operatorAddress) (not .Values.tests) }}
+{{- fail ".Values.charon.operatorAddress is required" }}
 {{- end }}
 
 {{- if .Values.centralMonitoring.enabled }}
