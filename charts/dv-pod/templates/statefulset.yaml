@@ -57,7 +57,7 @@ spec:
         # 3. If neither exists: Polls Obol API for cluster invites and runs DKG when ready
         #
         # To skip this container entirely:
-        # - Create a secret with your cluster-lock.json and reference it in values.yaml
+        # - Create a configMap with your cluster-lock.json and reference it in values.yaml
         # - The container will detect the existing lock file and exit gracefully
         - name: dkg-sidecar
           image: "{{ .Values.charon.dkgSidecar.image.repository }}:{{ .Values.charon.dkgSidecar.image.tag | default .Chart.AppVersion }}"
@@ -99,7 +99,7 @@ spec:
               readOnly: true
             - name: charon-data
               mountPath: /charon-data
-            {{- if .Values.secrets.clusterlock }}
+            {{- if .Values.configMaps.clusterlock }}
             # Mount pre-existing cluster-lock if provided
             - name: cluster-lock
               mountPath: /charon-data/cluster-lock.json
@@ -227,8 +227,8 @@ spec:
               port: {{ .Values.config.charonInternalMonitoringPort }}
         {{- end }}  
           volumeMounts:
-            {{- if .Values.secrets.clusterlock }}
-            # Mount cluster-lock secret if provided
+            {{- if .Values.configMaps.clusterlock }}
+            # Mount cluster-lock configMap if provided
             - name: cluster-lock
               mountPath: /charon-data/cluster-lock.json
               subPath: cluster-lock.json
@@ -349,8 +349,8 @@ spec:
         - name: cluster-lock
           projected:
             sources:
-            - secret:
-                name: {{ .Values.secrets.clusterlock }}
+            - configMap:
+                name: {{ .Values.configMaps.clusterlock }}
                 optional: true
         # Volume for the shared ENR private key
         - name: charon-enr-key
