@@ -299,7 +299,7 @@ charon:
   # 3. If neither exists: Polls the Obol API for cluster invites and runs DKG when ready
   #
   # To provide a pre-existing cluster-lock and skip DKG:
-  # 1. Create a secret: kubectl create secret generic cluster-lock --from-file=cluster-lock.json
+  # 1. Create a configMap: kubectl create configmap cluster-lock --from-file=cluster-lock.json
   # 2. The sidecar will detect the lock file and exit, allowing Charon to start immediately
   #
   # To provide a cluster-definition without running DKG through the API:
@@ -384,10 +384,15 @@ charon:
 secrets:
   # -- Suffix for ENR private key secret (used internally by templates)
   enrPrivateKey: "charon-enr-private-key"
-  # -- Name or suffix for the charon cluster lock secret
-  # To skip the DKG process entirely, create a Kubernetes secret containing your cluster-lock.json:
-  # kubectl create secret generic cluster-lock --from-file=cluster-lock.json
+
+# -- Kubernetes configMaps names for non-sensitive configuration data.
+configMaps:
+  # -- Name or suffix for the charon cluster lock configMap
+  # To skip the DKG process entirely, create a Kubernetes configMap containing your cluster-lock.json:
+  # kubectl create configmap cluster-lock --from-file=cluster-lock.json
   # The DKG sidecar will detect this file and exit immediately, allowing Charon to start with the existing lock.
+  # Note: ConfigMaps support larger file sizes than Secrets (up to 1MB compressed), making them
+  # more suitable for cluster-lock files which can be several megabytes.
   clusterlock: "cluster-lock"
 
 # -- Persistence configuration for DKG artifacts and charon data
