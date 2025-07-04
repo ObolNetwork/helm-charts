@@ -11,10 +11,6 @@ spec:
       targetPort: validator-api
       protocol: TCP
       name: validator-api
-    - port: {{ .Values.p2pPort }}
-      targetPort: p2p-tcp
-      protocol: TCP
-      name: p2p-tcp
     - port: {{ .Values.monitoringPort }}
       targetPort: monitoring
       protocol: TCP
