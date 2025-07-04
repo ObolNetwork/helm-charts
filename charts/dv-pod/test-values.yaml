@@ -26,10 +26,10 @@ erigon:
 lighthouse:
   enabled: false
 
-# Use external services configuration
+# Use external beacon node endpoints
 charon:
-  externalServices:
-    consensusEndpoint: "http://test-beacon:5052"
+  beaconNodeEndpoints:
+    - "http://test-beacon:5052"
 
 # Test configuration
 tests:
