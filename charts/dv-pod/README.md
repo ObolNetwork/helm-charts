@@ -29,6 +29,7 @@ A Helm chart for deploying a single distributed validator pod with Charon middle
 | centralMonitoring.enabled | bool | `false` | Specifies whether central monitoring should be enabled |
 | centralMonitoring.promEndpoint | string | `"https://vm.monitoring.gcp.obol.tech/write"` | https endpoint to obol central prometheus  |
 | centralMonitoring.token | string | `""` | The authentication token to the central prometheus |
+| charon.beaconNodeEndpoints | list | `["http://beacon-node:5052"]` | Beacon node endpoints (used when sub-charts are disabled) These will be used by both Charon and the validator client |
 | charon.config.privateKeyFile | string | `"/data/charon-enr-private-key"` | Path within the Charon container where the ENR private key file will be mounted. |
 | charon.dkgSidecar | object | `{"apiEndpoint":"https://api.obol.tech","enabled":true,"image":{"pullPolicy":"IfNotPresent","repository":"ghcr.io/obolnetwork/charon-dkg-sidecar","tag":"v1.0.0"},"initialRetryDelaySeconds":10,"maxRetryDelaySeconds":300,"pageLimit":10,"resources":{},"retryDelayFactor":2,"retryDelaySeconds":10,"serviceAccount":{"create":true}}` | Configuration for the DKG Sidecar init container This init container orchestrates the Distributed Key Generation (DKG) process for Charon clusters.  The sidecar has three operating modes: 1. If cluster-lock.json exists: Exits immediately (cluster already initialized) 2. If cluster-definition.json exists: Attempts DKG with the existing definition 3. If neither exists: Polls the Obol API for cluster invites and runs DKG when ready  To provide a pre-existing cluster-lock and skip DKG: 1. Create a configMap: kubectl create configmap cluster-lock --from-file=cluster-lock.json 2. The sidecar will detect the lock file and exit, allowing Charon to start immediately  To provide a cluster-definition without running DKG through the API: 1. Mount your cluster-definition.json in /charon-data/ 2. The sidecar will run 'charon dkg' to generate the cluster-lock.json  Note: When providing a pre-existing cluster-lock.json, you must also ensure the associated validator keys are available in the charon-data volume. |
 | charon.dkgSidecar.apiEndpoint | string | `"https://api.obol.tech"` | API endpoint for the Obol network to fetch cluster definitions |
@@ -45,10 +46,8 @@ A Helm chart for deploying a single distributed validator pod with Charon middle
 | charon.enr.generate.kubectlImage | object | `{"pullPolicy":"IfNotPresent","repository":"bitnami/kubectl","tag":"latest"}` | Image to use for kubectl operations within the ENR generation job This image must contain a compatible kubectl binary. |
 | charon.enr.privateKey | string | `""` | Provide the ENR private key directly (hex format, e.g., 0x...).  If set, 'generate' and 'existingSecret' are ignored. |
 | charon.enrJob.enabled | bool | `true` | Enable or disable the Kubernetes Job that generates/manages the ENR. |
-| charon.externalServices | object | `{"consensusEndpoint":"http://beacon-node:5052","executionEndpoint":"","fallbackConsensusEndpoints":[]}` | External services configuration (used when sub-charts are disabled) |
-| charon.externalServices.consensusEndpoint | string | `"http://beacon-node:5052"` | Consensus layer endpoint URL (e.g., your beacon node) This will be used by both Charon and the validator client |
-| charon.externalServices.executionEndpoint | string | `""` | Execution layer endpoint URL (e.g., your Ethereum execution client) |
-| charon.externalServices.fallbackConsensusEndpoints | list | `[]` | Fallback consensus layer endpoints (optional) These will be used if the primary consensusEndpoint is unavailable |
+| charon.executionClientRpcEndpoint | string | `""` | Execution client RPC endpoint URL (e.g., your Ethereum execution client) Note: Charon currently only supports a single execution endpoint |
+| charon.fallbackBeaconNodeEndpoints | list | `[]` | Fallback beacon node endpoints (optional) These will be used if the primary beaconNodeEndpoints are unavailable |
 | charon.operatorAddress | string | `""` | The Ethereum address of this operator. This MUST be provided by the user. |
 | config.LockFile | string | `"/charon/cluster-lock.json"` | The path to the cluster lock file defining distributed validator cluster. (default ".charon/cluster-lock.json") |
 | config.builderApi | string | `""` | Enables the builder api. Will only produce builder blocks. Builder API must also be enabled on the validator client. Beacon node must be connected to a builder-relay to access the builder network. |
@@ -195,7 +194,7 @@ Install a charon cluster `charon-cluster` with 4 nodes:
 ```sh
 helm upgrade --install charon-cluster obol/charon-cluster \
   --set='clusterSize=4' \
-  --set='charon.externalServices.consensusEndpoint=<BEACON_NODE_ENDPOINT>' \
+  --set='charon.beaconNodeEndpoints[0]=<BEACON_NODE_ENDPOINT>' \
   --create-namespace \
   --namespace $CHARON_NODE_NAMESPACE
 ```

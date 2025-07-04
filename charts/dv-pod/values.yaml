@@ -277,19 +277,21 @@ charon:
   # -- The Ethereum address of this operator. This MUST be provided by the user.
   operatorAddress: ""  # Required - set your operator address here
   
-  # -- External services configuration (used when sub-charts are disabled)
-  externalServices:
-    # -- Execution layer endpoint URL (e.g., your Ethereum execution client)
-    executionEndpoint: ""
-    # -- Consensus layer endpoint URL (e.g., your beacon node)
-    # This will be used by both Charon and the validator client
-    consensusEndpoint: "http://beacon-node:5052"
-    # -- Fallback consensus layer endpoints (optional)
-    # These will be used if the primary consensusEndpoint is unavailable
-    fallbackConsensusEndpoints: []
-    # Example:
-    # - "http://backup-beacon-1:5052"
-    # - "http://backup-beacon-2:5052"
+  # -- Beacon node endpoints (used when sub-charts are disabled)
+  # These will be used by both Charon and the validator client
+  beaconNodeEndpoints: 
+    - "http://beacon-node:5052"
+  
+  # -- Execution client RPC endpoint URL (e.g., your Ethereum execution client)
+  # Note: Charon currently only supports a single execution endpoint
+  executionClientRpcEndpoint: ""
+  
+  # -- Fallback beacon node endpoints (optional)
+  # These will be used if the primary beaconNodeEndpoints are unavailable
+  fallbackBeaconNodeEndpoints: []
+  # Example:
+  # - "https://ethereum-beacon-api.publicnode.com"
+  # - "http://backup-beacon-2:5052"
   # -- Configuration for the DKG Sidecar init container
   # This init container orchestrates the Distributed Key Generation (DKG) process for Charon clusters.
   #

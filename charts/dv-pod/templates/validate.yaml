@@ -1,5 +1,5 @@
-{{- if not .Values.charon.externalServices.consensusEndpoint }}
-{{- fail ".Values.charon.externalServices.consensusEndpoint is required" }}
+{{- if not .Values.charon.beaconNodeEndpoints }}
+{{- fail ".Values.charon.beaconNodeEndpoints is required" }}
 {{- end }}
 
 

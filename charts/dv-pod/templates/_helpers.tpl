@@ -108,11 +108,11 @@ Create comma-separated list of beacon node endpoints combining primary and fallb
 */}}
 {{- define "dv-pod.beaconNodeEndpoints" -}}
 {{- $endpoints := list -}}
-{{- if .Values.charon.externalServices.consensusEndpoint -}}
-{{- $endpoints = append $endpoints .Values.charon.externalServices.consensusEndpoint -}}
+{{- if .Values.charon.beaconNodeEndpoints -}}
+{{- $endpoints = concat $endpoints .Values.charon.beaconNodeEndpoints -}}
 {{- end -}}
-{{- if .Values.charon.externalServices.fallbackConsensusEndpoints -}}
-{{- $endpoints = concat $endpoints .Values.charon.externalServices.fallbackConsensusEndpoints -}}
+{{- if .Values.charon.fallbackBeaconNodeEndpoints -}}
+{{- $endpoints = concat $endpoints .Values.charon.fallbackBeaconNodeEndpoints -}}
 {{- end -}}
 {{- join "," $endpoints -}}
 {{- end -}}
