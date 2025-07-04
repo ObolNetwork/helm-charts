@@ -2,6 +2,31 @@ apiVersion: v1
 entries:
   charon:
   - apiVersion: v2
+    appVersion: 1.5.1
+    created: "2025-07-04T15:46:50.2692492Z"
+    description: Charon is an open-source Ethereum Distributed validator middleware
+      written in golang.
+    digest: 935ea7e8b23879f83597febd88d77581ba869684c16b3f33f5980d04a26a2280
+    home: https://obol.tech/
+    icon: https://raw.githubusercontent.com/ObolNetwork/charon/main/docs/images/charonlogo.svg
+    keywords:
+    - ethereum
+    - blockchain
+    - obol
+    - charon
+    - dvt
+    - node
+    maintainers:
+    - email: devops@obol.tech
+      name: Eth2DevOps
+    name: charon
+    sources:
+    - https://github.com/ObolNetwork/charon
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/charon-0.4.6/charon-0.4.6.tgz
+    version: 0.4.6
+  - apiVersion: v2
     appVersion: 1.5.0
     created: "2025-07-02T07:36:24.215504378Z"
     description: Charon is an open-source Ethereum Distributed validator middleware
@@ -570,6 +595,31 @@ entries:
     - https://github.com/ObolNetwork/helm-charts/releases/download/charon-0.1.0/charon-0.1.0.tgz
     version: 0.1.0
   charon-cluster:
+  - apiVersion: v2
+    appVersion: 1.5.1
+    created: "2025-07-04T15:46:50.448580876Z"
+    description: Charon is an open-source Ethereum Distributed validator middleware
+      written in golang. This chart deploys a full Charon cluster.
+    digest: 03c723d200e707d8fffe29ce981986f52210eea0691a540d9bb68709a7ba2c76
+    home: https://obol.tech/
+    icon: https://raw.githubusercontent.com/ObolNetwork/charon/main/docs/images/charonlogo.svg
+    keywords:
+    - ethereum
+    - blockchain
+    - obol
+    - charon
+    - dvt
+    - cluster
+    maintainers:
+    - email: devops@obol.tech
+      name: Eth2DevOps
+    name: charon-cluster
+    sources:
+    - https://github.com/ObolNetwork/charon
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/charon-cluster-0.3.6/charon-cluster-0.3.6.tgz
+    version: 0.3.6
   - apiVersion: v2
     appVersion: 1.5.0
     created: "2025-07-02T07:36:24.394768621Z"
@@ -1437,4 +1487,4 @@ entries:
     urls:
     - https://github.com/ObolNetwork/helm-charts/releases/download/helios-0.1.0/helios-0.1.0.tgz
     version: 0.1.0
-generated: "2025-07-02T07:36:24.395147086Z"
+generated: "2025-07-04T15:46:50.449110534Z"
