@@ -395,9 +395,10 @@ persistence:
     - ReadWriteOnce
   # -- Size of the PVC for charon-data.
   size: 1Gi
-  # -- Size of the PVC for validator-data. Defaults to the same as size.
+  # -- Size of the PVC for validator-data.
   # Validator data includes slashing protection DB and other validator state.
-  # WARNING: If persistence is disabled, validator data is lost on pod restart which could lead to slashing!
+  # NOTE: Validator data ALWAYS uses persistent storage to prevent slashing,
+  # even if persistence.enabled is false for charon-data.
   validatorDataSize: 500Mi
   # -- Optional: Annotations for the PVC
   # annotations: {}

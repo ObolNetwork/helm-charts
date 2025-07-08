@@ -364,15 +364,9 @@ spec:
         - name: charon-data
           emptyDir: {}
         {{- end }}
-        # Volume for validator client data
-        # WARNING: Using emptyDir means validator slashing protection DB is lost on pod restart!
-        # This could lead to slashing. Consider using a persistent volume instead.
-        {{- if not .Values.persistence.enabled }}
-        - name: validator-data
-          emptyDir: {}
-        {{- end }}
-  {{- if .Values.persistence.enabled }}
+        # Note: validator-data volume is always provided via PVC to prevent slashing
   volumeClaimTemplates:
+    {{- if .Values.persistence.enabled }}
     - metadata:
         name: charon-data
         {{- with .Values.persistence.annotations }}
@@ -391,7 +385,9 @@ spec:
         storageClassName: "{{ .Values.persistence.storageClassName }}"
         {{- end }}
         {{- end }}
+    {{- end }}
     {{- if .Values.validatorClient.enabled }}
+    # Validator data PVC is always created to prevent slashing
     - metadata:
         name: validator-data
         {{- with .Values.persistence.annotations }}
@@ -402,7 +398,7 @@ spec:
         accessModes: {{ .Values.persistence.accessModes | toYaml | nindent 10 }}
         resources:
           requests:
-            storage: {{ .Values.persistence.validatorDataSize | default .Values.persistence.size | quote }}
+            storage: {{ .Values.persistence.validatorDataSize | default "500Mi" | quote }}
         {{- if .Values.persistence.storageClassName }}
         {{- if (eq "-" .Values.persistence.storageClassName) }}
         storageClassName: ""
@@ -411,4 +407,3 @@ spec:
         {{- end }}
         {{- end }}
     {{- end }}
-  {{- end }}
