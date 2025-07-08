@@ -374,13 +374,15 @@ secrets:
 
 # -- Kubernetes configMaps names for non-sensitive configuration data.
 configMaps:
-  # -- Name or suffix for the charon cluster lock configMap
-  # To skip the DKG process entirely, create a Kubernetes configMap containing your cluster-lock.json:
-  # kubectl create configmap cluster-lock --from-file=cluster-lock.json
-  # The DKG sidecar will detect this file and exit immediately, allowing Charon to start with the existing lock.
+  # -- Name of the ConfigMap containing the cluster-lock.json file
+  # Set this to the name of an existing ConfigMap to skip the DKG process.
+  # Example: If you have created a ConfigMap named "my-cluster-lock":
+  #   kubectl create configmap my-cluster-lock --from-file=cluster-lock.json
+  # Then set: clusterlock: "my-cluster-lock"
+  # If not set or if the ConfigMap doesn't exist, the DKG process will run.
   # Note: ConfigMaps support larger file sizes than Secrets (up to 1MB compressed), making them
   # more suitable for cluster-lock files which can be several megabytes.
-  clusterlock: "cluster-lock"
+  clusterlock: ""
 
 # -- Persistence configuration for DKG artifacts and charon data
 persistence:
