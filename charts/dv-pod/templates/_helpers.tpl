@@ -104,15 +104,19 @@ Create the name of the service account to use for tests
 {{- end -}}
 
 {{/*
-Create comma-separated list of beacon node endpoints combining primary and fallback endpoints
+Create comma-separated list of primary beacon node endpoints
 */}}
 {{- define "dv-pod.beaconNodeEndpoints" -}}
-{{- $endpoints := list -}}
 {{- if .Values.charon.beaconNodeEndpoints -}}
-{{- $endpoints = concat $endpoints .Values.charon.beaconNodeEndpoints -}}
+{{- join "," .Values.charon.beaconNodeEndpoints -}}
 {{- end -}}
+{{- end -}}
+
+{{/*
+Create comma-separated list of fallback beacon node endpoints
+*/}}
+{{- define "dv-pod.fallbackBeaconNodeEndpoints" -}}
 {{- if .Values.charon.fallbackBeaconNodeEndpoints -}}
-{{- $endpoints = concat $endpoints .Values.charon.fallbackBeaconNodeEndpoints -}}
+{{- join "," .Values.charon.fallbackBeaconNodeEndpoints -}}
 {{- end -}}
-{{- join "," $endpoints -}}
 {{- end -}}

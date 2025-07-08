@@ -3,13 +3,6 @@
 {{- end }}
 
 
-{{- if not .Values.secrets.enrPrivateKey }}
-{{- fail ".Values.secrets.enrPrivateKey is required" }}
-{{- end }}
-
-{{- if not .Values.configMaps.clusterlock }}
-{{- fail ".Values.configMaps.clusterlock is required" }}
-{{- end }}
 
 {{- if and (not .Values.charon.operatorAddress) (not .Values.tests) }}
 {{- fail ".Values.charon.operatorAddress is required" }}
