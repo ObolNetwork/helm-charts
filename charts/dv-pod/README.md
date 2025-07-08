@@ -272,6 +272,30 @@ validatorClient:
       - --suggested-fee-recipient=0xYOUR_FEE_RECIPIENT_ADDRESS
 ```
 
+## Advanced Usage
+
+### Use an External Validator Client
+
+While the dv-pod chart includes an integrated validator client, you may want to use an external validator client instead. To do this:
+
+1. Disable the integrated validator client:
+```yaml
+validatorClient:
+  enabled: false
+```
+
+2. Configure your external validator client to connect to the Charon node's validator API endpoint:
+```
+--beacon-node-api-endpoint="http://<RELEASE_NAME>-dv-pod.<NAMESPACE>.svc.cluster.local:3600"
+```
+
+For example, if you installed the chart as `my-dv-pod` in namespace `dv-pod`:
+```
+--beacon-node-api-endpoint="http://my-dv-pod.dv-pod.svc.cluster.local:3600"
+```
+
+Note: The Charon validator API on port 3600 provides the same interface as a beacon node API, allowing standard validator clients to connect without modification.
+
 ## Uninstall the Chart
 To uninstall and delete the `my-dv-pod` release:
 ```sh
