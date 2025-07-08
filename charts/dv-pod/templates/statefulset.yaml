@@ -186,8 +186,6 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.name
-          - name: KUBERNETES_CLUSTER_DOMAIN
-            value: {{ .Values.kubernetesClusterDomain }}
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           name: {{ .Chart.Name }}
           {{- with .Values.containerSecurityContext }}
