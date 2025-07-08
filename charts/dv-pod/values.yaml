@@ -354,9 +354,6 @@ charon:
 
   # -- Comma-separated list of listening TCP addresses (ip and port) for libP2P traffic. Empty default doesn't bind to local port therefore only supports outgoing connections.
   p2pTcpAddress: "0.0.0.0:3610"
-
-  # -- Internal monitoring port for Charon metrics. Different from the service port (3620) to avoid conflicts with sidecars that may use the same port.
-  charonInternalMonitoringPort: 3625
   
   # -- Listening address (ip and port) for validator-facing traffic proxying the beacon-node API. (default "127.0.0.1:3600")
   validatorApiAddress: "0.0.0.0:3600"

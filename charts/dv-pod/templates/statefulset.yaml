@@ -146,7 +146,7 @@ spec:
               --loki-service="${NODE_NAME}"
               {{- end }}
               {{- if .Values.charon.monitoringAddress }}
-              --monitoring-address=0.0.0.0:{{ .Values.charon.charonInternalMonitoringPort }}
+              --monitoring-address=0.0.0.0:3620
               {{- end }}
               {{- if .Values.charon.noVerify }}
               --no-verify={{ .Values.charon.noVerify }}
@@ -199,7 +199,7 @@ spec:
             - containerPort: {{ .Values.service.ports.p2pTcp.targetPort }}
               name: p2p-tcp
               protocol: TCP
-            - containerPort: {{ .Values.charon.charonInternalMonitoringPort }}
+            - containerPort: 3620
               name: monitoring
               protocol: TCP
         {{- if or .Values.livenessProbe.enabled }}
@@ -208,7 +208,7 @@ spec:
             periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
             httpGet:
               path: {{ .Values.livenessProbe.httpGet.path }}
-              port: {{ .Values.charon.charonInternalMonitoringPort }}
+              port: 3620
         {{- end }}
         {{- if or .Values.readinessProbe.enabled }}
           readinessProbe:
@@ -216,7 +216,7 @@ spec:
             periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
             httpGet:
               path: {{ .Values.readinessProbe.httpGet.path }}
-              port: {{ .Values.charon.charonInternalMonitoringPort }}
+              port: 3620
         {{- end }}  
           volumeMounts:
             {{- if .Values.configMaps.clusterlock }}
