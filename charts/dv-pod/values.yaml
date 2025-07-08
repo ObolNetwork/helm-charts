@@ -14,9 +14,6 @@ erigon:
     # storageClassName: "your-storage-class" # Uncomment and set if you have a specific storage class
   # Add any erigon specific default values here if needed in the future
 
-teku:
-  enabled: false
-  # Add any teku specific default values here if needed in the future
 
 
 # -- Validator client configuration
@@ -54,7 +51,7 @@ validatorClient:
 image:
   repository: obolnetwork/charon
   pullPolicy: IfNotPresent
-  tag: v1.4.3
+  tag: v1.5.1
 
 # -- Credentials to fetch images from private registry
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
@@ -198,81 +195,6 @@ podDisruptionBudget:
 # -- allows you to configure and disable automated rolling updates for containers, labels, resource request/limits, and annotations for the Pods in a StatefulSet.
 updateStrategy: RollingUpdate
 
-## Charon command line options
-## ref: https://docs.obol.tech/docs/charon/charon_cli_reference
-config:
-  # -- This value is deprecated. Use externalServices.consensusEndpoint instead.
-  
-  # -- Enables the builder api. Will only produce builder blocks. Builder API must also be enabled on the validator client. Beacon node must be connected to a builder-relay to access the builder network.
-  builderApi: ""
-  
-  # -- Minimum feature set to enable by default: alpha, beta, or stable. Warning: modify at own risk. (default "stable")
-  featureSet: "stable"
-
-  # -- Comma-separated list of features to disable, overriding the default minimum feature set.
-  featureSetDisable: ""
-
-  # -- Comma-separated list of features to enable, overriding the default minimum feature set.
-  featureSetEnable: ""
-
-  # --  Listening address for jaeger tracing.
-  jaegerAddress: "jaeger:6831"
-
-  # -- Service name used for jaeger tracing.
-  jaegerService: ""
-
-  # -- The path to the cluster lock file defining distributed validator cluster. (default ".charon/cluster-lock.json")
-  LockFile: "/charon/cluster-lock.json"
-
-  # -- Log format; console, logfmt or json (default "console")
-  logFormat: "json"
-
-  # -- Log level; debug, info, warn or error (default "info")
-  logLevel: "info"
-
-  # --  Enables sending of logfmt structured logs to these Loki log aggregation server addresses. This is in addition to normal stderr logs.
-  lokiAddresses: ""
-  
-  # -- Service label sent with logs to Loki.
-  lokiService: ""
-
-  # -- Listening address (ip and port) for the monitoring API (prometheus, pprof). (default "127.0.0.1:3620")
-  monitoringAddress: "0.0.0.0:3620"
-
-  # -- Disables cluster definition and lock file verification.
-  noVerify: false
-
-  # -- Comma-separated list of CIDR subnets for allowing only certain peer connections. Example: 192.168.0.0/16 would permit connections to peers on your local network only. The default is to accept all connections.
-  p2pAllowlist: ""
-
-  # -- Comma-separated list of CIDR subnets for disallowing certain peer connections. Example: 192.168.0.0/16 would disallow connections to peers on your local network. The default is to accept all connections.
-  p2pDenylist: ""
-
-  # -- Disables TCP port reuse for outgoing libp2p connections.
-  p2pDisableReuseport: ""
-  
-  # --  The DNS hostname advertised by libp2p. This may be used to advertise an external DNS.
-  p2pExternalHostname: ""
-
-  # -- The IP address advertised by libp2p. This may be used to advertise an external IP.
-  p2pExternalIp: ""
-
-  # -- Comma-separated list of libp2p relay URLs or multiaddrs. (default [https://0.relay.obol.tech/enr])
-  p2pRelays: ""
-
-  # -- Comma-separated list of listening TCP addresses (ip and port) for libP2P traffic. Empty default doesn't bind to local port therefore only supports outgoing connections.
-  p2pTcpAddress: "0.0.0.0:3610"
-
-  
-  # -- Specific internal monitoring port for Charon container to avoid sidecar conflicts.
-  charonInternalMonitoringPort: 3625
-  
-  # -- Listening address (ip and port) for validator-facing traffic proxying the beacon-node API. (default "127.0.0.1:3600")
-  validatorApiAddress: "0.0.0.0:3600"
-
-  # -- If enabled, it will set p2pExternalHostname value to the pod name and enable direct connection between cluster nodes
-  directConnectionEnabled: "true"
-
 charon:
   # -- The Ethereum address of this operator. This MUST be provided by the user.
   operatorAddress: ""  # Required - set your operator address here
@@ -366,7 +288,7 @@ charon:
       image:
         repository: "obolnetwork/charon"
         # Specify a stable tag, e.g., v1.4.2 or check for latest on Docker Hub
-        tag: "v1.4.2"
+        tag: "v1.5.1"
         pullPolicy: "IfNotPresent"
       # -- Image to use for kubectl operations within the ENR generation job
       # This image must contain a compatible kubectl binary.
@@ -375,10 +297,73 @@ charon:
         tag: "latest" # Or a specific version like "1.27"
         pullPolicy: "IfNotPresent"
 
-  # --- Charon application internal configuration (translates to CLI flags) ---
-  config:
-    # -- Path within the Charon container where the ENR private key file will be mounted.
-    privateKeyFile: "/data/charon-enr-private-key"
+  # --- Charon command line options ---
+  ## ref: https://docs.obol.tech/docs/charon/charon_cli_reference
+  
+  # -- Enables the builder api. Will only produce builder blocks. Builder API must also be enabled on the validator client. Beacon node must be connected to a builder-relay to access the builder network.
+  builderApi: ""
+  
+  # -- Minimum feature set to enable by default: alpha, beta, or stable. Warning: modify at own risk. (default "stable")
+  featureSet: "stable"
+
+  # -- Comma-separated list of features to disable, overriding the default minimum feature set.
+  featureSetDisable: ""
+
+  # -- Comma-separated list of features to enable, overriding the default minimum feature set.
+  featureSetEnable: ""
+
+  # -- The path to the cluster lock file defining distributed validator cluster. (default ".charon/cluster-lock.json")
+  lockFile: "/charon-data/cluster-lock.json"
+
+  # -- Log format; console, logfmt or json (default "console")
+  logFormat: "json"
+
+  # -- Log level; debug, info, warn or error (default "info")
+  logLevel: "info"
+
+  # --  Enables sending of logfmt structured logs to these Loki log aggregation server addresses. This is in addition to normal stderr logs.
+  lokiAddresses: ""
+  
+  # -- Service label sent with logs to Loki.
+  lokiService: ""
+
+  # -- Listening address (ip and port) for the monitoring API (prometheus, pprof). (default "127.0.0.1:3620")
+  monitoringAddress: "0.0.0.0:3620"
+
+  # -- Disables cluster definition and lock file verification.
+  noVerify: false
+
+  # -- Comma-separated list of CIDR subnets for allowing only certain peer connections. Example: 192.168.0.0/16 would permit connections to peers on your local network only. The default is to accept all connections.
+  p2pAllowlist: ""
+
+  # -- Comma-separated list of CIDR subnets for disallowing certain peer connections. Example: 192.168.0.0/16 would disallow connections to peers on your local network. The default is to accept all connections.
+  p2pDenylist: ""
+
+  # -- Disables TCP port reuse for outgoing libp2p connections.
+  p2pDisableReuseport: ""
+  
+  # --  The DNS hostname advertised by libp2p. This may be used to advertise an external DNS.
+  p2pExternalHostname: ""
+
+  # -- The IP address advertised by libp2p. This may be used to advertise an external IP.
+  p2pExternalIp: ""
+
+  # -- Comma-separated list of libp2p relay URLs or multiaddrs.
+  # Default list is provided by libp2p and may change over time
+  p2pRelays: ""
+
+  # -- Comma-separated list of listening TCP addresses (ip and port) for libP2P traffic. Empty default doesn't bind to local port therefore only supports outgoing connections.
+  p2pTcpAddress: "0.0.0.0:3610"
+  
+  # -- Listening address (ip and port) for validator-facing traffic proxying the beacon-node API. (default "127.0.0.1:3600")
+  validatorApiAddress: "0.0.0.0:3600"
+
+  # -- If enabled, it will set p2pExternalHostname value to the pod name and enable direct connection between cluster nodes.
+  # This is useful for deployments where pods can directly communicate with each other.
+  directConnectionEnabled: "true"
+
+  # -- Path within the Charon container where the ENR private key file will be mounted.
+  privateKeyFile: "/data/charon-enr-private-key"
 
 # -- Kubernetes secrets names that might be used as suffixes or for other purposes.
 # For the ENR, the secret name is either defined in 'charon.enr.existingSecret.name' 
@@ -389,13 +374,15 @@ secrets:
 
 # -- Kubernetes configMaps names for non-sensitive configuration data.
 configMaps:
-  # -- Name or suffix for the charon cluster lock configMap
-  # To skip the DKG process entirely, create a Kubernetes configMap containing your cluster-lock.json:
-  # kubectl create configmap cluster-lock --from-file=cluster-lock.json
-  # The DKG sidecar will detect this file and exit immediately, allowing Charon to start with the existing lock.
+  # -- Name of the ConfigMap containing the cluster-lock.json file
+  # Set this to the name of an existing ConfigMap to skip the DKG process.
+  # Example: If you have created a ConfigMap named "my-cluster-lock":
+  #   kubectl create configmap my-cluster-lock --from-file=cluster-lock.json
+  # Then set: clusterlock: "my-cluster-lock"
+  # If not set or if the ConfigMap doesn't exist, the DKG process will run.
   # Note: ConfigMaps support larger file sizes than Secrets (up to 1MB compressed), making them
   # more suitable for cluster-lock files which can be several megabytes.
-  clusterlock: "cluster-lock"
+  clusterlock: ""
 
 # -- Persistence configuration for DKG artifacts and charon data
 persistence:
@@ -406,49 +393,17 @@ persistence:
   # -- Access modes for the PVC. Must be a list. Default: ["ReadWriteOnce"].
   accessModes:
     - ReadWriteOnce
-  # -- Size of the PVC.
+  # -- Size of the PVC for charon-data.
   size: 1Gi
+  # -- Size of the PVC for validator-data.
+  # Validator data includes slashing protection DB and other validator state.
+  # NOTE: Validator data ALWAYS uses persistent storage to prevent slashing,
+  # even if persistence.enabled is false for charon-data.
+  validatorDataSize: 500Mi
   # -- Optional: Annotations for the PVC
   # annotations: {}
   #   key: value
 
-# -- Node selector for pod assignment
-# Ref: https://kubernetes.io/docs/user-guide/node-selection/
-nodeSelector: {}
-
-# -- Tolerations for pod assignment
-## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
-tolerations: {}
-
-# -- Affinity for pod assignment
-## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
-##
-## Example:
-## affinity:
-##   podAntiAffinity:
-##     requiredDuringSchedulingIgnoredDuringExecution:
-##     - labelSelector:
-##         matchExpressions:
-##         - key: app.kubernetes.io/name
-##           operator: In
-##           values:
-##           - charon
-##       topologyKey: kubernetes.io/hostname
-##
-affinity: {}
-
-# -- Used to assign priority to pods
-## ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/
-priorityClassName: ""
-
-# -- Enable pod disruption budget
-## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb
-podDisruptionBudget:
-  minAvailable: ""
-  enabled: true
-
-# -- allows you to configure and disable automated rolling updates for containers, labels, resource request/limits, and annotations for the Pods in a StatefulSet.
-updateStrategy: RollingUpdate
 
 # -- Prometheus Service Monitor
 ## ref: https://github.com/coreos/prometheus-operator
