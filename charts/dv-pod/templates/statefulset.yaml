@@ -119,75 +119,67 @@ spec:
               exec /usr/local/bin/charon run
               --beacon-node-endpoints={{ include "dv-pod.beaconNodeEndpoints" . }}
               --lock-file=/charon-data/cluster-lock.json
-              {{- if .Values.config.builderApi }}
-              --builder-api={{ .Values.config.builderApi }}
+              {{- if .Values.charon.builderApi }}
+              --builder-api={{ .Values.charon.builderApi }}
               {{- end }}
-              {{- if .Values.config.featureSet }}
-              --feature-set={{ .Values.config.featureSet }}
+              {{- if .Values.charon.featureSet }}
+              --feature-set={{ .Values.charon.featureSet }}
               {{- end }}
-              {{- if .Values.config.featureSetDisable }}
-              --feature-set-disable={{ .Values.config.featureSetDisable }}
+              {{- if .Values.charon.featureSetDisable }}
+              --feature-set-disable={{ .Values.charon.featureSetDisable }}
               {{- end }}
-              {{- if .Values.config.featureSetEnable }}
-              --feature-set-enable={{ .Values.config.featureSetEnable }}
+              {{- if .Values.charon.featureSetEnable }}
+              --feature-set-enable={{ .Values.charon.featureSetEnable }}
               {{- end }}
-              {{- if .Values.config.jaegerAddress }}
-              --jaeger-address={{ .Values.config.jaegerAddress }}
+              {{- if .Values.charon.logFormat }}
+              --log-format={{ .Values.charon.logFormat }}
               {{- end }}
-              {{- if .Values.config.jaegerService }}
-              --jaeger-service={{ .Values.config.jaegerService }}
-              {{- else }}
-              --jaeger-service="${NODE_NAME}"
+              {{- if .Values.charon.logLevel }}
+              --log-level={{ .Values.charon.logLevel }}
               {{- end }}
-              {{- if .Values.config.logFormat }}
-              --log-format={{ .Values.config.logFormat }}
+              {{- if .Values.charon.lokiAddresses }}
+              --loki-addresses={{ .Values.charon.lokiAddresses }}
               {{- end }}
-              {{- if .Values.config.logLevel }}
-              --log-level={{ .Values.config.logLevel }}
-              {{- end }}
-              {{- if .Values.config.lokiAddresses }}
-              --loki-addresses={{ .Values.config.lokiAddresses }}
-              {{- end }}
-              {{- if .Values.config.lokiService }}
-              --loki-service={{ .Values.config.lokiService }}
+              {{- if .Values.charon.lokiService }}
+              --loki-service={{ .Values.charon.lokiService }}
               {{- else }}
               --loki-service="${NODE_NAME}"
               {{- end }}
-              {{- if .Values.config.monitoringAddress }}
-              --monitoring-address=0.0.0.0:{{ .Values.config.charonInternalMonitoringPort }}
+              {{- if .Values.charon.monitoringAddress }}
+              --monitoring-address=0.0.0.0:{{ .Values.charon.charonInternalMonitoringPort }}
               {{- end }}
-              {{- if .Values.config.noVerify }}
-              --no-verify={{ .Values.config.noVerify }}
+              {{- if .Values.charon.noVerify }}
+              --no-verify={{ .Values.charon.noVerify }}
               {{- end }}
-              {{- if .Values.config.p2pAllowlist }}
-              --p2p-allowlist={{ .Values.config.p2pAllowlist }}
+              {{- if .Values.charon.p2pAllowlist }}
+              --p2p-allowlist={{ .Values.charon.p2pAllowlist }}
               {{- end }}
-              {{- if .Values.config.p2pDenylist }}
-              --p2p-denylist={{ .Values.config.p2pDenylist }}
+              {{- if .Values.charon.p2pDenylist }}
+              --p2p-denylist={{ .Values.charon.p2pDenylist }}
               {{- end }}
-              {{- if .Values.config.p2pDisableReuseport }}
-              --p2p-disable-reuseport={{ .Values.config.p2pDisableReuseport }}
+              {{- if .Values.charon.p2pDisableReuseport }}
+              --p2p-disable-reuseport={{ .Values.charon.p2pDisableReuseport }}
               {{- end }}
-              {{- if .Values.config.directConnectionEnabled }}
+              {{- if .Values.charon.directConnectionEnabled }}
               --p2p-external-hostname="${NODE_NAME}"
               {{- else }}
-              --p2p-external-hostname={{ .Values.config.p2pExternalHostname }}
+              --p2p-external-hostname={{ .Values.charon.p2pExternalHostname }}
               {{- end }}
-              {{- if .Values.config.p2pExternalIp }}
-              --p2p-external-ip={{ .Values.config.p2pExternalIp }}
+              {{- if .Values.charon.p2pExternalIp }}
+              --p2p-external-ip={{ .Values.charon.p2pExternalIp }}
               {{- end }}
-              {{- if .Values.config.p2pRelays }}
-              --p2p-relays={{ .Values.config.p2pRelays }}
+              {{- if .Values.charon.p2pRelays }}
+              --p2p-relays={{ .Values.charon.p2pRelays }}
               {{- end }}
-              {{- if .Values.config.p2pTcpAddress }}
-              --p2p-tcp-address={{ .Values.config.p2pTcpAddress }}
+              {{- if .Values.charon.p2pTcpAddress }}
+              --p2p-tcp-address={{ .Values.charon.p2pTcpAddress }}
               {{- end }}
-              --private-key-file="{{ .Values.charon.config.privateKeyFile }}"
-              {{- if .Values.config.syntheticBlockProposals }}
-              --synthetic-block-proposals={{ .Values.config.syntheticBlockProposals }}
+              --private-key-file="{{ .Values.charon.privateKeyFile }}"
+              {{- if .Values.charon.syntheticBlockProposals }}
+              --synthetic-block-proposals={{ .Values.charon.syntheticBlockProposals }}
               {{- end }}
-              {{- if .Values.config.validatorApiAddress }}
-              --validator-api-address={{ .Values.config.validatorApiAddress }}
+              {{- if .Values.charon.validatorApiAddress }}
+              --validator-api-address={{ .Values.charon.validatorApiAddress }}
               {{- end }}
           env:
           - name: NODE_NAME
@@ -207,7 +199,7 @@ spec:
             - containerPort: {{ .Values.service.ports.p2pTcp.targetPort }}
               name: p2p-tcp
               protocol: TCP
-            - containerPort: {{ .Values.config.charonInternalMonitoringPort }}
+            - containerPort: {{ .Values.charon.charonInternalMonitoringPort }}
               name: monitoring
               protocol: TCP
         {{- if or .Values.livenessProbe.enabled }}
@@ -216,7 +208,7 @@ spec:
             periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
             httpGet:
               path: {{ .Values.livenessProbe.httpGet.path }}
-              port: {{ .Values.config.charonInternalMonitoringPort }}
+              port: {{ .Values.charon.charonInternalMonitoringPort }}
         {{- end }}
         {{- if or .Values.readinessProbe.enabled }}
           readinessProbe:
@@ -224,7 +216,7 @@ spec:
             periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
             httpGet:
               path: {{ .Values.readinessProbe.httpGet.path }}
-              port: {{ .Values.config.charonInternalMonitoringPort }}
+              port: {{ .Values.charon.charonInternalMonitoringPort }}
         {{- end }}  
           volumeMounts:
             {{- if .Values.configMaps.clusterlock }}
