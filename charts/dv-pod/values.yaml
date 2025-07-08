@@ -393,8 +393,12 @@ persistence:
   # -- Access modes for the PVC. Must be a list. Default: ["ReadWriteOnce"].
   accessModes:
     - ReadWriteOnce
-  # -- Size of the PVC.
+  # -- Size of the PVC for charon-data.
   size: 1Gi
+  # -- Size of the PVC for validator-data. Defaults to the same as size.
+  # Validator data includes slashing protection DB and other validator state.
+  # WARNING: If persistence is disabled, validator data is lost on pod restart which could lead to slashing!
+  validatorDataSize: 500Mi
   # -- Optional: Annotations for the PVC
   # annotations: {}
   #   key: value
