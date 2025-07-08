@@ -187,7 +187,11 @@ To deploy node0 using this chart:
 kubectl create secret generic charon-enr-private-key --from-file=cluster/node0/charon-enr-private-key
 
 # Create the cluster lock ConfigMap (same for all nodes)
-kubectl create configmap cluster-lock --from-file=cluster/node0/cluster-lock.json
+kubectl create configmap my-cluster-lock --from-file=cluster/node0/cluster-lock.json
+
+# Install the chart, referencing your ConfigMap
+helm install my-dv-pod obol/dv-pod \
+  --set configMaps.clusterlock=my-cluster-lock
 ```
 
 Note: The validator keys will be loaded from the persistent volume created during DKG.
@@ -211,7 +215,11 @@ Create the required resources:
 kubectl create secret generic charon-enr-private-key --from-file=.charon/charon-enr-private-key
 
 # Create the cluster lock ConfigMap
-kubectl create configmap cluster-lock --from-file=.charon/cluster-lock.json
+kubectl create configmap my-cluster-lock --from-file=.charon/cluster-lock.json
+
+# Install the chart, referencing your ConfigMap
+helm install my-dv-pod obol/dv-pod \
+  --set configMaps.clusterlock=my-cluster-lock
 ```
 
 ### Option 2: Run DKG through the chart (automatic)
@@ -297,8 +305,8 @@ For example, if you installed the chart as `my-dv-pod` in namespace `dv-pod`:
 Note: The Charon validator API on port 3600 provides the same interface as a beacon node API, allowing standard validator clients to connect without modification.
 
 ## Uninstall the Chart
-To uninstall and delete the `my-dv-pod` release:
+To uninstall and delete the `dv-pod` release:
 ```sh
-helm uninstall my-dv-pod -n dv-pod
+helm uninstall dv-pod -n dv-pod
 ```
 The command removes all the Kubernetes components associated with the chart and deletes the release.
