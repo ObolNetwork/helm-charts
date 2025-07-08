@@ -118,6 +118,9 @@ spec:
             - >
               exec /usr/local/bin/charon run
               --beacon-node-endpoints={{ include "dv-pod.beaconNodeEndpoints" . }}
+              {{- if .Values.charon.fallbackBeaconNodeEndpoints }}
+              --fallback-beacon-node-endpoints={{ include "dv-pod.fallbackBeaconNodeEndpoints" . }}
+              {{- end }}
               --lock-file=/charon-data/cluster-lock.json
               {{- if .Values.charon.builderApi }}
               --builder-api={{ .Values.charon.builderApi }}
