@@ -404,43 +404,6 @@ persistence:
   # annotations: {}
   #   key: value
 
-# -- Node selector for pod assignment
-# Ref: https://kubernetes.io/docs/user-guide/node-selection/
-nodeSelector: {}
-
-# -- Tolerations for pod assignment
-## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
-tolerations: {}
-
-# -- Affinity for pod assignment
-## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
-##
-## Example:
-## affinity:
-##   podAntiAffinity:
-##     requiredDuringSchedulingIgnoredDuringExecution:
-##     - labelSelector:
-##         matchExpressions:
-##         - key: app.kubernetes.io/name
-##           operator: In
-##           values:
-##           - charon
-##       topologyKey: kubernetes.io/hostname
-##
-affinity: {}
-
-# -- Used to assign priority to pods
-## ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/
-priorityClassName: ""
-
-# -- Enable pod disruption budget
-## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb
-podDisruptionBudget:
-  minAvailable: ""
-  enabled: true
-
-# -- allows you to configure and disable automated rolling updates for containers, labels, resource request/limits, and annotations for the Pods in a StatefulSet.
-updateStrategy: RollingUpdate
 
 # -- Prometheus Service Monitor
 ## ref: https://github.com/coreos/prometheus-operator
