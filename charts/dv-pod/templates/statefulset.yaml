@@ -203,7 +203,7 @@ spec:
             - containerPort: 3620
               name: monitoring
               protocol: TCP
-        {{- if or .Values.livenessProbe.enabled }}
+        {{- if .Values.livenessProbe.enabled }}
           livenessProbe:
             initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
@@ -211,7 +211,7 @@ spec:
               path: {{ .Values.livenessProbe.httpGet.path }}
               port: 3620
         {{- end }}
-        {{- if or .Values.readinessProbe.enabled }}
+        {{- if .Values.readinessProbe.enabled }}
           readinessProbe:
             initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
