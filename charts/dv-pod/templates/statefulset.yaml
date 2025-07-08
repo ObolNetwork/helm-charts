@@ -59,6 +59,7 @@ spec:
         # To skip this container entirely:
         # - Create a configMap with your cluster-lock.json and reference it in values.yaml
         # - The container will detect the existing lock file and exit gracefully
+        {{- if .Values.charon.dkgSidecar.enabled }}
         - name: dkg-sidecar
           image: "{{ .Values.charon.dkgSidecar.image.repository }}:{{ .Values.charon.dkgSidecar.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.charon.dkgSidecar.image.pullPolicy }}
@@ -111,6 +112,7 @@ spec:
               subPath: "{{ include "dv-pod.enrSecretDataKey" . }}"
           resources:
             {{- toYaml .Values.charon.dkgSidecar.resources | nindent 12 }}
+        {{- end }}
       containers:
         - command:
             - sh
