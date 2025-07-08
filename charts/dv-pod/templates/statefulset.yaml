@@ -339,12 +339,17 @@ spec:
           {{- end }}
         {{- end }}
       volumes:
+        {{- if .Values.configMaps.clusterlock }}
         - name: cluster-lock
           projected:
             sources:
             - configMap:
                 name: {{ .Values.configMaps.clusterlock }}
                 optional: true
+        {{- else }}
+        - name: cluster-lock
+          emptyDir: {}
+        {{- end }}
         # Volume for the shared ENR private key
         - name: charon-enr-key
           secret:
