@@ -229,7 +229,7 @@ spec:
             {{- end }}
             # Mount for the shared ENR private key
             - name: charon-enr-key
-              mountPath: "{{ .Values.charon.config.privateKeyFile }}"
+              mountPath: "{{ .Values.charon.privateKeyFile }}"
               subPath: "{{ include "dv-pod.enrSecretDataKey" . }}" # Mount the specific key file, not the whole secret dir
             - name: charon-data
               mountPath: /charon-data
