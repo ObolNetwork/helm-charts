@@ -277,7 +277,7 @@ spec:
           image: {{ .Values.validatorClient.image.repository | default "gcr.io/prysmaticlabs/prysm/validator" }}:{{ .Values.validatorClient.image.tag | default "v5.1.2" }}
           command:
             - /app/cmd/validator/validator
-            - --beacon-rpc-provider=localhost:3600
+            - --beacon-rest-api-provider=http://localhost:3600
             - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
             - --datadir=/validator-data
             - --monitoring-host=0.0.0.0
