@@ -107,6 +107,13 @@ spec:
               subPath: cluster-lock.json
               readOnly: true
             {{- end }}
+            {{- if .Values.configMaps.configHash }}
+            # Mount config-hash for large cluster-lock files
+            - name: config-hash
+              mountPath: /charon-data/config-hash
+              subPath: config-hash
+              readOnly: true
+            {{- end }}
             - name: charon-enr-key
               mountPath: /charon-data/charon-enr-private-key
               subPath: "{{ include "dv-pod.enrSecretDataKey" . }}"
@@ -351,6 +358,15 @@ spec:
         {{- else }}
         - name: cluster-lock
           emptyDir: {}
+        {{- end }}
+        {{- if .Values.configMaps.configHash }}
+        # Volume for config-hash ConfigMap (large cluster-lock files)
+        - name: config-hash
+          configMap:
+            name: {{ .Values.configMaps.configHash }}
+            items:
+            - key: config-hash
+              path: config-hash
         {{- end }}
         # Volume for the shared ENR private key
         - name: charon-enr-key

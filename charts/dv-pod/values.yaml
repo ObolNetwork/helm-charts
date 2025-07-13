@@ -383,6 +383,13 @@ configMaps:
   # Note: ConfigMaps support larger file sizes than Secrets (up to 1MB compressed), making them
   # more suitable for cluster-lock files which can be several megabytes.
   clusterlock: ""
+  
+  # -- Name of the ConfigMap containing the config-hash
+  # Use this when your cluster-lock.json is too large (>1MB) for a ConfigMap.
+  # The ConfigMap should contain a key 'config-hash' with the value from 
+  # cluster_definition.config_hash in your cluster-lock.json
+  # Example: kubectl create configmap cluster-config-hash --from-literal=config-hash=$CONFIG_HASH
+  configHash: ""
 
 # -- Persistence configuration for DKG artifacts and charon data
 persistence:
