@@ -2,12 +2,12 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: {{ include "charon.serviceAccountName" . }}
+  name: {{ include "dv-pod.serviceAccountName" . }}
   {{- if .Values.serviceMonitor.namespace }}
   namespace: {{ .Values.serviceMonitor.namespace }}
   {{- end }}
   labels:
-    {{- include "charon.labels" . | nindent 4 }}
+    {{- include "dv-pod.labels" . | nindent 4 }}
     {{- if .Values.serviceMonitor.labels }}
     {{- toYaml .Values.serviceMonitor.labels | nindent 4 }}
     {{- end }}
@@ -36,7 +36,7 @@ spec:
   jobLabel: "{{ .Release.Name }}"
   selector:
     matchLabels:
-      {{- include "charon.selectorLabels" . | nindent 8 }}
+      {{- include "dv-pod.selectorLabels" . | nindent 8 }}
   namespaceSelector:
     matchNames:
       - {{ .Release.Namespace }}

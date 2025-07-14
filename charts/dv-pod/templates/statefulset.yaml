@@ -2,16 +2,16 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "charon.fullname" . }}
+  name: {{ include "dv-pod.fullname" . }}
   labels:
-    {{- include "charon.labels" . | nindent 4 }}
+    {{- include "dv-pod.labels" . | nindent 4 }}
 spec:
-  serviceName: {{ include "charon.fullname" . }}
+  serviceName: {{ include "dv-pod.fullname" . }}
   updateStrategy:
     type: {{ .Values.updateStrategy }}
   selector:
     matchLabels:
-      {{- include "charon.selectorLabels" . | nindent 6 }}
+      {{- include "dv-pod.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -19,14 +19,14 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "charon.selectorLabels" . | nindent 8 }}
+        {{- include "dv-pod.selectorLabels" . | nindent 8 }}
     spec:
       {{- with concat .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- if or .Values.serviceAccount.enabled }}
-      serviceAccountName: {{ include "charon.serviceAccountName" . }}
+      serviceAccountName: {{ include "dv-pod.serviceAccountName" . }}
       {{- end }}
       {{- if .Values.priorityClassName }}
       priorityClassName: {{ .Values.priorityClassName | quote }}
@@ -48,15 +48,25 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       initContainers:
+        # DKG Sidecar Init Container
+        # This container orchestrates the Distributed Key Generation (DKG) process for Charon clusters.
+        # 
+        # Behavior:
+        # 1. If /charon-data/cluster-lock.json exists: Exits immediately (cluster already initialized)
+        # 2. If /charon-data/cluster-definition.json exists but no cluster-lock.json: Runs DKG with existing definition
+        # 3. If neither exists: Polls Obol API for cluster invites and runs DKG when ready
+        #
+        # To skip this container entirely:
+        # - Create a configMap with your cluster-lock.json and reference it in values.yaml
+        # - The container will detect the existing lock file and exit gracefully
+        {{- if .Values.charon.dkgSidecar.enabled }}
         - name: dkg-sidecar
           image: "{{ .Values.charon.dkgSidecar.image.repository }}:{{ .Values.charon.dkgSidecar.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.charon.dkgSidecar.image.pullPolicy }}
           securityContext:
             runAsUser: 0
             runAsGroup: 0
-          command:
-            - "node"
-            - "/app/dkg-sidecar.js"
+          args:
             - "{{ .Values.charon.operatorAddress }}"
             - "/enr-from-job/enr.txt"
           env:
@@ -90,105 +100,245 @@ spec:
               readOnly: true
             - name: charon-data
               mountPath: /charon-data
+            {{- if .Values.configMaps.clusterlock }}
+            # Mount pre-existing cluster-lock if provided
+            - name: cluster-lock
+              mountPath: /charon-data/cluster-lock.json
+              subPath: cluster-lock.json
+              readOnly: true
+            {{- end }}
+            {{- if .Values.configMaps.configHash }}
+            # Mount config-hash for large cluster-lock files
+            - name: config-hash
+              mountPath: /charon-data/config-hash
+              subPath: config-hash
+              readOnly: true
+            {{- end }}
             - name: charon-enr-key
               mountPath: /charon-data/charon-enr-private-key
-              subPath: "{{ include "charon.enrSecretDataKey" . }}"
+              subPath: "{{ include "dv-pod.enrSecretDataKey" . }}"
           resources:
             {{- toYaml .Values.charon.dkgSidecar.resources | nindent 12 }}
+        {{- end }}
+        {{- if .Values.validatorClient.enabled }}
+        # Keystore Import Init Container
+        # This container imports validator keystores for the validator client.
+        # It handles different validator client formats and sources:
+        # 1. Pre-existing keystores from a Secret
+        # 2. DKG-generated keystores from /charon-data/validator_keys/
+        - name: import-keystores
+          image: busybox:1.34.0
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              echo "Starting keystore import process..."
+              
+              # Determine validator client type
+              VC_TYPE="{{ .Values.validatorClient.type }}"
+              echo "Validator client type: $VC_TYPE"
+              
+              # Check if keystores already exist in validator-data
+              if [ "$VC_TYPE" = "lighthouse" ] && [ -d /validator-data/validators ] && [ "$(ls -A /validator-data/validators 2>/dev/null)" ]; then
+                echo "Keystores already exist in validator data, skipping import"
+                exit 0
+              elif [ "$VC_TYPE" = "lodestar" ] && [ -d /validator-data/keystores ] && [ "$(ls -A /validator-data/keystores 2>/dev/null)" ]; then
+                echo "Keystores already exist in validator data, skipping import"
+                exit 0
+              elif [ "$VC_TYPE" = "teku" ] && [ -d /validator-data/keys ] && [ "$(ls -A /validator-data/keys 2>/dev/null)" ]; then
+                echo "Keystores already exist in validator data, skipping import"
+                exit 0
+              elif [ "$VC_TYPE" = "prysm" ] && [ -d /validator-data/wallets ] && [ "$(ls -A /validator-data/wallets 2>/dev/null)" ]; then
+                echo "Keystores already exist in validator data, skipping import"
+                exit 0
+              elif [ "$VC_TYPE" = "nimbus" ] && [ -d /validator-data/validators ] && [ "$(ls -A /validator-data/validators 2>/dev/null)" ]; then
+                echo "Keystores already exist in validator data, skipping import"
+                exit 0
+              fi
+              
+              # Determine source of keystores
+              if [ -d /keystores ] && [ "$(ls -A /keystores 2>/dev/null)" ]; then
+                echo "Found keystores in mounted secret"
+                KEYSTORE_DIR="/keystores"
+              elif [ -d /charon-data/validator_keys ] && [ "$(ls -A /charon-data/validator_keys 2>/dev/null)" ]; then
+                echo "Found keystores from DKG output"
+                KEYSTORE_DIR="/charon-data/validator_keys"
+              else
+                echo "ERROR: No keystores found to import"
+                echo "Checked locations:"
+                echo "  - /keystores (from secret): $(ls -la /keystores 2>&1 || echo 'Not mounted')"
+                echo "  - /charon-data/validator_keys (from DKG): $(ls -la /charon-data/validator_keys 2>&1 || echo 'Not found')"
+                exit 1
+              fi
+              
+              echo "Importing keystores from: $KEYSTORE_DIR"
+              
+              # Import based on validator client type
+              case "$VC_TYPE" in
+                "lighthouse")
+                  echo "Importing for Lighthouse..."
+                  mkdir -p /validator-data/validators /validator-data/secrets
+                  cp -v $KEYSTORE_DIR/keystore-*.json /validator-data/validators/ 2>/dev/null || echo "No keystore JSON files found"
+                  cp -v $KEYSTORE_DIR/keystore-*.txt /validator-data/secrets/ 2>/dev/null || echo "No keystore password files found"
+                  chmod -R 600 /validator-data/validators/* /validator-data/secrets/*
+                  chown -R 1000:1000 /validator-data
+                  ;;
+                  
+                "lodestar")
+                  echo "Importing for Lodestar (requires restructuring)..."
+                  mkdir -p /validator-data/keystores /validator-data/secrets
+                  for keystore in $KEYSTORE_DIR/keystore-*.json; do
+                    if [ -f "$keystore" ]; then
+                      # Extract pubkey from keystore
+                      pubkey=$(grep -o '"pubkey":"[^"]*"' "$keystore" | cut -d'"' -f4)
+                      if [ -n "$pubkey" ]; then
+                        echo "Processing keystore for pubkey: $pubkey"
+                        mkdir -p "/validator-data/keystores/$pubkey"
+                        cp "$keystore" "/validator-data/keystores/$pubkey/voting-keystore.json"
+                        # Copy corresponding password file
+                        password_file="${keystore%.json}.txt"
+                        if [ -f "$password_file" ]; then
+                          cp "$password_file" "/validator-data/secrets/$pubkey"
+                        fi
+                        chmod 600 "/validator-data/keystores/$pubkey/voting-keystore.json"
+                        chmod 600 "/validator-data/secrets/$pubkey"
+                      fi
+                    fi
+                  done
+                  chown -R 1000:1000 /validator-data
+                  ;;
+                  
+                "teku")
+                  echo "Importing for Teku..."
+                  mkdir -p /validator-data/keys /validator-data/passwords
+                  cp -v $KEYSTORE_DIR/keystore-*.json /validator-data/keys/ 2>/dev/null || echo "No keystore JSON files found"
+                  cp -v $KEYSTORE_DIR/keystore-*.txt /validator-data/passwords/ 2>/dev/null || echo "No keystore password files found"
+                  chmod -R 600 /validator-data/keys/* /validator-data/passwords/*
+                  chown -R 1000:1000 /validator-data
+                  ;;
+                  
+                "prysm")
+                  echo "Importing for Prysm..."
+                  mkdir -p /validator-data/wallets
+                  # Prysm expects a specific wallet structure, for now just copy keystores
+                  cp -v $KEYSTORE_DIR/keystore-*.json /validator-data/wallets/ 2>/dev/null || echo "No keystore JSON files found"
+                  cp -v $KEYSTORE_DIR/keystore-*.txt /validator-data/wallets/ 2>/dev/null || echo "No keystore password files found"
+                  chmod -R 600 /validator-data/wallets/*
+                  chown -R 1000:1000 /validator-data
+                  ;;
+                  
+                "nimbus")
+                  echo "Importing for Nimbus..."
+                  mkdir -p /validator-data/validators /validator-data/secrets
+                  cp -v $KEYSTORE_DIR/keystore-*.json /validator-data/validators/ 2>/dev/null || echo "No keystore JSON files found"
+                  cp -v $KEYSTORE_DIR/keystore-*.txt /validator-data/secrets/ 2>/dev/null || echo "No keystore password files found"
+                  chmod -R 600 /validator-data/validators/* /validator-data/secrets/*
+                  chown -R 1000:1000 /validator-data
+                  ;;
+                  
+                *)
+                  echo "ERROR: Unknown validator client type: $VC_TYPE"
+                  exit 1
+                  ;;
+              esac
+              
+              echo "Keystore import completed successfully"
+              echo "Imported keystores:"
+              find /validator-data -name "*.json" -o -name "*.txt" | head -20
+          volumeMounts:
+            {{- if .Values.validatorClient.keystores.secretName }}
+            - name: validator-keystores
+              mountPath: /keystores
+              readOnly: true
+            {{- end }}
+            - name: charon-data
+              mountPath: /charon-data
+              readOnly: true
+            - name: validator-data
+              mountPath: /validator-data
+        {{- end }}
       containers:
         - command:
             - sh
             - -ac
             - >
               exec /usr/local/bin/charon run
-              --beacon-node-endpoints={{ .Values.config.beaconNodeEndpoints }}
+              --beacon-node-endpoints={{ include "dv-pod.beaconNodeEndpoints" . }}
+              {{- if .Values.charon.fallbackBeaconNodeEndpoints }}
+              --fallback-beacon-node-endpoints={{ include "dv-pod.fallbackBeaconNodeEndpoints" . }}
+              {{- end }}
               --lock-file=/charon-data/cluster-lock.json
-              {{- if .Values.config.builderApi }}
-              --builder-api={{ .Values.config.builderApi }}
+              {{- if .Values.charon.builderApi }}
+              --builder-api={{ .Values.charon.builderApi }}
               {{- end }}
-              {{- if .Values.config.featureSet }}
-              --feature-set={{ .Values.config.featureSet }}
+              {{- if .Values.charon.featureSet }}
+              --feature-set={{ .Values.charon.featureSet }}
               {{- end }}
-              {{- if .Values.config.featureSetDisable }}
-              --feature-set-disable={{ .Values.config.featureSetDisable }}
+              {{- if .Values.charon.featureSetDisable }}
+              --feature-set-disable={{ .Values.charon.featureSetDisable }}
               {{- end }}
-              {{- if .Values.config.featureSetEnable }}
-              --feature-set-enable={{ .Values.config.featureSetEnable }}
+              {{- if .Values.charon.featureSetEnable }}
+              --feature-set-enable={{ .Values.charon.featureSetEnable }}
               {{- end }}
-              {{- if .Values.config.jaegerAddress }}
-              --jaeger-address={{ .Values.config.jaegerAddress }}
+              {{- if .Values.charon.logFormat }}
+              --log-format={{ .Values.charon.logFormat }}
               {{- end }}
-              {{- if .Values.config.jaegerService }}
-              --jaeger-service={{ .Values.config.jaegerService }}
-              {{- else }}
-              --jaeger-service="${NODE_NAME}"
+              {{- if .Values.charon.logLevel }}
+              --log-level={{ .Values.charon.logLevel }}
               {{- end }}
-              {{- if .Values.config.logFormat }}
-              --log-format={{ .Values.config.logFormat }}
+              {{- if .Values.charon.lokiAddresses }}
+              --loki-addresses={{ .Values.charon.lokiAddresses }}
               {{- end }}
-              {{- if .Values.config.logLevel }}
-              --log-level={{ .Values.config.logLevel }}
-              {{- end }}
-              {{- if .Values.config.lokiAddresses }}
-              --loki-addresses={{ .Values.config.lokiAddresses }}
-              {{- end }}
-              {{- if .Values.config.lokiService }}
-              --loki-service={{ .Values.config.lokiService }}
+              {{- if .Values.charon.lokiService }}
+              --loki-service={{ .Values.charon.lokiService }}
               {{- else }}
               --loki-service="${NODE_NAME}"
               {{- end }}
-              {{- if .Values.config.monitoringAddress }}
-              --monitoring-address=0.0.0.0:{{ .Values.config.charonInternalMonitoringPort }}
+              {{- if .Values.charon.monitoringAddress }}
+              --monitoring-address=0.0.0.0:3620
               {{- end }}
-              {{- if .Values.config.noVerify }}
-              --no-verify={{ .Values.config.noVerify }}
+              {{- if .Values.charon.noVerify }}
+              --no-verify={{ .Values.charon.noVerify }}
               {{- end }}
-              {{- if .Values.config.p2pAllowlist }}
-              --p2p-allowlist={{ .Values.config.p2pAllowlist }}
+              {{- if .Values.charon.p2pAllowlist }}
+              --p2p-allowlist={{ .Values.charon.p2pAllowlist }}
               {{- end }}
-              {{- if .Values.config.p2pDenylist }}
-              --p2p-denylist={{ .Values.config.p2pDenylist }}
+              {{- if .Values.charon.p2pDenylist }}
+              --p2p-denylist={{ .Values.charon.p2pDenylist }}
               {{- end }}
-              {{- if .Values.config.p2pDisableReuseport }}
-              --p2p-disable-reuseport={{ .Values.config.p2pDisableReuseport }}
+              {{- if .Values.charon.p2pDisableReuseport }}
+              --p2p-disable-reuseport={{ .Values.charon.p2pDisableReuseport }}
               {{- end }}
-              {{- if .Values.config.directConnectionEnabled }}
+              {{- if .Values.charon.directConnectionEnabled }}
               --p2p-external-hostname="${NODE_NAME}"
               {{- else }}
-              --p2p-external-hostname={{ .Values.config.p2pExternalHostname }}
+              --p2p-external-hostname={{ .Values.charon.p2pExternalHostname }}
               {{- end }}
-              {{- if .Values.config.p2pExternalIp }}
-              --p2p-external-ip={{ .Values.config.p2pExternalIp }}
+              {{- if .Values.charon.p2pExternalIp }}
+              --p2p-external-ip={{ .Values.charon.p2pExternalIp }}
               {{- end }}
-              {{- if .Values.config.p2pRelays }}
-              --p2p-relays={{ .Values.config.p2pRelays }}
+              {{- if .Values.charon.p2pRelays }}
+              --p2p-relays={{ .Values.charon.p2pRelays }}
               {{- end }}
-              {{- if .Values.config.p2pTcpAddress }}
-              --p2p-tcp-address={{ .Values.config.p2pTcpAddress }}
+              {{- if .Values.charon.p2pTcpAddress }}
+              --p2p-tcp-address={{ .Values.charon.p2pTcpAddress }}
               {{- end }}
-              --private-key-file="{{ .Values.charon.config.privateKeyFile }}"
-              {{- if .Values.config.simnetBeaconMock }}
-              --simnet-beacon-mock={{ .Values.config.simnetBeaconMock }}
+              --private-key-file="{{ .Values.charon.privateKeyFile }}"
+              {{- if .Values.charon.syntheticBlockProposals }}
+              --synthetic-block-proposals={{ .Values.charon.syntheticBlockProposals }}
               {{- end }}
-              {{- if .Values.config.simnetValidatorKeysDir }}
-              --simnet-validator-keys-dir={{ .Values.config.simnetValidatorKeysDir }}
-              {{- end }}
-              {{- if .Values.config.simnetValidatorMock }}
-              --simnet-validator-mock={{ .Values.config.simnetValidatorMock }}
-              {{- end }}
-              {{- if .Values.config.syntheticBlockProposals }}
-              --synthetic-block-proposals={{ .Values.config.syntheticBlockProposals }}
-              {{- end }}
-              {{- if .Values.config.validatorApiAddress }}
-              --validator-api-address={{ .Values.config.validatorApiAddress }}
+              {{- if .Values.charon.validatorApiAddress }}
+              --validator-api-address={{ .Values.charon.validatorApiAddress }}
               {{- end }}
           env:
           - name: NODE_NAME
             valueFrom:
               fieldRef:
                 fieldPath: metadata.name
-          - name: KUBERNETES_CLUSTER_DOMAIN
-            value: {{ .Values.kubernetesClusterDomain }}
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           name: {{ .Chart.Name }}
           {{- with .Values.containerSecurityContext }}
@@ -200,32 +350,37 @@ spec:
             - containerPort: {{ .Values.service.ports.p2pTcp.targetPort }}
               name: p2p-tcp
               protocol: TCP
-            - containerPort: {{ .Values.config.charonInternalMonitoringPort }}
+            - containerPort: 3620
               name: monitoring
               protocol: TCP
-        {{- if or .Values.livenessProbe.enabled }}
+        {{- if .Values.livenessProbe.enabled }}
           livenessProbe:
             initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
             httpGet:
               path: {{ .Values.livenessProbe.httpGet.path }}
-              port: {{ .Values.config.charonInternalMonitoringPort }}
+              port: 3620
         {{- end }}
-        {{- if or .Values.readinessProbe.enabled }}
+        {{- if .Values.readinessProbe.enabled }}
           readinessProbe:
             initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
             httpGet:
               path: {{ .Values.readinessProbe.httpGet.path }}
-              port: {{ .Values.config.charonInternalMonitoringPort }}
+              port: 3620
         {{- end }}  
           volumeMounts:
-            - mountPath: /charon
-              name: cluster-lock
+            {{- if .Values.configMaps.clusterlock }}
+            # Mount cluster-lock configMap if provided
+            - name: cluster-lock
+              mountPath: /charon-data/cluster-lock.json
+              subPath: cluster-lock.json
+              readOnly: true
+            {{- end }}
             # Mount for the shared ENR private key
             - name: charon-enr-key
-              mountPath: "{{ .Values.charon.config.privateKeyFile }}"
-              subPath: "{{ include "charon.enrSecretDataKey" . }}" # Mount the specific key file, not the whole secret dir
+              mountPath: "{{ .Values.charon.privateKeyFile }}"
+              subPath: "{{ include "dv-pod.enrSecretDataKey" . }}" # Mount the specific key file, not the whole secret dir
             - name: charon-data
               mountPath: /charon-data
               readOnly: true
@@ -233,34 +388,158 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- end }}
+        {{- if .Values.validatorClient.enabled }}
+        # Validator Client Container
+        - name: validator-client
+          {{- if eq .Values.validatorClient.type "lighthouse" }}
+          image: {{ .Values.validatorClient.image.repository | default "sigp/lighthouse" }}:{{ .Values.validatorClient.image.tag | default "v7.0.1" }}
+          command:
+            - lighthouse
+            - validator_client
+            - --beacon-nodes=http://localhost:3600
+            - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
+            - --datadir=/validator-data
+            - --init-slashing-protection
+            - --metrics
+            - --metrics-address=0.0.0.0
+            - --metrics-port=5064
+            - --distributed
+            {{- range .Values.validatorClient.config.extraArgs }}
+            - {{ . }}
+            {{- end }}
+          {{- else if eq .Values.validatorClient.type "teku" }}
+          image: {{ .Values.validatorClient.image.repository | default "consensys/teku" }}:{{ .Values.validatorClient.image.tag | default "25.6.0" }}
+          command:
+            - /opt/teku/bin/teku
+            - validator-client
+            - --network={{ .Values.validatorClient.config.network | default "auto" }}
+            - --beacon-node-api-endpoint=http://localhost:3600
+            - --validators-graffiti={{ .Values.validatorClient.config.graffiti | quote }}
+            - --data-path=/validator-data
+            - --validator-keys=/validator-data/keys:/validator-data/passwords
+            - --metrics-enabled=true
+            - --metrics-host=0.0.0.0
+            - --metrics-port=5064
+            - --Xobol-dvt-integration-enabled=true
+            {{- range .Values.validatorClient.config.extraArgs }}
+            - {{ . }}
+            {{- end }}
+          {{- else if eq .Values.validatorClient.type "prysm" }}
+          image: {{ .Values.validatorClient.image.repository | default "gcr.io/prysmaticlabs/prysm/validator" }}:{{ .Values.validatorClient.image.tag | default "v5.1.2" }}
+          command:
+            - /app/cmd/validator/validator
+            - --beacon-rest-api-provider=http://localhost:3600
+            - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
+            - --datadir=/validator-data
+            - --monitoring-host=0.0.0.0
+            - --monitoring-port=5064
+            - --distributed
+            {{- range .Values.validatorClient.config.extraArgs }}
+            - {{ . }}
+            {{- end }}
+          {{- else if eq .Values.validatorClient.type "nimbus" }}
+          image: {{ .Values.validatorClient.image.repository | default "statusim/nimbus-eth2" }}:{{ .Values.validatorClient.image.tag | default "multiarch-v25.6.0" }}
+          command:
+            - /home/user/nimbus-eth2/build/nimbus_validator_client
+            - --beacon-node=http://localhost:3600
+            - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
+            - --data-dir=/validator-data
+            - --metrics
+            - --metrics-address=0.0.0.0
+            - --metrics-port=5064
+            - --distributed
+            {{- range .Values.validatorClient.config.extraArgs }}
+            - {{ . }}
+            {{- end }}
+          {{- else if eq .Values.validatorClient.type "lodestar" }}
+          image: {{ .Values.validatorClient.image.repository | default "chainsafe/lodestar" }}:{{ .Values.validatorClient.image.tag | default "v1.31.0" }}
+          command:
+            - node
+            - /usr/app/packages/cli/bin/lodestar
+            - validator
+            - --beacon-nodes=http://localhost:3600
+            - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
+            - --dataDir=/validator-data
+            - --importKeystores=/validator-data/keystores
+            - --importKeystoresPassword=/validator-data/secrets
+            - --metrics=true
+            - --metrics.address=0.0.0.0
+            - --metrics.port=5064
+            - --distributed
+            {{- range .Values.validatorClient.config.extraArgs }}
+            - {{ . }}
+            {{- end }}
+          {{- end }}
+          imagePullPolicy: {{ .Values.validatorClient.image.pullPolicy }}
+          ports:
+            - containerPort: 5064
+              name: vc-metrics
+              protocol: TCP
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          volumeMounts:
+            - name: charon-data
+              mountPath: /charon-data
+              readOnly: true
+            - name: validator-data
+              mountPath: /validator-data
+          {{- with .Values.validatorClient.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        {{- end }}
       volumes:
+        {{- if .Values.configMaps.clusterlock }}
         - name: cluster-lock
           projected:
             sources:
-            - secret:
-                name: {{ .Values.secrets.clusterlock }}
+            - configMap:
+                name: {{ .Values.configMaps.clusterlock }}
                 optional: true
+        {{- else }}
+        - name: cluster-lock
+          emptyDir: {}
+        {{- end }}
+        {{- if .Values.configMaps.configHash }}
+        # Volume for config-hash ConfigMap (large cluster-lock files)
+        - name: config-hash
+          configMap:
+            name: {{ .Values.configMaps.configHash }}
+            items:
+            - key: config-hash
+              path: config-hash
+        {{- end }}
         # Volume for the shared ENR private key
         - name: charon-enr-key
           secret:
-            secretName: {{ include "charon.enrSecretName" . }}
+            secretName: {{ include "dv-pod.enrSecretName" . }}
             items:
-              - key: {{ include "charon.enrSecretDataKey" . }}
-                path: {{ include "charon.enrSecretDataKey" . }} # Ensure the file in the volume has the name of the data key
+              - key: {{ include "dv-pod.enrSecretDataKey" . }}
+                path: {{ include "dv-pod.enrSecretDataKey" . }} # Ensure the file in the volume has the name of the data key
         - name: enr-data
           secret:
-            secretName: {{ include "charon.enrSecretName" . }}
+            secretName: {{ include "dv-pod.enrSecretName" . }}
             items:
               - key: public-enr
                 path: enr.txt
+        {{- if .Values.validatorClient.keystores.secretName }}
+        # Volume for validator keystores secret
+        - name: validator-keystores
+          secret:
+            secretName: {{ .Values.validatorClient.keystores.secretName }}
+        {{- end }}
         {{- if not .Values.persistence.enabled }}
         # If persistence is disabled, use an emptyDir for charon-data.
         # Note: DKG artifacts will be lost if the pod restarts.
         - name: charon-data
           emptyDir: {}
         {{- end }}
-  {{- if .Values.persistence.enabled }}
+        # Note: validator-data volume is always provided via PVC to prevent slashing
   volumeClaimTemplates:
+    {{- if .Values.persistence.enabled }}
     - metadata:
         name: charon-data
         {{- with .Values.persistence.annotations }}
@@ -279,4 +558,25 @@ spec:
         storageClassName: "{{ .Values.persistence.storageClassName }}"
         {{- end }}
         {{- end }}
-  {{- end }}
+    {{- end }}
+    {{- if .Values.validatorClient.enabled }}
+    # Validator data PVC is always created to prevent slashing
+    - metadata:
+        name: validator-data
+        {{- with .Values.persistence.annotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      spec:
+        accessModes: {{ .Values.persistence.accessModes | toYaml | nindent 10 }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.validatorDataSize | default "500Mi" | quote }}
+        {{- if .Values.persistence.storageClassName }}
+        {{- if (eq "-" .Values.persistence.storageClassName) }}
+        storageClassName: ""
+        {{- else }}
+        storageClassName: "{{ .Values.persistence.storageClassName }}"
+        {{- end }}
+        {{- end }}
+    {{- end }}

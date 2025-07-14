@@ -2,9 +2,9 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ include "charon.serviceAccountName" . }}
+  name: {{ include "dv-pod.serviceAccountName" . }}
   labels:
-    {{- include "charon.labels" . | nindent 4 }}
+    {{- include "dv-pod.labels" . | nindent 4 }}
 rules:
 {{- toYaml .Values.rbac.rules | nindent 0 }}
 {{- end }}

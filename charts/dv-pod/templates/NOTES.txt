@@ -1,5 +1,5 @@
-{{- define "charon.clusterNotes" -}}
-Your Obol Charon cluster node "{{ template "charon.fullname" . }}" has been deployed.
+{{- define "dv-pod.clusterNotes" -}}
+Your Obol distributed validator pod "{{ template "dv-pod.fullname" . }}" has been deployed.
 
 1. ENR (Ethereum Node Record) Configuration:
 {{- if .Values.charon.enrJob.enabled }}
@@ -8,24 +8,24 @@ Your Obol Charon cluster node "{{ template "charon.fullname" . }}" has been depl
 
    To retrieve the public ENR string:
    A. Check the logs of the ENR generation job:
-      kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ template "charon.name" . }},app.kubernetes.io/instance={{ .Release.Name }},component=enr-job
+      kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ template "dv-pod.name" . }},app.kubernetes.io/instance={{ .Release.Name }},component=enr-job
       (Look for a line like "INFO: Public ENR String: enr:-...")
 
-   B. Get it from the 'public-enr' key in the Secret '{{ template "charon.enrSecretName" . }}':
-      kubectl get secret -n {{ .Release.Namespace }} {{ template "charon.enrSecretName" . }} -o jsonpath='{.data.public-enr}' | base64 --decode
+   B. Get it from the 'public-enr' key in the Secret '{{ template "dv-pod.enrSecretName" . }}':
+      kubectl get secret -n {{ .Release.Namespace }} {{ template "dv-pod.enrSecretName" . }} -o jsonpath='{.data.public-enr}' | base64 --decode
       echo ""
 
-   **IMPORTANT ACTION REQUIRED:** You **MUST** take this public ENR string and submit it during the cluster formation process on the Obol Launchpad (https://launchpad.obol.tech/) for the operator address '{{ .Values.charon.operatorAddress }}'.
+   **IMPORTANT ACTION REQUIRED:** You **MUST** take this public ENR string and submit it during the cluster formation process on the Obol Launchpad (https://launchpad.obol.org/) for the operator address '{{ .Values.charon.operatorAddress }}'.
 
 {{- else }}
    The ENR generation job is DISABLED (.Values.charon.enrJob.enabled is false).
-   The orchestration process requires the public ENR of this Charon node to be present in the Kubernetes Secret named '{{ template "charon.enrSecretName" . }}' under the data key 'public-enr'.
+   The orchestration process requires the public ENR of this Charon node to be present in the Kubernetes Secret named '{{ template "dv-pod.enrSecretName" . }}' under the data key 'public-enr'.
 
    **IMPORTANT ACTION REQUIRED:**
-   You **MUST** manually ensure that the Secret '{{ template "charon.enrSecretName" . }}' in namespace '{{ .Release.Namespace }}' exists and contains a key 'public-enr' with your desired public ENR string, base64 encoded.
+   You **MUST** manually ensure that the Secret '{{ template "dv-pod.enrSecretName" . }}' in namespace '{{ .Release.Namespace }}' exists and contains a key 'public-enr' with your desired public ENR string, base64 encoded.
 
    Example to create/update the secret with your ENR (replace 'enr:-YourActualENRStringHere'):
-   kubectl create secret generic {{ template "charon.enrSecretName" . }} -n {{ .Release.Namespace }} \
+   kubectl create secret generic {{ template "dv-pod.enrSecretName" . }} -n {{ .Release.Namespace }} \
      --from-literal=public-enr=$(echo -n 'enr:-YourActualENRStringHere' | base64) \
      --dry-run=client -o yaml | kubectl apply -f -
 
@@ -44,17 +44,17 @@ Your Obol Charon cluster node "{{ template "charon.fullname" . }}" has been depl
    e. After successful DKG, the main Charon node will start using the generated '/charon-data/cluster-lock.json'.
 
    Monitor the orchestrator logs:
-     kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ template "charon.name" . }},app.kubernetes.io/instance={{ .Release.Name }} -c dkg-sidecar -f
+     kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ template "dv-pod.name" . }},app.kubernetes.io/instance={{ .Release.Name }} -c dkg-sidecar -f
 
 3. Charon Node Status:
    Once orchestration is complete, the main Charon container ('{{ .Chart.Name }}') will start.
    Monitor its logs:
-     kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ template "charon.name" . }},app.kubernetes.io/instance={{ .Release.Name }} -c {{ .Chart.Name }} -f
+     kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ template "dv-pod.name" . }},app.kubernetes.io/instance={{ .Release.Name }} -c {{ .Chart.Name }} -f
 
    {{- if .Values.persistence.enabled }}
    Persistence is ENABLED.
    DKG artifacts and other Charon data are stored in a PersistentVolumeClaim, which should persist across pod restarts.
-   PVC Name: charon-data-{{ template "charon.fullname" . }}-0 (for StatefulSet pod 0)
+   PVC Name: charon-data-{{ template "dv-pod.fullname" . }}-0 (for StatefulSet pod 0)
    {{- else}}
    WARNING: Persistence is DISABLED (.Values.persistence.enabled is false).
    DKG artifacts and Charon data will be stored in an emptyDir volume and will be LOST if the pod restarts. It is STRONGLY recommended to enable persistence for any non-testing deployment.
@@ -63,4 +63,4 @@ Your Obol Charon cluster node "{{ template "charon.fullname" . }}" has been depl
 For troubleshooting and more details, refer to the Obol Network documentation: https://docs.obol.tech/
 {{- end -}}
 
-{{- include "charon.clusterNotes" . }}
+{{- include "dv-pod.clusterNotes" . }}
