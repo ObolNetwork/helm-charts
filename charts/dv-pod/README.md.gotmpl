@@ -97,6 +97,37 @@ helm install my-dv-pod obol/dv-pod \
   --set configMaps.clusterlock=my-cluster-lock
 ```
 
+#### Handling Large Cluster-Lock Files (>1MB)
+
+If your cluster-lock.json file is larger than 1MB, you may encounter errors when creating the ConfigMap:
+
+```console
+error validating data: ValidationError(ConfigMap.data.cluster-lock.json): invalid type for io.k8s.api.core.v1.ConfigMap.data: got "array", expected "string"
+```
+
+In this case, you can use the config hash approach:
+
+1. First, extract the config_hash from your cluster-lock.json:
+   ```console
+   CONFIG_HASH=$(jq -r '.cluster_definition.config_hash' cluster-lock.json)
+   echo $CONFIG_HASH
+   ```
+
+2. Create a ConfigMap with just the config hash:
+   ```console
+   kubectl create configmap cluster-config-hash \
+     --from-literal=config-hash=$CONFIG_HASH
+   ```
+
+3. Install the chart with the configHash option:
+   ```console
+   helm install my-dv-pod obol/dv-pod \
+     --set configMaps.configHash=cluster-config-hash \
+     --set charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>
+   ```
+
+The DKG sidecar will use this config hash to fetch the full cluster definition from the Obol API.
+
 ### Option 2: Run DKG through the chart (automatic)
 
 If you don't have pre-existing artifacts, the chart can automatically:
