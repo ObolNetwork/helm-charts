@@ -68,8 +68,9 @@ A Helm chart for deploying a single distributed validator pod with Charon middle
 | charon.p2pTcpAddress | string | `"0.0.0.0:3610"` | Comma-separated list of listening TCP addresses (ip and port) for libP2P traffic. Empty default doesn't bind to local port therefore only supports outgoing connections. |
 | charon.privateKeyFile | string | `"/data/charon-enr-private-key"` | Path within the Charon container where the ENR private key file will be mounted. |
 | charon.validatorApiAddress | string | `"0.0.0.0:3600"` | Listening address (ip and port) for validator-facing traffic proxying the beacon-node API. (default "127.0.0.1:3600") |
-| configMaps | object | `{"clusterlock":""}` | Kubernetes configMaps names for non-sensitive configuration data. |
+| configMaps | object | `{"clusterlock":"","configHash":""}` | Kubernetes configMaps names for non-sensitive configuration data. |
 | configMaps.clusterlock | string | `""` | Name of the ConfigMap containing the cluster-lock.json file Set this to the name of an existing ConfigMap to skip the DKG process. Example: If you have created a ConfigMap named "my-cluster-lock":   kubectl create configmap my-cluster-lock --from-file=cluster-lock.json Then set: clusterlock: "my-cluster-lock" If not set or if the ConfigMap doesn't exist, the DKG process will run. Note: ConfigMaps support larger file sizes than Secrets (up to 1MB compressed), making them more suitable for cluster-lock files which can be several megabytes. |
+| configMaps.configHash | string | `""` | Name of the ConfigMap containing the config-hash Use this when your cluster-lock.json is too large (>1MB) for a ConfigMap. The ConfigMap should contain a key 'config-hash' with the value from  cluster_definition.config_hash in your cluster-lock.json Example: kubectl create configmap cluster-config-hash --from-literal=config-hash=$CONFIG_HASH |
 | containerSecurityContext | object | See `values.yaml` | The security context for containers |
 | erigon.enabled | bool | `false` |  |
 | erigon.extraArgs[0] | string | `"--chain=hoodi"` |  |
@@ -215,6 +216,37 @@ kubectl create configmap my-cluster-lock --from-file=.charon/cluster-lock.json
 helm install my-dv-pod obol/dv-pod \
   --set configMaps.clusterlock=my-cluster-lock
 ```
+
+#### Handling Large Cluster-Lock Files (>1MB)
+
+If your cluster-lock.json file is larger than 1MB, you may encounter errors when creating the ConfigMap:
+
+```console
+error validating data: ValidationError(ConfigMap.data.cluster-lock.json): invalid type for io.k8s.api.core.v1.ConfigMap.data: got "array", expected "string"
+```
+
+In this case, you can use the config hash approach:
+
+1. First, extract the config_hash from your cluster-lock.json:
+   ```console
+   CONFIG_HASH=$(jq -r '.cluster_definition.config_hash' cluster-lock.json)
+   echo $CONFIG_HASH
+   ```
+
+2. Create a ConfigMap with just the config hash:
+   ```console
+   kubectl create configmap cluster-config-hash \
+     --from-literal=config-hash=$CONFIG_HASH
+   ```
+
+3. Install the chart with the configHash option:
+   ```console
+   helm install my-dv-pod obol/dv-pod \
+     --set configMaps.configHash=cluster-config-hash \
+     --set charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>
+   ```
+
+The DKG sidecar will use this config hash to fetch the full cluster definition from the Obol API.
 
 ### Option 2: Run DKG through the chart (automatic)
 
