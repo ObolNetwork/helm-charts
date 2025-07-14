@@ -412,7 +412,7 @@ spec:
           command:
             - /opt/teku/bin/teku
             - validator-client
-            - --network={{ .Values.validatorClient.config.network | default "hoodi" }}
+            - --network={{ .Values.validatorClient.config.network | default "auto" }}
             - --beacon-node-api-endpoint=http://localhost:3600
             - --validators-graffiti={{ .Values.validatorClient.config.graffiti | quote }}
             - --data-path=/validator-data
