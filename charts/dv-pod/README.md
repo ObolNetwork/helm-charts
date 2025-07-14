@@ -52,6 +52,7 @@ A Helm chart for deploying a single distributed validator pod with Charon middle
 | charon.featureSetDisable | string | `""` | Comma-separated list of features to disable, overriding the default minimum feature set. |
 | charon.featureSetEnable | string | `""` | Comma-separated list of features to enable, overriding the default minimum feature set. |
 | charon.lockFile | string | `"/charon-data/cluster-lock.json"` | The path to the cluster lock file defining distributed validator cluster. (default ".charon/cluster-lock.json") |
+| charon.lockHash | string | `""` | Lock hash for large cluster-lock files If your cluster-lock.json is larger than 1MB, extract the lock_hash value and provide it here. The DKG sidecar will fetch the full cluster lock from the Obol API. Example: --set charon.lockHash="0xabc123..." |
 | charon.logFormat | string | `"json"` | Log format; console, logfmt or json (default "console") |
 | charon.logLevel | string | `"info"` | Log level; debug, info, warn or error (default "info") |
 | charon.lokiAddresses | string | `""` | Enables sending of logfmt structured logs to these Loki log aggregation server addresses. This is in addition to normal stderr logs. |
@@ -68,9 +69,9 @@ A Helm chart for deploying a single distributed validator pod with Charon middle
 | charon.p2pTcpAddress | string | `"0.0.0.0:3610"` | Comma-separated list of listening TCP addresses (ip and port) for libP2P traffic. Empty default doesn't bind to local port therefore only supports outgoing connections. |
 | charon.privateKeyFile | string | `"/data/charon-enr-private-key"` | Path within the Charon container where the ENR private key file will be mounted. |
 | charon.validatorApiAddress | string | `"0.0.0.0:3600"` | Listening address (ip and port) for validator-facing traffic proxying the beacon-node API. (default "127.0.0.1:3600") |
-| configMaps | object | `{"clusterlock":"","configHash":""}` | Kubernetes configMaps names for non-sensitive configuration data. |
+| configMaps | object | `{"clusterlock":"","lockHash":""}` | Kubernetes configMaps names for non-sensitive configuration data. |
 | configMaps.clusterlock | string | `""` | Name of the ConfigMap containing the cluster-lock.json file Set this to the name of an existing ConfigMap to skip the DKG process. Example: If you have created a ConfigMap named "my-cluster-lock":   kubectl create configmap my-cluster-lock --from-file=cluster-lock.json Then set: clusterlock: "my-cluster-lock" If not set or if the ConfigMap doesn't exist, the DKG process will run. Note: ConfigMaps support larger file sizes than Secrets (up to 1MB compressed), making them more suitable for cluster-lock files which can be several megabytes. |
-| configMaps.configHash | string | `""` | Name of the ConfigMap containing the config-hash Use this when your cluster-lock.json is too large (>1MB) for a ConfigMap. The ConfigMap should contain a key 'config-hash' with the value from  cluster_definition.config_hash in your cluster-lock.json Example: kubectl create configmap cluster-config-hash --from-literal=config-hash=$CONFIG_HASH |
+| configMaps.lockHash | string | `""` | Name of the ConfigMap containing the lock-hash Alternative method for large cluster-lock files (>1MB). The ConfigMap should contain a key 'lock-hash' with the lock_hash value from your cluster-lock.json Example: kubectl create configmap cluster-lock-hash --from-literal=lock-hash=$LOCK_HASH Note: Using charon.lockHash directly is recommended over this method |
 | containerSecurityContext | object | See `values.yaml` | The security context for containers |
 | erigon.enabled | bool | `false` |  |
 | erigon.extraArgs[0] | string | `"--chain=hoodi"` |  |
@@ -228,28 +229,40 @@ If your cluster-lock.json file is larger than 1MB, you may encounter errors when
 error validating data: ValidationError(ConfigMap.data.cluster-lock.json): invalid type for io.k8s.api.core.v1.ConfigMap.data: got "array", expected "string"
 ```
 
-In this case, you can use the config hash approach:
+In this case, you have two options:
 
-1. First, extract the config_hash from your cluster-lock.json:
+**Option A: Direct lock hash (Recommended)**
+
+1. Extract the lock_hash from your cluster-lock.json:
    ```console
-   CONFIG_HASH=$(jq -r '.cluster_definition.config_hash' cluster-lock.json)
-   echo $CONFIG_HASH
+   LOCK_HASH=$(jq -r '.lock_hash' cluster-lock.json)
+   echo $LOCK_HASH
    ```
 
-2. Create a ConfigMap with just the config hash:
-   ```console
-   kubectl create configmap cluster-config-hash \
-     --from-literal=config-hash=$CONFIG_HASH
-   ```
-
-3. Install the chart with the configHash option:
+2. Install the chart with the lockHash value:
    ```console
    helm install my-dv-pod obol/dv-pod \
-     --set configMaps.configHash=cluster-config-hash \
+     --set charon.lockHash=$LOCK_HASH \
      --set charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>
    ```
 
-The DKG sidecar will use this config hash to fetch the full cluster definition from the Obol API.
+**Option B: ConfigMap approach**
+
+1. Extract the lock_hash and create a ConfigMap:
+   ```console
+   LOCK_HASH=$(jq -r '.lock_hash' cluster-lock.json)
+   kubectl create configmap cluster-lock-hash \
+     --from-literal=lock-hash=$LOCK_HASH
+   ```
+
+2. Install the chart referencing the ConfigMap:
+   ```console
+   helm install my-dv-pod obol/dv-pod \
+     --set configMaps.lockHash=cluster-lock-hash \
+     --set charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>
+   ```
+
+The DKG sidecar will use the lock hash to fetch the full cluster lock from the Obol API.
 
 ### Option 2: Run DKG through the chart (automatic)
 

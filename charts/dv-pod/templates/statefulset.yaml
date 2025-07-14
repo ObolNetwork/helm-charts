@@ -94,6 +94,10 @@ spec:
               value: "/charon-data"
             - name: CHARON_PRIVATE_KEY_FILE
               value: "/charon-data/charon-enr-private-key"
+            {{- if .Values.charon.lockHash }}
+            - name: LOCK_HASH
+              value: "{{ .Values.charon.lockHash }}"
+            {{- end }}
           volumeMounts:
             - name: enr-data
               mountPath: /enr-from-job
@@ -107,11 +111,11 @@ spec:
               subPath: cluster-lock.json
               readOnly: true
             {{- end }}
-            {{- if .Values.configMaps.configHash }}
-            # Mount config-hash for large cluster-lock files
-            - name: config-hash
-              mountPath: /charon-data/config-hash
-              subPath: config-hash
+            {{- if .Values.configMaps.lockHash }}
+            # Mount lock-hash for large cluster-lock files
+            - name: lock-hash
+              mountPath: /charon-data/lockhash
+              subPath: lock-hash
               readOnly: true
             {{- end }}
             - name: charon-enr-key
@@ -503,14 +507,14 @@ spec:
         - name: cluster-lock
           emptyDir: {}
         {{- end }}
-        {{- if .Values.configMaps.configHash }}
-        # Volume for config-hash ConfigMap (large cluster-lock files)
-        - name: config-hash
+        {{- if .Values.configMaps.lockHash }}
+        # Volume for lock-hash ConfigMap (large cluster-lock files)
+        - name: lock-hash
           configMap:
-            name: {{ .Values.configMaps.configHash }}
+            name: {{ .Values.configMaps.lockHash }}
             items:
-            - key: config-hash
-              path: config-hash
+            - key: lock-hash
+              path: lock-hash
         {{- end }}
         # Volume for the shared ENR private key
         - name: charon-enr-key
