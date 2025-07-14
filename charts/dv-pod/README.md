@@ -126,12 +126,15 @@ A Helm chart for deploying a single distributed validator pod with Charon middle
 | tests.dkgSidecar.serviceAccount | object | `{"create":true}` | Service account settings for test pods |
 | tolerations | object | `{}` | Tolerations for pod assignment # ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/ |
 | updateStrategy | string | `"RollingUpdate"` | allows you to configure and disable automated rolling updates for containers, labels, resource request/limits, and annotations for the Pods in a StatefulSet. |
-| validatorClient | object | `{"config":{"extraArgs":[],"graffiti":"DV-Pod"},"enabled":true,"image":{"pullPolicy":"IfNotPresent","repository":"","tag":""},"resources":{},"type":"lighthouse"}` | Validator client configuration |
+| validatorClient | object | `{"config":{"extraArgs":[],"graffiti":"DV-Pod"},"enabled":true,"image":{"pullPolicy":"IfNotPresent","repository":"","tag":""},"keystores":{"autoCreate":true,"secretName":""},"resources":{},"type":"lighthouse"}` | Validator client configuration |
 | validatorClient.config | object | `{"extraArgs":[],"graffiti":"DV-Pod"}` | Validator client specific configuration |
 | validatorClient.config.extraArgs | list | `[]` | Additional CLI arguments for the validator client |
 | validatorClient.config.graffiti | string | `"DV-Pod"` | Graffiti to include in proposed blocks |
 | validatorClient.enabled | bool | `true` | Enable the validator client container |
 | validatorClient.image | object | `{"pullPolicy":"IfNotPresent","repository":"","tag":""}` | Image configuration for validator client |
+| validatorClient.keystores | object | `{"autoCreate":true,"secretName":""}` | Validator keystores configuration |
+| validatorClient.keystores.autoCreate | bool | `true` | Automatically create secret from DKG-generated keystores Only applies when secretName is empty and DKG runs successfully |
+| validatorClient.keystores.secretName | string | `""` | Name of the Secret containing validator keystores If provided, skip keystore generation and use existing keys The secret should contain keystore-*.json and keystore-*.txt files Example: kubectl create secret generic validator-keys --from-file=keystore-0.json --from-file=keystore-0.txt |
 | validatorClient.resources | object | `{}` | Resource limits and requests for validator client |
 | validatorClient.type | string | `"lighthouse"` | Type of validator client to use Options: lighthouse, teku, nimbus, lodestar |
 
@@ -305,6 +308,38 @@ validatorClient:
     extraArgs:
       - --suggested-fee-recipient=0xYOUR_FEE_RECIPIENT_ADDRESS
 ```
+
+### Validator Keystores
+
+The chart supports two methods for providing validator keystores:
+
+#### Option 1: Pre-existing Keystores (Recommended for Production)
+
+If you have existing keystores, create a Kubernetes secret and reference it:
+
+```console
+# Create secret with your keystores
+kubectl create secret generic validator-keys \
+  --from-file=keystore-0.json \
+  --from-file=keystore-0.txt \
+  --from-file=keystore-1.json \
+  --from-file=keystore-1.txt
+
+# Deploy the chart with the keystore secret
+helm install my-dv-pod obol/dv-pod \
+  --set validatorClient.keystores.secretName=validator-keys \
+  --set configMaps.clusterlock=my-cluster-lock
+```
+
+#### Option 2: DKG-Generated Keystores (Automatic)
+
+When running DKG through the chart, keystores are automatically generated and imported to the validator client. The import process handles the specific directory structure required by each validator client:
+
+- **Lighthouse**: Keystores in `/validator-data/validators/`, passwords in `/validator-data/secrets/`
+- **Lodestar**: Restructured with pubkey directories under `/validator-data/keystores/`
+- **Teku**: Keystores in `/validator-data/keys/`, passwords in `/validator-data/passwords/`
+- **Prysm**: Keystores in `/validator-data/wallets/`
+- **Nimbus**: Similar to Lighthouse structure
 
 ## Advanced Usage
 
