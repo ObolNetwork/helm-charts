@@ -1,35 +1,59 @@
-# Test values for charon-cluster
+# Test values for dv-pod
+# This file provides test-specific overrides for the dv-pod chart
+
+# Disable sub-charts for testing
+erigon:
+  enabled: false
+
+# Validator client configuration for testing
+validatorClient:
+  enabled: true
+  type: "lighthouse"
+  config:
+    graffiti: "Test DV-Pod"
+    network: "hoodi"
+  # For testing, we might want to use a pre-existing keystore secret
+  keystores:
+    secretName: ""  # Leave empty for DKG-generated keystores
+    autoCreate: true
+
+# Charon configuration
 charon:
   # Test operator address - must match OPERATOR_A_ADDRESS in mock API
   operatorAddress: "0x3D1f0598943239806A251899016EAf4920d4726d"
   
+  # Use external beacon node endpoints for testing
+  beaconNodeEndpoints:
+    - "http://test-beacon:5052"
+  
   # DKG sidecar configuration
   dkgSidecar:
     enabled: true
-    apiEndpoint: "http://test-charon-cluster-dkg-mock-api-service:3001"  # Point to mock API service
+    apiEndpoint: "http://test-dkg-mock-api-service:3001"  # Point to mock API service
     image:
-      repository: "charon-dkg-sidecar"
-      tag: "latest"
-      pullPolicy: "Never"  # Use Never since we're using a locally loaded image
+      repository: "ghcr.io/obolnetwork/charon-dkg-sidecar"
+      tag: "v1.0.0"
+      pullPolicy: "Never"  # Use Never for locally loaded images in testing
     # Faster polling for tests
     initialRetryDelaySeconds: 2
     maxRetryDelaySeconds: 10
     retryDelayFactor: 2
+    pageLimit: 5
 
 # Disable persistence for testing
 persistence:
+  enabled: false
+  # Even with persistence disabled, validator data will use emptyDir to prevent slashing
+
+# Service monitor disabled for testing
+serviceMonitor:
   enabled: false
 
 # Disable external dependencies for testing
 erigon:
   enabled: false
-lighthouse:
+readinessProbe:
   enabled: false
-
-# Use external beacon node endpoints
-charon:
-  beaconNodeEndpoints:
-    - "http://test-beacon:5052"
 
 # Test configuration
 tests:
