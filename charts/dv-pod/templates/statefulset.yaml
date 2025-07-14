@@ -120,6 +120,147 @@ spec:
           resources:
             {{- toYaml .Values.charon.dkgSidecar.resources | nindent 12 }}
         {{- end }}
+        {{- if .Values.validatorClient.enabled }}
+        # Keystore Import Init Container
+        # This container imports validator keystores for the validator client.
+        # It handles different validator client formats and sources:
+        # 1. Pre-existing keystores from a Secret
+        # 2. DKG-generated keystores from /charon-data/validator_keys/
+        - name: import-keystores
+          image: busybox:1.34.0
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              echo "Starting keystore import process..."
+              
+              # Determine validator client type
+              VC_TYPE="{{ .Values.validatorClient.type }}"
+              echo "Validator client type: $VC_TYPE"
+              
+              # Check if keystores already exist in validator-data
+              if [ "$VC_TYPE" = "lighthouse" ] && [ -d /validator-data/validators ] && [ "$(ls -A /validator-data/validators 2>/dev/null)" ]; then
+                echo "Keystores already exist in validator data, skipping import"
+                exit 0
+              elif [ "$VC_TYPE" = "lodestar" ] && [ -d /validator-data/keystores ] && [ "$(ls -A /validator-data/keystores 2>/dev/null)" ]; then
+                echo "Keystores already exist in validator data, skipping import"
+                exit 0
+              elif [ "$VC_TYPE" = "teku" ] && [ -d /validator-data/keys ] && [ "$(ls -A /validator-data/keys 2>/dev/null)" ]; then
+                echo "Keystores already exist in validator data, skipping import"
+                exit 0
+              elif [ "$VC_TYPE" = "prysm" ] && [ -d /validator-data/wallets ] && [ "$(ls -A /validator-data/wallets 2>/dev/null)" ]; then
+                echo "Keystores already exist in validator data, skipping import"
+                exit 0
+              elif [ "$VC_TYPE" = "nimbus" ] && [ -d /validator-data/validators ] && [ "$(ls -A /validator-data/validators 2>/dev/null)" ]; then
+                echo "Keystores already exist in validator data, skipping import"
+                exit 0
+              fi
+              
+              # Determine source of keystores
+              if [ -d /keystores ] && [ "$(ls -A /keystores 2>/dev/null)" ]; then
+                echo "Found keystores in mounted secret"
+                KEYSTORE_DIR="/keystores"
+              elif [ -d /charon-data/validator_keys ] && [ "$(ls -A /charon-data/validator_keys 2>/dev/null)" ]; then
+                echo "Found keystores from DKG output"
+                KEYSTORE_DIR="/charon-data/validator_keys"
+              else
+                echo "ERROR: No keystores found to import"
+                echo "Checked locations:"
+                echo "  - /keystores (from secret): $(ls -la /keystores 2>&1 || echo 'Not mounted')"
+                echo "  - /charon-data/validator_keys (from DKG): $(ls -la /charon-data/validator_keys 2>&1 || echo 'Not found')"
+                exit 1
+              fi
+              
+              echo "Importing keystores from: $KEYSTORE_DIR"
+              
+              # Import based on validator client type
+              case "$VC_TYPE" in
+                "lighthouse")
+                  echo "Importing for Lighthouse..."
+                  mkdir -p /validator-data/validators /validator-data/secrets
+                  cp -v $KEYSTORE_DIR/keystore-*.json /validator-data/validators/ 2>/dev/null || echo "No keystore JSON files found"
+                  cp -v $KEYSTORE_DIR/keystore-*.txt /validator-data/secrets/ 2>/dev/null || echo "No keystore password files found"
+                  chmod -R 600 /validator-data/validators/* /validator-data/secrets/*
+                  chown -R 1000:1000 /validator-data
+                  ;;
+                  
+                "lodestar")
+                  echo "Importing for Lodestar (requires restructuring)..."
+                  mkdir -p /validator-data/keystores /validator-data/secrets
+                  for keystore in $KEYSTORE_DIR/keystore-*.json; do
+                    if [ -f "$keystore" ]; then
+                      # Extract pubkey from keystore
+                      pubkey=$(grep -o '"pubkey":"[^"]*"' "$keystore" | cut -d'"' -f4)
+                      if [ -n "$pubkey" ]; then
+                        echo "Processing keystore for pubkey: $pubkey"
+                        mkdir -p "/validator-data/keystores/$pubkey"
+                        cp "$keystore" "/validator-data/keystores/$pubkey/voting-keystore.json"
+                        # Copy corresponding password file
+                        password_file="${keystore%.json}.txt"
+                        if [ -f "$password_file" ]; then
+                          cp "$password_file" "/validator-data/secrets/$pubkey"
+                        fi
+                        chmod 600 "/validator-data/keystores/$pubkey/voting-keystore.json"
+                        chmod 600 "/validator-data/secrets/$pubkey"
+                      fi
+                    fi
+                  done
+                  chown -R 1000:1000 /validator-data
+                  ;;
+                  
+                "teku")
+                  echo "Importing for Teku..."
+                  mkdir -p /validator-data/keys /validator-data/passwords
+                  cp -v $KEYSTORE_DIR/keystore-*.json /validator-data/keys/ 2>/dev/null || echo "No keystore JSON files found"
+                  cp -v $KEYSTORE_DIR/keystore-*.txt /validator-data/passwords/ 2>/dev/null || echo "No keystore password files found"
+                  chmod -R 600 /validator-data/keys/* /validator-data/passwords/*
+                  chown -R 1000:1000 /validator-data
+                  ;;
+                  
+                "prysm")
+                  echo "Importing for Prysm..."
+                  mkdir -p /validator-data/wallets
+                  # Prysm expects a specific wallet structure, for now just copy keystores
+                  cp -v $KEYSTORE_DIR/keystore-*.json /validator-data/wallets/ 2>/dev/null || echo "No keystore JSON files found"
+                  cp -v $KEYSTORE_DIR/keystore-*.txt /validator-data/wallets/ 2>/dev/null || echo "No keystore password files found"
+                  chmod -R 600 /validator-data/wallets/*
+                  chown -R 1000:1000 /validator-data
+                  ;;
+                  
+                "nimbus")
+                  echo "Importing for Nimbus..."
+                  mkdir -p /validator-data/validators /validator-data/secrets
+                  cp -v $KEYSTORE_DIR/keystore-*.json /validator-data/validators/ 2>/dev/null || echo "No keystore JSON files found"
+                  cp -v $KEYSTORE_DIR/keystore-*.txt /validator-data/secrets/ 2>/dev/null || echo "No keystore password files found"
+                  chmod -R 600 /validator-data/validators/* /validator-data/secrets/*
+                  chown -R 1000:1000 /validator-data
+                  ;;
+                  
+                *)
+                  echo "ERROR: Unknown validator client type: $VC_TYPE"
+                  exit 1
+                  ;;
+              esac
+              
+              echo "Keystore import completed successfully"
+              echo "Imported keystores:"
+              find /validator-data -name "*.json" -o -name "*.txt" | head -20
+          volumeMounts:
+            {{- if .Values.validatorClient.keystores.secretName }}
+            - name: validator-keystores
+              mountPath: /keystores
+              readOnly: true
+            {{- end }}
+            - name: charon-data
+              mountPath: /charon-data
+              readOnly: true
+            - name: validator-data
+              mountPath: /validator-data
+        {{- end }}
       containers:
         - command:
             - sh
@@ -271,10 +412,11 @@ spec:
           command:
             - /opt/teku/bin/teku
             - validator-client
-            - --network={{ .Values.validatorClient.config.network | default "auto" }}
+            - --network={{ .Values.validatorClient.config.network | default "hoodi" }}
             - --beacon-node-api-endpoint=http://localhost:3600
             - --validators-graffiti={{ .Values.validatorClient.config.graffiti | quote }}
             - --data-path=/validator-data
+            - --validator-keys=/validator-data/keys:/validator-data/passwords
             - --metrics-enabled=true
             - --metrics-host=0.0.0.0
             - --metrics-port=5064
@@ -318,6 +460,8 @@ spec:
             - --beacon-nodes=http://localhost:3600
             - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
             - --dataDir=/validator-data
+            - --importKeystores=/validator-data/keystores
+            - --importKeystoresPassword=/validator-data/secrets
             - --metrics=true
             - --metrics.address=0.0.0.0
             - --metrics.port=5064
@@ -381,6 +525,12 @@ spec:
             items:
               - key: public-enr
                 path: enr.txt
+        {{- if .Values.validatorClient.keystores.secretName }}
+        # Volume for validator keystores secret
+        - name: validator-keystores
+          secret:
+            secretName: {{ .Values.validatorClient.keystores.secretName }}
+        {{- end }}
         {{- if not .Values.persistence.enabled }}
         # If persistence is disabled, use an emptyDir for charon-data.
         # Note: DKG artifacts will be lost if the pod restarts.
