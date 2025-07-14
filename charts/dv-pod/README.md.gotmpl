@@ -186,6 +186,38 @@ validatorClient:
       - --suggested-fee-recipient=0xYOUR_FEE_RECIPIENT_ADDRESS
 ```
 
+### Validator Keystores
+
+The chart supports two methods for providing validator keystores:
+
+#### Option 1: Pre-existing Keystores (Recommended for Production)
+
+If you have existing keystores, create a Kubernetes secret and reference it:
+
+```console
+# Create secret with your keystores
+kubectl create secret generic validator-keys \
+  --from-file=keystore-0.json \
+  --from-file=keystore-0.txt \
+  --from-file=keystore-1.json \
+  --from-file=keystore-1.txt
+
+# Deploy the chart with the keystore secret
+helm install my-dv-pod obol/dv-pod \
+  --set validatorClient.keystores.secretName=validator-keys \
+  --set configMaps.clusterlock=my-cluster-lock
+```
+
+#### Option 2: DKG-Generated Keystores (Automatic)
+
+When running DKG through the chart, keystores are automatically generated and imported to the validator client. The import process handles the specific directory structure required by each validator client:
+
+- **Lighthouse**: Keystores in `/validator-data/validators/`, passwords in `/validator-data/secrets/`
+- **Lodestar**: Restructured with pubkey directories under `/validator-data/keystores/`
+- **Teku**: Keystores in `/validator-data/keys/`, passwords in `/validator-data/passwords/`
+- **Prysm**: Keystores in `/validator-data/wallets/`
+- **Nimbus**: Similar to Lighthouse structure
+
 ## Advanced Usage
 
 ### Use an External Validator Client

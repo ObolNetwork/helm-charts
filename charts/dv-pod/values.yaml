@@ -46,6 +46,18 @@ validatorClient:
     # requests:
     #   cpu: 500m
     #   memory: 1Gi
+  
+  # -- Validator keystores configuration
+  keystores:
+    # -- Name of the Secret containing validator keystores
+    # If provided, skip keystore generation and use existing keys
+    # The secret should contain keystore-*.json and keystore-*.txt files
+    # Example: kubectl create secret generic validator-keys --from-file=keystore-0.json --from-file=keystore-0.txt
+    secretName: ""
+    
+    # -- Automatically create secret from DKG-generated keystores
+    # Only applies when secretName is empty and DKG runs successfully
+    autoCreate: true
 
 # -- Charon image repository, pull policy, and tag version
 image:
