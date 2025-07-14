@@ -376,6 +376,12 @@ charon:
 
   # -- Path within the Charon container where the ENR private key file will be mounted.
   privateKeyFile: "/data/charon-enr-private-key"
+  
+  # -- Lock hash for large cluster-lock files
+  # If your cluster-lock.json is larger than 1MB, extract the lock_hash value
+  # and provide it here. The DKG sidecar will fetch the full cluster lock from the Obol API.
+  # Example: --set charon.lockHash="0xabc123..."
+  lockHash: ""
 
 # -- Kubernetes secrets names that might be used as suffixes or for other purposes.
 # For the ENR, the secret name is either defined in 'charon.enr.existingSecret.name' 
@@ -396,12 +402,13 @@ configMaps:
   # more suitable for cluster-lock files which can be several megabytes.
   clusterlock: ""
   
-  # -- Name of the ConfigMap containing the config-hash
-  # Use this when your cluster-lock.json is too large (>1MB) for a ConfigMap.
-  # The ConfigMap should contain a key 'config-hash' with the value from 
-  # cluster_definition.config_hash in your cluster-lock.json
-  # Example: kubectl create configmap cluster-config-hash --from-literal=config-hash=$CONFIG_HASH
-  configHash: ""
+  # -- Name of the ConfigMap containing the lock-hash
+  # Alternative method for large cluster-lock files (>1MB).
+  # The ConfigMap should contain a key 'lock-hash' with the lock_hash value
+  # from your cluster-lock.json
+  # Example: kubectl create configmap cluster-lock-hash --from-literal=lock-hash=$LOCK_HASH
+  # Note: Using charon.lockHash directly is recommended over this method
+  lockHash: ""
 
 # -- Persistence configuration for DKG artifacts and charon data
 persistence:
