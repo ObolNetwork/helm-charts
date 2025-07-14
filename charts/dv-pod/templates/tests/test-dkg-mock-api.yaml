@@ -9,7 +9,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/component: test-dkg-mock-api
-    {{- include "charon.labels" . | nindent 4 }}
+    {{- include "dv-pod.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": test
     "helm.sh/hook-weight": "-5" # Ensure this runs before tests that depend on it
@@ -27,10 +27,10 @@ spec:
         app.kubernetes.io/component: dkg-mock-api
         app.kubernetes.io/instance: {{ .Release.Name }}
         app.kubernetes.io/name: charon-cluster # Match service selector
-        {{- include "charon.labels" . | nindent 8 }}
+        {{- include "dv-pod.labels" . | nindent 8 }}
     spec:
       {{- if .Values.tests.dkgSidecar.serviceAccount.create }}
-      serviceAccountName: {{ template "charon.serviceAccountNameTest" . }}
+      serviceAccountName: {{ template "dv-pod.serviceAccountNameTest" . }}
       {{- end }}
       containers:
         - name: dkg-mock-api
@@ -62,7 +62,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/component: test-dkg-mock-api-service
-    {{- include "charon.labels" . | nindent 4 }}
+    {{- include "dv-pod.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": test
     "helm.sh/hook-weight": "-5" # Ensure this runs before tests that depend on it

@@ -2,10 +2,10 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "charon.fullname" . }}-enr-job
+  name: {{ include "dv-pod.fullname" . }}-enr-job
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "charon.labels" . | nindent 4 }}
+    {{- include "dv-pod.labels" . | nindent 4 }}
     app.kubernetes.io/component: enr-job
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
@@ -17,13 +17,13 @@ metadata:
 spec:
   template:
     metadata:
-      name: {{ include "charon.fullname" . }}-enr-job-pod
+      name: {{ include "dv-pod.fullname" . }}-enr-job-pod
       labels:
-        {{- include "charon.selectorLabels" . | nindent 8 }}
+        {{- include "dv-pod.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: enr-job-pod
     spec:
       restartPolicy: Never
-      serviceAccountName: {{ include "charon.fullname" . }}-enr-job # Service account with secret permissions
+      serviceAccountName: {{ include "dv-pod.fullname" . }}-enr-job # Service account with secret permissions
       volumes:
         - name: enr-data
           emptyDir: {}
@@ -114,7 +114,7 @@ spec:
                 exit 1
               fi
 
-              SECRET_NAME="{{ include "charon.enrSecretName" . }}"
+              SECRET_NAME="{{ include "dv-pod.enrSecretName" . }}"
               NAMESPACE="{{ .Release.Namespace }}"
 
               echo "Creating/updating secret '$SECRET_NAME' in namespace '$NAMESPACE'..."

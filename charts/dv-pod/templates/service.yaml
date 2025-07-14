@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: {{ include "release.name" . }}
   labels:
-    {{- include "charon.labels" . | nindent 4 }}
+    {{- include "dv-pod.labels" . | nindent 4 }}
 spec:
   clusterIP: {{ .Values.service.clusterIP }}
   ports:
@@ -19,5 +19,11 @@ spec:
       protocol: {{ .Values.service.ports.monitoring.protocol }}
       port: {{ .Values.service.ports.monitoring.port }}
       targetPort: {{ .Values.service.ports.monitoring.targetPort }}
+    {{- if .Values.validatorClient.enabled }}
+    - name: vc-metrics
+      protocol: TCP
+      port: 5064
+      targetPort: 5064
+    {{- end }}
   selector:
-    {{- include "charon.selectorLabels" . | nindent 4 }}
+    {{- include "dv-pod.selectorLabels" . | nindent 4 }}

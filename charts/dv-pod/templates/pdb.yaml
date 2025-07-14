@@ -2,9 +2,9 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: {{ include "charon.fullname" . }}
+  name: {{ include "dv-pod.fullname" . }}
   labels:
-    {{- include "charon.labels" . | nindent 4 }}
+    {{- include "dv-pod.labels" . | nindent 4 }}
 spec:
 {{- if .Values.podDisruptionBudget.minAvailable }}
   minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
@@ -14,5 +14,5 @@ spec:
 {{- end }}
   selector:
     matchLabels:
-      {{- include "charon.selectorLabels" . | nindent 6 }}
+      {{- include "dv-pod.selectorLabels" . | nindent 6 }}
 {{- end }}
