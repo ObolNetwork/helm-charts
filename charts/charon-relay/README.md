@@ -1,5 +1,5 @@
 
-Charon Relay
+Charon Cluster
 ===========
 
 ![Version: 0.1.8](https://img.shields.io/badge/Version-0.1.8-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.0.0](https://img.shields.io/badge/AppVersion-1.0.0-informational?style=flat-square)
@@ -78,97 +78,248 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | tolerations | object | `{}` | Tolerations for pod assignment # ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/ |
 | updateStrategy | string | `"RollingUpdate"` | Allows you to configure and disable automated rolling updates for containers, labels, resource request/limits, and annotations for the Pods in a StatefulSet. |
 
-# Prerequisites
-- An operational Kubernetes GKE cluster with these add-ons, nginx-ingress, external-dns, and cert-manager with let'sEncrypt issuer
-- A valid public domain name (i.e obol.tech)
-
-# Deployment Architecture
-- HAProxy, to establish a header-base sticky session between the charon DV nodes and the relay server
-- Charon nodes, running in relay mode and deployed as statefulsets
-
 # How to use this chart
 
-## Add Obol's Helm Charts
+A distributed validator cluster is composed of the following containers:
+
+- Single execution layer client
+- Single consensus layer client
+- Number of Distributed Validator clients [This chart]
+- Number of Validator clients
+- Prometheus, Grafana and Jaeger clients for monitoring this cluster.
+
+![Distributed Validator Cluster](https://github.com/ObolNetwork/charon-distributed-validator-cluster/blob/main/DVCluster.png?raw=true)
+
+## Prerequisites
+
+This chart deploys a single distributed validator pod. You have two options for providing the required artifacts:
+
+### Option 1: Pre-existing DKG artifacts (skip DKG process)
+
+If you already have DKG artifacts from a ceremony, you can provide them to skip the DKG process entirely.
+
+#### Example 1a: From a multi-node cluster output (./cluster/ structure)
+
+When you've run DKG for multiple nodes and have a `./cluster/` directory:
+
+```
+./cluster/
+├── node0/
+│   ├── charon-enr-private-key
+│   ├── cluster-lock.json
+│   └── validator_keys/
+│       ├── keystore-0.json
+│       └── keystore-0.txt
+├── node1/
+│   ├── charon-enr-private-key
+│   ├── cluster-lock.json
+│   └── validator_keys/
+│       ├── keystore-0.json
+│       └── keystore-0.txt
+└── ...
+```
+
+To deploy node0 using this chart:
+```console
+# Create ENR private key secret
+kubectl create secret generic charon-enr-private-key --from-file=cluster/node0/charon-enr-private-key
+
+# Create the cluster lock ConfigMap (same for all nodes)
+kubectl create configmap my-cluster-lock --from-file=cluster/node0/cluster-lock.json
+
+# Install the chart, referencing your ConfigMap
+helm install my-dv-pod obol/dv-pod \
+  --set configMaps.clusterlock=my-cluster-lock
+```
+
+Note: The validator keys will be loaded from the persistent volume created during DKG.
+
+#### Example 1b: From a single node output (.charon/ structure)
+
+When you have DKG artifacts in a `.charon/` directory:
+
+```
+.charon/
+├── charon-enr-private-key
+├── cluster-lock.json
+└── validator_keys/
+    ├── keystore-0.json
+    └── keystore-0.txt
+```
+
+Create the required resources:
+```console
+# Create ENR private key secret
+kubectl create secret generic charon-enr-private-key --from-file=.charon/charon-enr-private-key
+
+# Create the cluster lock ConfigMap
+kubectl create configmap my-cluster-lock --from-file=.charon/cluster-lock.json
+
+# Install the chart, referencing your ConfigMap
+helm install my-dv-pod obol/dv-pod \
+  --set configMaps.clusterlock=my-cluster-lock
+```
+
+#### Handling Large Cluster-Lock Files (>1MB)
+
+If your cluster-lock.json file is larger than 1MB, you may encounter errors when creating the ConfigMap:
 
 ```console
+error validating data: ValidationError(ConfigMap.data.cluster-lock.json): invalid type for io.k8s.api.core.v1.ConfigMap.data: got "array", expected "string"
+```
+
+In this case, you have two options:
+
+**Option A: Direct lock hash (Recommended)**
+
+1. Extract the lock_hash from your cluster-lock.json:
+   ```console
+   LOCK_HASH=$(jq -r '.lock_hash' cluster-lock.json)
+   echo $LOCK_HASH
+   ```
+
+2. Install the chart with the lockHash value:
+   ```console
+   helm install my-dv-pod obol/dv-pod \
+     --set charon.lockHash=$LOCK_HASH \
+     --set charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>
+   ```
+
+**Option B: ConfigMap approach**
+
+1. Extract the lock_hash and create a ConfigMap:
+   ```console
+   LOCK_HASH=$(jq -r '.lock_hash' cluster-lock.json)
+   kubectl create configmap cluster-lock-hash \
+     --from-literal=lock-hash=$LOCK_HASH
+   ```
+
+2. Install the chart referencing the ConfigMap:
+   ```console
+   helm install my-dv-pod obol/dv-pod \
+     --set configMaps.lockHash=cluster-lock-hash \
+     --set charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>
+   ```
+
+The DKG sidecar will use the lock hash to fetch the full cluster lock from the Obol API.
+
+### Option 2: Run DKG through the chart (automatic)
+
+If you don't have pre-existing artifacts, the chart can automatically:
+1. Generate an ENR private key (or use one you provide)
+2. Run the DKG ceremony via the Obol API
+3. Store the resulting artifacts in a persistent volume
+
+Simply deploy the chart with your operator address:
+```console
+helm install my-dv-pod obol/dv-pod \
+  --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS
+```
+
+The DKG sidecar will poll the Obol API for cluster invites and automatically run the DKG ceremony when ready.
+
+## Add Obol's Helm Charts Repo
+
+```sh
 helm repo add obol https://obolnetwork.github.io/helm-charts
 helm repo update
 ```
+_See [helm repo](https://helm.sh/docs/helm/helm_repo/) for command documentation._
 
-## Install the Chart
-
-To install the chart with the release name `charon-relay`
-```console
-helm upgrade --install charon-relay obol/charon-relay \
-  --set='clusterSize=3' \
+## Install the chart
+Install a distributed validator pod:
+```sh
+helm upgrade --install my-dv-pod obol/dv-pod \
+  --set='charon.beaconNodeEndpoints[0]=<BEACON_NODE_ENDPOINT>' \
+  --set='charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>' \
   --create-namespace \
-  --namespace charon-relay
+  --namespace dv-pod
 ```
 
-## Cluster health check
+## Validator Client
 
-Ensure the relay node is up and healthy
-```console
-kubectl -n charon-relay get pods
-```
+The dv-pod chart includes an integrated validator client that runs alongside Charon in the same pod. The validator client is automatically configured to connect to Charon's validator API.
 
-## Deploy HAProxy
+### Supported Validator Clients
 
-Retrieve the relay nodes public IPs then update the `backend relays` section in the haproxy `values.yaml`
-```console
-kubectl -n charon-relay get svc --no-headers=true -o "custom-columns=NAME:.metadata.name,IP:.status.loadBalancer.ingress[*].ip" | awk '/relay/{print $2}'
-```
+You can choose from the following validator clients using the `validatorClient.type` parameter:
+- `lighthouse` (default)
+- `teku`
+- `nimbus`
+- `lodestar`
+- `prysm`
 
-Create custom `values.yaml` to override haproxy configuration with the relay nodes public IPs
+### Configuration Example
+
 ```yaml
-replicaCount: 3
-service:
-  type: ClusterIP
-  externalTrafficPolicy: Local
-configuration: |-
-  global
-      log stdout format raw local0
-      maxconn 1024
-  defaults
-      log global
-      timeout client 60s
-      timeout connect 60s
-      timeout server 60s
-  frontend fe_main
-      bind :8080
-      default_backend relays
-  backend relays
-      mode http
-      balance hdr(Charon-Cluster)
-      server charon-relay-0 {charon-relay-0-IP}:3640 check inter 10s fall 12 rise 2
-      server charon-relay-1 {charon-relay-1-IP}:3640 check inter 10s fall 12 rise 2
-      server charon-relay-2 {charon-relay-2-IP}:3640 check inter 10s fall 12 rise 2
-ingress:
+validatorClient:
   enabled: true
-  ingressClassName: nginx
-  annotations:
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    cert-manager.io/cluster-issuer: "letsencrypt"
-    nginx.ingress.kubernetes.io/app-root: /enr
-    cert-manager.io/issue-temporary-certificate: "true"
-    acme.cert-manager.io/http01-edit-in-place: "true"
-  tls: true
+  type: lighthouse
+  config:
+    graffiti: "My DV Pod"
+    extraArgs:
+      - --suggested-fee-recipient=0xYOUR_FEE_RECIPIENT_ADDRESS
 ```
 
-Deploy the haproxy helm chart
+### Validator Keystores
+
+The chart supports two methods for providing validator keystores:
+
+#### Option 1: Pre-existing Keystores (Recommended for Production)
+
+If you have existing keystores, create a Kubernetes secret and reference it:
+
 ```console
-helm upgrade --install haproxy bitnami/haproxy \
-  --set='ingress.hostname=charon-relay.example.com' \
-  --create-namespace \
-  --namespace charon-relay \
-  -f values.yaml
+# Create secret with your keystores
+kubectl create secret generic validator-keys \
+  --from-file=keystore-0.json \
+  --from-file=keystore-0.txt \
+  --from-file=keystore-1.json \
+  --from-file=keystore-1.txt
+
+# Deploy the chart with the keystore secret
+helm install my-dv-pod obol/dv-pod \
+  --set validatorClient.keystores.secretName=validator-keys \
+  --set configMaps.clusterlock=my-cluster-lock
 ```
+
+#### Option 2: DKG-Generated Keystores (Automatic)
+
+When running DKG through the chart, keystores are automatically generated and imported to the validator client. The import process handles the specific directory structure required by each validator client:
+
+- **Lighthouse**: Keystores in `/validator-data/validators/`, passwords in `/validator-data/secrets/`
+- **Lodestar**: Restructured with pubkey directories under `/validator-data/keystores/`
+- **Teku**: Keystores in `/validator-data/keys/`, passwords in `/validator-data/passwords/`
+- **Prysm**: Keystores in `/validator-data/wallets/`
+- **Nimbus**: Similar to Lighthouse structure
+
+## Advanced Usage
+
+### Use an External Validator Client
+
+While the dv-pod chart includes an integrated validator client, you may want to use an external validator client instead. To do this:
+
+1. Disable the integrated validator client:
+```yaml
+validatorClient:
+  enabled: false
+```
+
+2. Configure your external validator client to connect to the Charon node's validator API endpoint:
+```
+--beacon-node-api-endpoint="http://<RELEASE_NAME>-dv-pod.<NAMESPACE>.svc.cluster.local:3600"
+```
+
+For example, if you installed the chart as `my-dv-pod` in namespace `dv-pod`:
+```
+--beacon-node-api-endpoint="http://my-dv-pod.dv-pod.svc.cluster.local:3600"
+```
+
+Note: The Charon validator API on port 3600 provides the same interface as a beacon node API, allowing standard validator clients to connect without modification.
 
 ## Uninstall the Chart
-
-To uninstall and delete the `charon-relay` and `haproxy` charts
-```console
-helm uninstall charon-relay haproxy
+To uninstall and delete the `dv-pod` release:
+```sh
+helm uninstall dv-pod -n dv-pod
 ```
-
-The command removes all the Kubernetes components associated with the chart and deletes the releases.
+The command removes all the Kubernetes components associated with the chart and deletes the release.
