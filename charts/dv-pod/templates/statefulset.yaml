@@ -69,6 +69,16 @@ spec:
           args:
             - "{{ .Values.charon.operatorAddress }}"
             - "/enr-from-job/enr.txt"
+          {{- if .Values.charon.lockHash }}
+          command:
+            - sh
+            - -c
+            - |
+              # Write lockHash to file for DKG sidecar
+              echo "{{ .Values.charon.lockHash }}" > /charon-data/lockhash
+              # Execute the original command with the original args
+              exec node /app/dist/dkg-sidecar.js {{ .Values.charon.operatorAddress }} /enr-from-job/enr.txt
+          {{- end }}
           env:
             - name: POD_NAME
               valueFrom:
@@ -94,10 +104,6 @@ spec:
               value: "/charon-data"
             - name: CHARON_PRIVATE_KEY_FILE
               value: "/charon-data/charon-enr-private-key"
-            {{- if .Values.charon.lockHash }}
-            - name: LOCK_HASH
-              value: "{{ .Values.charon.lockHash }}"
-            {{- end }}
           volumeMounts:
             - name: enr-data
               mountPath: /enr-from-job
@@ -421,8 +427,12 @@ spec:
             - --validators-graffiti={{ .Values.validatorClient.config.graffiti | quote }}
             - --data-path=/validator-data
             - --validator-keys=/validator-data/keys:/validator-data/passwords
+            - --validators-proposer-default-fee-recipient=0x0000000000000000000000000000000000000000
+            {{- if .Values.charon.executionClientRpcEndpoint }}
+            - --ee-endpoint={{ .Values.charon.executionClientRpcEndpoint }}
+            {{- end }}
             - --metrics-enabled=true
-            - --metrics-host=0.0.0.0
+            - --metrics-interface=0.0.0.0
             - --metrics-port=5064
             - --Xobol-dvt-integration-enabled=true
             {{- range .Values.validatorClient.config.extraArgs }}

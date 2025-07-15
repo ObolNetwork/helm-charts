@@ -277,6 +277,9 @@ charon:
 
   enrJob:
     # -- Enable or disable the Kubernetes Job that generates/manages the ENR.
+    # Note: This is typically not needed as the job automatically detects existing secrets.
+    # The job will check if the ENR secret already exists and skip generation if found.
+    # Only set to false for advanced use cases where you need to completely disable the job.
     enabled: true
 
   # --- Configuration for ENR management ---
@@ -287,6 +290,8 @@ charon:
 
     # -- Point to an existing Kubernetes secret that holds the ENR private key.
     # If 'privateKey' above is not set and this 'existingSecret.name' is provided, 'generate' is ignored.
+    # NOTE: If not set, the chart will automatically check for a secret named 'charon-enr-private-key'
+    # (configurable via secrets.defaultEnrPrivateKey) and use it if it exists.
     existingSecret:
       name: ""           # Name of the K8s secret (e.g., "my-dv-pod-enr-secret")
       dataKey: "private-key" # Key in the secret's 'data' field holding the private key hex string.
@@ -389,6 +394,10 @@ charon:
 secrets:
   # -- Suffix for ENR private key secret (used internally by templates)
   enrPrivateKey: "charon-enr-private-key"
+  # -- Default ENR private key secret name to check for auto-detection
+  # If this secret exists in the namespace, it will be used automatically
+  # unless explicitly overridden by charon.enr.existingSecret.name
+  defaultEnrPrivateKey: "charon-enr-private-key"
 
 # -- Kubernetes configMaps names for non-sensitive configuration data.
 configMaps:
