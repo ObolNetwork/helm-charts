@@ -1,4 +1,4 @@
-{{- if and .Values.charon.enr.generate.enabled (not .Values.charon.enr.existingSecret.name) -}}
+{{- if eq (include "dv-pod.shouldCreateEnrJob" .) "true" -}}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -27,6 +27,31 @@ spec:
       volumes:
         - name: enr-data
           emptyDir: {}
+      initContainers:
+        - name: check-existing-secret
+          image: "{{ .Values.charon.enr.generate.kubectlImage.repository }}:{{ .Values.charon.enr.generate.kubectlImage.tag }}"
+          imagePullPolicy: {{ .Values.charon.enr.generate.kubectlImage.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              SECRET_NAME="{{ include "dv-pod.enrSecretName" . }}"
+              NAMESPACE="{{ .Release.Namespace }}"
+              
+              # Check if the secret already exists
+              echo "Checking if secret '$SECRET_NAME' already exists in namespace '$NAMESPACE'..."
+              if kubectl get secret "${SECRET_NAME}" -n "${NAMESPACE}" >/dev/null 2>&1; then
+                echo "INFO: Secret '$SECRET_NAME' already exists. Skipping ENR generation."
+                echo "INFO: The existing secret will be used by the pod."
+                # Create a marker file to signal other containers to skip
+                touch /enr-shared/skip-generation
+              else
+                echo "Secret '$SECRET_NAME' does not exist. ENR generation will proceed."
+              fi
+          volumeMounts:
+            - name: enr-data
+              mountPath: /enr-shared
       containers:
         - name: charon-key-generator
           image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
@@ -36,6 +61,12 @@ spec:
             - -c
             - |
               set -e
+              # Check if we should skip generation
+              if [ -f /enr-shared/skip-generation ]; then
+                echo "INFO: Skipping ENR generation as secret already exists."
+                exit 0
+              fi
+              
               mkdir -p /enr-output
               if [ -n "{{ .Values.charon.enr.privateKey }}" ]; then
                 echo "INFO: Using provided ENR private key."
@@ -81,6 +112,8 @@ spec:
           volumeMounts:
             - name: enr-data
               mountPath: /enr-output
+            - name: enr-data
+              mountPath: /enr-shared
         - name: kubectl-secret-creator
           image: "{{ .Values.charon.enr.generate.kubectlImage.repository }}:{{ .Values.charon.enr.generate.kubectlImage.tag }}"
           imagePullPolicy: {{ .Values.charon.enr.generate.kubectlImage.pullPolicy }}
@@ -89,6 +122,23 @@ spec:
             - -c
             - |
               set -e
+              SECRET_NAME="{{ include "dv-pod.enrSecretName" . }}"
+              NAMESPACE="{{ .Release.Namespace }}"
+              
+              # Check if we should skip (double-check in case secret was created between containers)
+              if [ -f /enr-shared/skip-generation ]; then
+                echo "INFO: Skipping secret creation as it already exists."
+                exit 0
+              fi
+              
+              # Check again if the secret already exists (race condition protection)
+              echo "Double-checking if secret '$SECRET_NAME' already exists in namespace '$NAMESPACE'..."
+              if kubectl get secret "${SECRET_NAME}" -n "${NAMESPACE}" >/dev/null 2>&1; then
+                echo "INFO: Secret '$SECRET_NAME' already exists. Skipping."
+                exit 0
+              fi
+              
+              echo "Secret '$SECRET_NAME' does not exist. Creating from generated ENR..."
               echo "Waiting for ENR key files in /enr-input..."
               # Wait for the private key file and the public ENR string file
               while [ ! -f /enr-input/charon-enr-private-key ] || [ ! -f /enr-input/enr_public_string ]; do
@@ -114,9 +164,6 @@ spec:
                 exit 1
               fi
 
-              SECRET_NAME="{{ include "dv-pod.enrSecretName" . }}"
-              NAMESPACE="{{ .Release.Namespace }}"
-
               echo "Creating/updating secret '$SECRET_NAME' in namespace '$NAMESPACE'..."
               
               # Using kubectl create secret generic with --dry-run and kubectl apply for idempotency
@@ -130,6 +177,8 @@ spec:
           volumeMounts:
             - name: enr-data
               mountPath: /enr-input
+            - name: enr-data  
+              mountPath: /enr-shared
       {{- with .Values.charon.enr.generate.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
