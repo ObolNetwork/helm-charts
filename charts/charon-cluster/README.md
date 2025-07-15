@@ -107,132 +107,30 @@ A distributed validator cluster is composed of the following containers:
 ![Distributed Validator Cluster](https://github.com/ObolNetwork/charon-distributed-validator-cluster/blob/main/DVCluster.png?raw=true)
 
 ## Prerequisites
+You have the following charon artifacts created as k8s secrets per each charon node:
+- `<cluster-name>-<node-index>-validators` i.e `charon-cluster-0-validators`
+- `<cluster-name>-<node-index>-charon-enr-private-key` i.e `charon-cluster-0-charon-enr-private-key`
+The cluster lock is a single secret for the whole cluster:
+- `cluster-lock`
 
-This chart deploys a single distributed validator pod. You have two options for providing the required artifacts:
-
-### Option 1: Pre-existing DKG artifacts (skip DKG process)
-
-If you already have DKG artifacts from a ceremony, you can provide them to skip the DKG process entirely.
-
-#### Example 1a: From a multi-node cluster output (./cluster/ structure)
-
-When you've run DKG for multiple nodes and have a `./cluster/` directory:
-
-```
-./cluster/
-├── node0/
-│   ├── charon-enr-private-key
-│   ├── cluster-lock.json
-│   └── validator_keys/
-│       ├── keystore-0.json
-│       └── keystore-0.txt
-├── node1/
-│   ├── charon-enr-private-key
-│   ├── cluster-lock.json
-│   └── validator_keys/
-│       ├── keystore-0.json
-│       └── keystore-0.txt
-└── ...
-```
-
-To deploy node0 using this chart:
+e.g. with node0:
 ```console
-# Create ENR private key secret
 kubectl create secret generic charon-enr-private-key --from-file=cluster/node0/charon-enr-private-key
+kubectl create secret generic cluster-lock --from-file=node0/cluster-lock.json
+kubectl create secret generic validator-keys --from-file=keystore-0.json=cluster/node0/validator_keys/keystore-0.json --from-file=keystore-0.txt=cluster/node0/validator_keys/keystore-0.txt
 
-# Create the cluster lock ConfigMap (same for all nodes)
-kubectl create configmap my-cluster-lock --from-file=cluster/node0/cluster-lock.json
-
-# Install the chart, referencing your ConfigMap
-helm install my-dv-pod obol/dv-pod \
-  --set configMaps.clusterlock=my-cluster-lock
-```
-
-Note: The validator keys will be loaded from the persistent volume created during DKG.
-
-#### Example 1b: From a single node output (.charon/ structure)
-
-When you have DKG artifacts in a `.charon/` directory:
-
-```
-.charon/
-├── charon-enr-private-key
-├── cluster-lock.json
-└── validator_keys/
-    ├── keystore-0.json
-    └── keystore-0.txt
-```
-
-Create the required resources:
+List of secrets for a cluster `charon-cluster` with 4 nodes are:
 ```console
-# Create ENR private key secret
-kubectl create secret generic charon-enr-private-key --from-file=.charon/charon-enr-private-key
-
-# Create the cluster lock ConfigMap
-kubectl create configmap my-cluster-lock --from-file=.charon/cluster-lock.json
-
-# Install the chart, referencing your ConfigMap
-helm install my-dv-pod obol/dv-pod \
-  --set configMaps.clusterlock=my-cluster-lock
+charon-cluster-0-charon-enr-private-key
+charon-cluster-0-validators
+charon-cluster-1-charon-enr-private-key
+charon-cluster-1-validators
+charon-cluster-2-charon-enr-private-key
+charon-cluster-2-validators
+charon-cluster-3-charon-enr-private-key
+charon-cluster-3-validators
+cluster-lock
 ```
-
-#### Handling Large Cluster-Lock Files (>1MB)
-
-If your cluster-lock.json file is larger than 1MB, you may encounter errors when creating the ConfigMap:
-
-```console
-error validating data: ValidationError(ConfigMap.data.cluster-lock.json): invalid type for io.k8s.api.core.v1.ConfigMap.data: got "array", expected "string"
-```
-
-In this case, you have two options:
-
-**Option A: Direct lock hash (Recommended)**
-
-1. Extract the lock_hash from your cluster-lock.json:
-   ```console
-   LOCK_HASH=$(jq -r '.lock_hash' cluster-lock.json)
-   echo $LOCK_HASH
-   ```
-
-2. Install the chart with the lockHash value:
-   ```console
-   helm install my-dv-pod obol/dv-pod \
-     --set charon.lockHash=$LOCK_HASH \
-     --set charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>
-   ```
-
-**Option B: ConfigMap approach**
-
-1. Extract the lock_hash and create a ConfigMap:
-   ```console
-   LOCK_HASH=$(jq -r '.lock_hash' cluster-lock.json)
-   kubectl create configmap cluster-lock-hash \
-     --from-literal=lock-hash=$LOCK_HASH
-   ```
-
-2. Install the chart referencing the ConfigMap:
-   ```console
-   helm install my-dv-pod obol/dv-pod \
-     --set configMaps.lockHash=cluster-lock-hash \
-     --set charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>
-   ```
-
-The DKG sidecar will use the lock hash to fetch the full cluster lock from the Obol API.
-
-### Option 2: Run DKG through the chart (automatic)
-
-If you don't have pre-existing artifacts, the chart can automatically:
-1. Generate an ENR private key (or use one you provide)
-2. Run the DKG ceremony via the Obol API
-3. Store the resulting artifacts in a persistent volume
-
-Simply deploy the chart with your operator address:
-```console
-helm install my-dv-pod obol/dv-pod \
-  --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS
-```
-
-The DKG sidecar will poll the Obol API for cluster invites and automatically run the DKG ceremony when ready.
 
 ## Add Obol's Helm Charts Repo
 
@@ -243,99 +141,97 @@ helm repo update
 _See [helm repo](https://helm.sh/docs/helm/helm_repo/) for command documentation._
 
 ## Install the chart
-Install a distributed validator pod:
+Install a charon cluster `charon-cluster` with 4 nodes:
 ```sh
-helm upgrade --install my-dv-pod obol/dv-pod \
-  --set='charon.beaconNodeEndpoints[0]=<BEACON_NODE_ENDPOINT>' \
-  --set='charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>' \
+helm upgrade --install charon-cluster obol/charon-cluster \
+  --set='clusterSize=4' \
+  --set='config.beaconNodeEndpoints=<BEACON_NODES_ENDPOINTS>' \
   --create-namespace \
-  --namespace dv-pod
+  --namespace $CHARON_NODE_NAMESPACE
 ```
 
-## Validator Client
+## Connect the validator client
+- Update each validator client to connect to charon node API endpoint instead of the beacon node endpoint `--beacon-node-api-endpoint="http://CHARON_NODE_SERVICE_NAME:3600"`
+- Mount each of the `<cluster-name>-<node-index>-validators` k8s secrets to the validator client validators folder.
 
-The dv-pod chart includes an integrated validator client that runs alongside Charon in the same pod. The validator client is automatically configured to connect to Charon's validator API.
-
-### Supported Validator Clients
-
-You can choose from the following validator clients using the `validatorClient.type` parameter:
-- `lighthouse` (default)
-- `teku`
-- `nimbus`
-- `lodestar`
-- `prysm`
-
-### Configuration Example
-
+Example of a single teku deployment that pairs with the charon-cluster node `charon-cluster-0`
 ```yaml
-validatorClient:
-  enabled: true
-  type: lighthouse
-  config:
-    graffiti: "My DV Pod"
-    extraArgs:
-      - --suggested-fee-recipient=0xYOUR_FEE_RECIPIENT_ADDRESS
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: charon-cluster-0-teku
+  name: charon-cluster-0-teku
+  namespace: charon-cluster
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: charon-cluster-0-teku
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: charon-cluster-0-teku
+    spec:
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+      initContainers:
+        - name: init-chown
+          image: busybox
+          securityContext:
+            runAsUser: 0
+          command:
+            - sh
+            - -ac
+            - >
+              rm -rf /data/teku/validator_keys 2>/dev/null || true;
+              mkdir -p /data/teku/validator_keys;
+              cp /validator_keys/* /data/teku/validator_keys;
+              chown -R 1000:1000 /data/teku;
+          volumeMounts:
+            - name: data
+              mountPath: /data/teku
+            - name: validators
+              mountPath: "/validator_keys"
+      containers:
+        - name: charon-cluster-0-teku
+          image: consensys/teku:latest
+          command:
+            - sh
+            - -ace
+            - |
+              /opt/teku/bin/teku vc \
+              --network=auto \
+              --log-destination=console \
+              --data-base-path=/data/teku \
+              --metrics-enabled=true \
+              --metrics-host-allowlist="*" \
+              --metrics-interface="0.0.0.0" \
+              --metrics-port="8008" \
+              --validator-keys="/data/teku/validator_keys:/data/teku/validator_keys" \
+              --validators-graffiti="Obol Distributed Validator" \
+              --beacon-node-api-endpoint="http://charon-cluster-0.charon-cluster.charon-cluster.svc.cluster.local:3600" \
+              --validators-proposer-default-fee-recipient="0x9FD17880D4F5aE131D62CE6b48dF7ba7D426a410";
+          volumeMounts:
+            - name: data
+              mountPath: /data/teku
+      volumes:
+        - name: validators
+          projected:
+            sources:
+            - secret:
+                name: charon-cluster-validators
+        - name: data
+          emptyDir: {}
 ```
-
-### Validator Keystores
-
-The chart supports two methods for providing validator keystores:
-
-#### Option 1: Pre-existing Keystores (Recommended for Production)
-
-If you have existing keystores, create a Kubernetes secret and reference it:
-
-```console
-# Create secret with your keystores
-kubectl create secret generic validator-keys \
-  --from-file=keystore-0.json \
-  --from-file=keystore-0.txt \
-  --from-file=keystore-1.json \
-  --from-file=keystore-1.txt
-
-# Deploy the chart with the keystore secret
-helm install my-dv-pod obol/dv-pod \
-  --set validatorClient.keystores.secretName=validator-keys \
-  --set configMaps.clusterlock=my-cluster-lock
-```
-
-#### Option 2: DKG-Generated Keystores (Automatic)
-
-When running DKG through the chart, keystores are automatically generated and imported to the validator client. The import process handles the specific directory structure required by each validator client:
-
-- **Lighthouse**: Keystores in `/validator-data/validators/`, passwords in `/validator-data/secrets/`
-- **Lodestar**: Restructured with pubkey directories under `/validator-data/keystores/`
-- **Teku**: Keystores in `/validator-data/keys/`, passwords in `/validator-data/passwords/`
-- **Prysm**: Keystores in `/validator-data/wallets/`
-- **Nimbus**: Similar to Lighthouse structure
-
-## Advanced Usage
-
-### Use an External Validator Client
-
-While the dv-pod chart includes an integrated validator client, you may want to use an external validator client instead. To do this:
-
-1. Disable the integrated validator client:
-```yaml
-validatorClient:
-  enabled: false
-```
-
-2. Configure your external validator client to connect to the Charon node's validator API endpoint:
-```
---beacon-node-api-endpoint="http://<RELEASE_NAME>-dv-pod.<NAMESPACE>.svc.cluster.local:3600"
-```
-
-For example, if you installed the chart as `my-dv-pod` in namespace `dv-pod`:
-```
---beacon-node-api-endpoint="http://my-dv-pod.dv-pod.svc.cluster.local:3600"
-```
-
-Note: The Charon validator API on port 3600 provides the same interface as a beacon node API, allowing standard validator clients to connect without modification.
 
 ## Uninstall the Chart
-To uninstall and delete the `dv-pod` release:
+To uninstall and delete the `charon-cluster`:
 ```sh
-helm uninstall dv-pod -n dv-pod
+helm uninstall charon-cluster
 ```
 The command removes all the Kubernetes components associated with the chart and deletes the release.
