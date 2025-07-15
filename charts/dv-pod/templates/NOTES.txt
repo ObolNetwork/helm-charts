@@ -2,38 +2,27 @@
 Your Obol distributed validator pod "{{ template "dv-pod.fullname" . }}" has been deployed.
 
 1. ENR (Ethereum Node Record) Configuration:
-{{- if .Values.charon.enrJob.enabled }}
-   The ENR generation job is ENABLED.
-   An ENR has been automatically generated (or derived from a provided private key if `charon.config.privateKeyFile` was used by the job logic and the key existed before the job's first run).
+   {{- if .Values.charon.enr.existingSecret.name }}
+   Using existing ENR secret: {{ .Values.charon.enr.existingSecret.name }}
+   {{- else if (include "dv-pod.enrSecretName" .) }}
+   ENR secret name: {{ include "dv-pod.enrSecretName" . }}
+   {{- end }}
+
+   {{- if eq (include "dv-pod.shouldCreateEnrJob" .) "true" }}
+   The ENR generation job will create a new ENR private key and derive the public ENR.
+   {{- else }}
+   The ENR generation job detected an existing secret and will use it.
+   {{- end }}
 
    To retrieve the public ENR string:
-   A. Check the logs of the ENR generation job:
-      kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ template "dv-pod.name" . }},app.kubernetes.io/instance={{ .Release.Name }},component=enr-job
-      (Look for a line like "INFO: Public ENR String: enr:-...")
+   kubectl get secret -n {{ .Release.Namespace }} {{ include "dv-pod.enrSecretName" . }} -o jsonpath='{.data.public-enr}' | base64 --decode
+   echo ""
 
-   B. Get it from the 'public-enr' key in the Secret '{{ template "dv-pod.enrSecretName" . }}':
-      kubectl get secret -n {{ .Release.Namespace }} {{ template "dv-pod.enrSecretName" . }} -o jsonpath='{.data.public-enr}' | base64 --decode
-      echo ""
-
+   {{- if not .Values.configMaps.clusterlock }}
+   {{- if not .Values.charon.lockHash }}
    **IMPORTANT ACTION REQUIRED:** You **MUST** take this public ENR string and submit it during the cluster formation process on the Obol Launchpad (https://launchpad.obol.org/) for the operator address '{{ .Values.charon.operatorAddress }}'.
-
-{{- else }}
-   The ENR generation job is DISABLED (.Values.charon.enrJob.enabled is false).
-   The orchestration process requires the public ENR of this Charon node to be present in the Kubernetes Secret named '{{ template "dv-pod.enrSecretName" . }}' under the data key 'public-enr'.
-
-   **IMPORTANT ACTION REQUIRED:**
-   You **MUST** manually ensure that the Secret '{{ template "dv-pod.enrSecretName" . }}' in namespace '{{ .Release.Namespace }}' exists and contains a key 'public-enr' with your desired public ENR string, base64 encoded.
-
-   Example to create/update the secret with your ENR (replace 'enr:-YourActualENRStringHere'):
-   kubectl create secret generic {{ template "dv-pod.enrSecretName" . }} -n {{ .Release.Namespace }} \
-     --from-literal=public-enr=$(echo -n 'enr:-YourActualENRStringHere' | base64) \
-     --dry-run=client -o yaml | kubectl apply -f -
-
-   The public ENR from this secret ('public-enr' key) is what the orchestrator will use. This ENR **MUST** be the one you submit to the Obol Launchpad for operator address '{{ .Values.charon.operatorAddress }}'.
-
-   Note: If `charon.config.enr` is set in your `values.yaml`, it is NOT automatically used by this orchestration process when the ENR job is disabled. The orchestrator relies solely on the 'public-enr' key in the Secret mentioned above.
-
-{{- end }}
+   {{- end }}
+   {{- end }}
 
 2. Cluster Orchestration Process:
    The Charon node includes an orchestrator init container. This orchestrator will:

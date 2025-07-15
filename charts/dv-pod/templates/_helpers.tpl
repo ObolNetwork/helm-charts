@@ -72,16 +72,21 @@ Create the name of the service account to use
 Determine the name of the shared ENR secret.
 This secret holds the single ENR private key for the entire cluster.
 Logic:
-1. If .Values.charon.enr.privateKey is set, the ENR job creates a predictable secret.
-2. Else if .Values.charon.enr.existingSecret.name is set, use that.
-3. Else if .Values.charon.enr.generate.enabled is true, the ENR job creates a predictable secret.
-4. Fallback to the predictable secret name (though hook conditions should prevent needing this directly for non-generation scenarios).
+1. If .Values.charon.enr.existingSecret.name is set, use that (explicit override).
+2. Else if .Values.secrets.defaultEnrPrivateKey is set, use that as the default.
+3. Else if .Values.charon.enr.privateKey is set or .Values.charon.enr.generate.enabled is true, 
+   the ENR job creates a predictable secret.
+4. Fallback to the predictable secret name.
 */}}
 {{- define "dv-pod.enrSecretName" -}}
-{{- if or .Values.charon.enr.privateKey .Values.charon.enr.generate.enabled (not .Values.charon.enr.existingSecret.name) -}}
-{{- printf "%s-enr-key" (include "dv-pod.fullname" .) -}}
-{{- else if .Values.charon.enr.existingSecret.name -}}
+{{- if .Values.charon.enr.existingSecret.name -}}
 {{- .Values.charon.enr.existingSecret.name -}}
+{{- else if .Values.secrets.defaultEnrPrivateKey -}}
+{{- .Values.secrets.defaultEnrPrivateKey -}}
+{{- else if or .Values.charon.enr.privateKey .Values.charon.enr.generate.enabled -}}
+{{- printf "%s-enr-key" (include "dv-pod.fullname" .) -}}
+{{- else -}}
+{{- printf "%s-enr-key" (include "dv-pod.fullname" .) -}}
 {{- end -}}
 {{- end -}}
 
@@ -90,6 +95,20 @@ Return the data key for the ENR private key within the shared secret.
 */}}
 {{- define "dv-pod.enrSecretDataKey" -}}
 {{- .Values.charon.enr.existingSecret.dataKey | default "private-key" -}}
+{{- end -}}
+
+{{/*
+Determine if the ENR generation job should be created.
+The job should be created only if:
+1. Generate is enabled
+2. No private key is directly provided
+3. No existing secret is explicitly configured
+Note: The job will check at runtime if the default secret exists and skip generation if it does
+*/}}
+{{- define "dv-pod.shouldCreateEnrJob" -}}
+{{- if and .Values.charon.enr.generate.enabled (not .Values.charon.enr.privateKey) (not .Values.charon.enr.existingSecret.name) .Values.charon.enrJob.enabled -}}
+true
+{{- end -}}
 {{- end -}}
 
 {{/*
