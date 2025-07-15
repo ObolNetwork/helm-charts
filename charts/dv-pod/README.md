@@ -186,15 +186,19 @@ To deploy node0 using this chart:
 # Create ENR private key secret
 kubectl create secret generic charon-enr-private-key --from-file=cluster/node0/charon-enr-private-key
 
-# Create the cluster lock ConfigMap (same for all nodes)
-kubectl create configmap my-cluster-lock --from-file=cluster/node0/cluster-lock.json
+# Create validator keystore secret
+kubectl create secret generic validator-keys \
+  --from-file=cluster/node0/validator_keys/keystore-0.json \
+  --from-file=cluster/node0/validator_keys/keystore-0.txt \
+  --from-file=cluster/node0/validator_keys/keystore-1.json \
+  --from-file=cluster/node0/validator_keys/keystore-1.txt
 
-# Install the chart, referencing your ConfigMap
+# Install the chart, passing in the lock_hash from the cluster-lock.json file. This snippet uses jq, or you can copy the hash manually.
+
+lock_hash=$(jq  -r '.lock_hash' cluster/node0/cluster-lock.json)
 helm install my-dv-pod obol/dv-pod \
-  --set configMaps.clusterlock=my-cluster-lock
-```
-
-Note: The validator keys will be loaded from the persistent volume created during DKG.
+  --set charon.lockHash="$lock_hash"
+  
 
 #### Example 1b: From a single node output (.charon/ structure)
 
