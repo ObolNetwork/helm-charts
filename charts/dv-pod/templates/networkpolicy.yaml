@@ -1,0 +1,113 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "dv-pod.fullname" . }}
+  labels:
+    {{- include "dv-pod.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "dv-pod.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow Charon P2P traffic
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "dv-pod.selectorLabels" . | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: 3610
+    # Allow validator API access from validator clients
+    - from:
+        {{- if .Values.networkPolicy.validatorClientSelector }}
+        - podSelector:
+            {{- toYaml .Values.networkPolicy.validatorClientSelector | nindent 12 }}
+        {{- end }}
+        {{- if .Values.networkPolicy.validatorClientNamespaceSelector }}
+        - namespaceSelector:
+            {{- toYaml .Values.networkPolicy.validatorClientNamespaceSelector | nindent 12 }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: 3600
+    # Allow monitoring access
+    {{- if .Values.networkPolicy.monitoring.enabled }}
+    - from:
+        {{- if .Values.networkPolicy.monitoring.podSelector }}
+        - podSelector:
+            {{- toYaml .Values.networkPolicy.monitoring.podSelector | nindent 12 }}
+        {{- end }}
+        {{- if .Values.networkPolicy.monitoring.namespaceSelector }}
+        - namespaceSelector:
+            {{- toYaml .Values.networkPolicy.monitoring.namespaceSelector | nindent 12 }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: 3620
+    {{- end }}
+    # Allow custom ingress rules
+    {{- with .Values.networkPolicy.customIngress }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  egress:
+    # Allow DNS resolution
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Allow access to beacon nodes
+    {{- if .Values.networkPolicy.beaconNodes.enabled }}
+    - to:
+        {{- if .Values.networkPolicy.beaconNodes.podSelector }}
+        - podSelector:
+            {{- toYaml .Values.networkPolicy.beaconNodes.podSelector | nindent 12 }}
+        {{- end }}
+        {{- if .Values.networkPolicy.beaconNodes.namespaceSelector }}
+        - namespaceSelector:
+            {{- toYaml .Values.networkPolicy.beaconNodes.namespaceSelector | nindent 12 }}
+        {{- end }}
+        {{- if .Values.networkPolicy.beaconNodes.ipBlock }}
+        - ipBlock:
+            {{- toYaml .Values.networkPolicy.beaconNodes.ipBlock | nindent 12 }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          {{- if .Values.networkPolicy.beaconNodes.port }}
+          port: {{ .Values.networkPolicy.beaconNodes.port }}
+          {{- end }}
+    {{- end }}
+    # Allow Charon P2P communication
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "dv-pod.selectorLabels" . | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: 3610
+    # Allow access to Obol API for DKG
+    {{- if .Values.networkPolicy.obolApi.enabled }}
+    - to:
+        - ipBlock:
+            cidr: {{ .Values.networkPolicy.obolApi.cidr | default "0.0.0.0/0" }}
+            {{- if .Values.networkPolicy.obolApi.except }}
+            except:
+              {{- toYaml .Values.networkPolicy.obolApi.except | nindent 14 }}
+            {{- end }}
+      ports:
+        - protocol: TCP
+          port: 443
+    {{- end }}
+    # Allow custom egress rules
+    {{- with .Values.networkPolicy.customEgress }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{- end }}

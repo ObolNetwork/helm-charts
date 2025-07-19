@@ -80,10 +80,10 @@ spec:
                 # 'charon create enr --data-dir' will generate the private key file in /enr-output
                 # and output the public ENR string to stdout.
                 PUBLIC_ENR_STRING=$(charon create enr --data-dir /enr-output)
-                # Ensure the generated private key is readable by the next container
+                # Ensure the generated private key is readable only by the owner
                 if [ -f "/enr-output/charon-enr-private-key" ]; then
-                  echo "INFO: Setting permissions on generated /enr-output/charon-enr-private-key"
-                  chmod 644 /enr-output/charon-enr-private-key
+                  echo "INFO: Setting secure permissions on generated /enr-output/charon-enr-private-key"
+                  chmod 600 /enr-output/charon-enr-private-key
                 else
                   echo "ERROR: Expected private key /enr-output/charon-enr-private-key not found after generation."
                   exit 1 # or handle error appropriately

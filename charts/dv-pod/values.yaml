@@ -39,13 +39,13 @@ validatorClient:
     extraArgs: []
   
   # -- Resource limits and requests for validator client
-  resources: {}
-    # limits:
-    #   cpu: 1000m
-    #   memory: 2Gi
-    # requests:
-    #   cpu: 500m
-    #   memory: 1Gi
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
   
   # -- Validator keystores configuration
   keystores:
@@ -90,22 +90,22 @@ serviceAccount:
 
 # -- The security context for pods
 # @default -- See `values.yaml`
-securityContext: {}
-  # runAsUser: 10001
-  # fsGroup: 10001
-  # runAsGroup: 10001
-  # runAsNonRoot: true
-  # runAsUser: 10001
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  fsGroup: 10001
+  runAsGroup: 10001
+  seccompProfile:
+    type: RuntimeDefault
 
 # -- The security context for containers
 # @default -- See `values.yaml`
-containerSecurityContext: {}
-  # runAsUser: 1000
-  # runAsNonRoot: true
-  # readOnlyRootFilesystem: true
-  # capabilities:
-  #   drop:
-  #   - ALL
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false  # Charon needs to write to data directory
+  capabilities:
+    drop:
+    - ALL
 
 # -- RBAC configuration.
 ## ref: https://kubernetes.io/docs/reference/access-authn-authz/rbac/
@@ -157,17 +157,15 @@ service:
       targetPort: 3620
 
 # -- Pod resources limits and requests
-resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
+resources:
+  # Default resource limits and requests for the main Charon container
+  # These values are suitable for production use and can be adjusted based on your needs
+  limits:
+    cpu: 2000m
+    memory: 4Gi
+  requests:
+    cpu: 1000m
+    memory: 2Gi
 
 # -- Node labels for pod assignment
 ## ref: https://kubernetes.io/docs/user-guide/node-selection/
@@ -264,13 +262,13 @@ charon:
     # -- API endpoint for the Obol network to fetch cluster definitions
     apiEndpoint: "https://api.obol.tech"
     # -- Resources for the cluster poller init container
-    resources: {}
-     #  requests:
-     #    cpu: 50m
-     #    memory: 64Mi
-     #  limits:
-     #    cpu: 100m
-     #    memory: 128Mi
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
     # -- Service account settings for test pods
     serviceAccount:
       create: true # Whether to specify the test service account for test pods
@@ -512,3 +510,51 @@ tests:
 
 # -- Configuration for the DKG Mock API Server used in tests.
 # This is relevant if you are using the mock server deployment included in this chart for testing.
+
+# -- NetworkPolicy configuration for pod network isolation
+networkPolicy:
+  # -- Enable NetworkPolicy to restrict network traffic
+  enabled: false
+  # -- Selector for validator client pods that can access the validator API
+  validatorClientSelector: {}
+    # app: validator-client
+  # -- Namespace selector for validator client access
+  validatorClientNamespaceSelector: {}
+    # name: validators
+  # -- Monitoring configuration
+  monitoring:
+    # -- Enable access from monitoring tools
+    enabled: true
+    # -- Pod selector for monitoring tools (e.g., Prometheus)
+    podSelector: {}
+      # app: prometheus
+    # -- Namespace selector for monitoring namespace
+    namespaceSelector: {}
+      # name: monitoring
+  # -- Beacon node configuration
+  beaconNodes:
+    # -- Enable egress to beacon nodes
+    enabled: true
+    # -- Pod selector for beacon nodes
+    podSelector: {}
+    # -- Namespace selector for beacon nodes
+    namespaceSelector: {}
+    # -- IP block for external beacon nodes
+    ipBlock: {}
+      # cidr: 0.0.0.0/0
+      # except:
+      #   - 169.254.169.254/32
+    # -- Port for beacon node connections (leave empty for any port)
+    port: null
+  # -- Obol API configuration
+  obolApi:
+    # -- Enable egress to Obol API for DKG
+    enabled: true
+    # -- CIDR block for Obol API access
+    cidr: "0.0.0.0/0"
+    # -- IP ranges to exclude
+    except: []
+  # -- Custom ingress rules to add
+  customIngress: []
+  # -- Custom egress rules to add
+  customEgress: []
