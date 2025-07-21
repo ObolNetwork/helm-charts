@@ -15,7 +15,7 @@ spec:
   restartPolicy: Never
   containers:
     - name: test-enr-job-completion
-      image: bitnami/kubectl:latest
+      image: bitnami/kubectl:1.33.3
       command:
         - /bin/sh
         - -ec
@@ -31,7 +31,7 @@ spec:
           echo "INFO: ENR generation job $JOB_NAME completed successfully."
 
     - name: test-enr-secret-existence
-      image: bitnami/kubectl:latest
+      image: bitnami/kubectl:1.33.3
       command:
         - /bin/sh
         - -ec

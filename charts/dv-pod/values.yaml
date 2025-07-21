@@ -76,7 +76,16 @@ nameOverride: ""
 fullnameOverride: ""
 
 # -- Pod annotations
-podAnnotations: {}
+podAnnotations:
+  # Pod Security Standards annotations
+  # These annotations enforce security policies at the pod level
+  # https://kubernetes.io/docs/concepts/security/pod-security-standards/
+  pod-security.kubernetes.io/enforce: "restricted"
+  pod-security.kubernetes.io/enforce-version: "latest"
+  pod-security.kubernetes.io/audit: "restricted"
+  pod-security.kubernetes.io/audit-version: "latest"
+  pod-security.kubernetes.io/warn: "restricted"
+  pod-security.kubernetes.io/warn-version: "latest"
 
 # -- Service account
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
@@ -309,7 +318,7 @@ charon:
       # This image must contain a compatible kubectl binary.
       kubectlImage:
         repository: "bitnami/kubectl"
-        tag: "latest" # Or a specific version like "1.27"
+        tag: "1.33.3" # Pinned to match stable Kubernetes v1.33.3
         pullPolicy: "IfNotPresent"
 
   # --- Charon command line options ---
