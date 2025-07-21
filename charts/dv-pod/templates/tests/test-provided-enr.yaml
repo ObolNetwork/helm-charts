@@ -21,7 +21,7 @@ spec:
   restartPolicy: Never
   containers:
     - name: test-enr-job-completion-provided
-      image: bitnami/kubectl:latest
+      image: bitnami/kubectl:1.33.3
       command:
         - /bin/sh
         - -ec
@@ -36,7 +36,7 @@ spec:
           echo "INFO: ENR generation job $JOB_NAME completed successfully (provided key)."
 
     - name: test-enr-secret-content-provided
-      image: bitnami/kubectl:latest
+      image: bitnami/kubectl:1.33.3
       env:
         - name: EXPECTED_PRIVATE_KEY
           value: "{{ .Values.charon.enr.privateKey | trimPrefix "0x" }}"

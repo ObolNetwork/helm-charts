@@ -136,7 +136,7 @@ spec:
         # It runs as root only to set ownership, then the actual import runs as non-root
         {{- if .Values.validatorClient.enabled }}
         - name: prepare-validator-data
-          image: busybox:1.34.0
+          image: busybox:1.37.0
           imagePullPolicy: IfNotPresent
           securityContext:
             runAsUser: 0
@@ -157,7 +157,7 @@ spec:
         # 1. Pre-existing keystores from a Secret
         # 2. DKG-generated keystores from /charon-data/validator_keys/
         - name: import-keystores
-          image: busybox:1.34.0
+          image: busybox:1.37.0
           imagePullPolicy: IfNotPresent
           securityContext:
             runAsUser: 1000
