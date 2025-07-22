@@ -80,11 +80,13 @@ podAnnotations:
   # Pod Security Standards annotations
   # These annotations enforce security policies at the pod level
   # https://kubernetes.io/docs/concepts/security/pod-security-standards/
-  pod-security.kubernetes.io/enforce: "restricted"
+  # Note: We use "baseline" instead of "restricted" because the prepare-validator-data
+  # init container needs to run as root to set proper file ownership
+  pod-security.kubernetes.io/enforce: "baseline"
   pod-security.kubernetes.io/enforce-version: "latest"
-  pod-security.kubernetes.io/audit: "restricted"
+  pod-security.kubernetes.io/audit: "baseline"
   pod-security.kubernetes.io/audit-version: "latest"
-  pod-security.kubernetes.io/warn: "restricted"
+  pod-security.kubernetes.io/warn: "baseline"
   pod-security.kubernetes.io/warn-version: "latest"
 
 # -- Service account
@@ -99,13 +101,9 @@ serviceAccount:
 
 # -- The security context for pods
 # @default -- See `values.yaml`
-securityContext:
-  runAsNonRoot: true
-  runAsUser: 10001
-  fsGroup: 10001
-  runAsGroup: 10001
-  seccompProfile:
-    type: RuntimeDefault
+# Note: This must be set to null or omit runAsNonRoot to allow the prepare-validator-data
+# init container to run as root for setting file permissions
+securityContext: {}
 
 # -- The security context for containers
 # @default -- See `values.yaml`
@@ -389,11 +387,6 @@ charon:
   # -- Path within the Charon container where the ENR private key file will be mounted.
   privateKeyFile: "/data/charon-enr-private-key"
   
-  # -- Lock hash for large cluster-lock files
-  # If your cluster-lock.json is larger than 1MB, extract the lock_hash value
-  # and provide it here. The DKG sidecar will fetch the full cluster lock from the Obol API.
-  # Example: --set charon.lockHash="0xabc123..."
-  lockHash: ""
 
 # -- Kubernetes secrets names that might be used as suffixes or for other purposes.
 # For the ENR, the secret name is either defined in 'charon.enr.existingSecret.name' 
@@ -418,13 +411,6 @@ configMaps:
   # more suitable for cluster-lock files which can be several megabytes.
   clusterlock: ""
   
-  # -- Name of the ConfigMap containing the lock-hash
-  # Alternative method for large cluster-lock files (>1MB).
-  # The ConfigMap should contain a key 'lock-hash' with the lock_hash value
-  # from your cluster-lock.json
-  # Example: kubectl create configmap cluster-lock-hash --from-literal=lock-hash=$LOCK_HASH
-  # Note: Using charon.lockHash directly is recommended over this method
-  lockHash: ""
 
 # -- Persistence configuration for DKG artifacts and charon data
 persistence:
