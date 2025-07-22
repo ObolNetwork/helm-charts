@@ -24,6 +24,10 @@ spec:
     spec:
       restartPolicy: Never
       serviceAccountName: {{ include "dv-pod.fullname" . }}-enr-job # Service account with secret permissions
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
       volumes:
         - name: enr-data
           emptyDir: {}
