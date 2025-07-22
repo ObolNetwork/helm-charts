@@ -25,7 +25,15 @@ metadata:
 rules:
 - apiGroups: [""]
   resources: ["secrets"]
-  verbs: ["get", "create", "update", "patch", "list", "delete"]
+  verbs: ["get", "list"]  # For checking existence
+- apiGroups: [""]
+  resources: ["secrets"]
+  resourceNames: 
+    - {{ include "dv-pod.enrSecretName" . | quote }}
+  verbs: ["update", "patch"]  # For updating existing secret
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["create"]  # For initial creation only
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

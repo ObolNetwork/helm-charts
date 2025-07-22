@@ -1,9 +1,0 @@
-dependencies:
-- name: erigon
-  repository: https://ethpandaops.github.io/ethereum-helm-charts
-  version: 1.0.12
-- name: teku
-  repository: https://ethpandaops.github.io/ethereum-helm-charts
-  version: 1.1.4
-digest: sha256:053fb069c6fe2ff27aef9f2af7d26f4e924918e9924963f0e88356441a117996
-generated: "2025-06-27T16:04:04.651508+02:00"
