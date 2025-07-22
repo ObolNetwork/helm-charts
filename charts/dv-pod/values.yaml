@@ -39,13 +39,13 @@ validatorClient:
     extraArgs: []
   
   # -- Resource limits and requests for validator client
-  resources: {}
-    # limits:
-    #   cpu: 1000m
-    #   memory: 2Gi
-    # requests:
-    #   cpu: 500m
-    #   memory: 1Gi
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
   
   # -- Validator keystores configuration
   keystores:
@@ -76,7 +76,18 @@ nameOverride: ""
 fullnameOverride: ""
 
 # -- Pod annotations
-podAnnotations: {}
+podAnnotations:
+  # Pod Security Standards annotations
+  # These annotations enforce security policies at the pod level
+  # https://kubernetes.io/docs/concepts/security/pod-security-standards/
+  # Note: We use "baseline" instead of "restricted" because the prepare-validator-data
+  # init container needs to run as root to set proper file ownership
+  pod-security.kubernetes.io/enforce: "baseline"
+  pod-security.kubernetes.io/enforce-version: "latest"
+  pod-security.kubernetes.io/audit: "baseline"
+  pod-security.kubernetes.io/audit-version: "latest"
+  pod-security.kubernetes.io/warn: "baseline"
+  pod-security.kubernetes.io/warn-version: "latest"
 
 # -- Service account
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
@@ -90,22 +101,18 @@ serviceAccount:
 
 # -- The security context for pods
 # @default -- See `values.yaml`
+# Note: This must be set to null or omit runAsNonRoot to allow the prepare-validator-data
+# init container to run as root for setting file permissions
 securityContext: {}
-  # runAsUser: 10001
-  # fsGroup: 10001
-  # runAsGroup: 10001
-  # runAsNonRoot: true
-  # runAsUser: 10001
 
 # -- The security context for containers
 # @default -- See `values.yaml`
-containerSecurityContext: {}
-  # runAsUser: 1000
-  # runAsNonRoot: true
-  # readOnlyRootFilesystem: true
-  # capabilities:
-  #   drop:
-  #   - ALL
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false  # Charon needs to write to data directory
+  capabilities:
+    drop:
+    - ALL
 
 # -- RBAC configuration.
 ## ref: https://kubernetes.io/docs/reference/access-authn-authz/rbac/
@@ -157,17 +164,15 @@ service:
       targetPort: 3620
 
 # -- Pod resources limits and requests
-resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
+resources:
+  # Default resource limits and requests for the main Charon container
+  # These values are suitable for production use and can be adjusted based on your needs
+  limits:
+    cpu: 2000m
+    memory: 4Gi
+  requests:
+    cpu: 1000m
+    memory: 2Gi
 
 # -- Node labels for pod assignment
 ## ref: https://kubernetes.io/docs/user-guide/node-selection/
@@ -264,13 +269,13 @@ charon:
     # -- API endpoint for the Obol network to fetch cluster definitions
     apiEndpoint: "https://api.obol.tech"
     # -- Resources for the cluster poller init container
-    resources: {}
-     #  requests:
-     #    cpu: 50m
-     #    memory: 64Mi
-     #  limits:
-     #    cpu: 100m
-     #    memory: 128Mi
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
     # -- Service account settings for test pods
     serviceAccount:
       create: true # Whether to specify the test service account for test pods
@@ -311,7 +316,7 @@ charon:
       # This image must contain a compatible kubectl binary.
       kubectlImage:
         repository: "bitnami/kubectl"
-        tag: "latest" # Or a specific version like "1.27"
+        tag: "1.33.3" # Pinned to match stable Kubernetes v1.33.3
         pullPolicy: "IfNotPresent"
 
   # --- Charon command line options ---
@@ -382,11 +387,6 @@ charon:
   # -- Path within the Charon container where the ENR private key file will be mounted.
   privateKeyFile: "/data/charon-enr-private-key"
   
-  # -- Lock hash for large cluster-lock files
-  # If your cluster-lock.json is larger than 1MB, extract the lock_hash value
-  # and provide it here. The DKG sidecar will fetch the full cluster lock from the Obol API.
-  # Example: --set charon.lockHash="0xabc123..."
-  lockHash: ""
 
 # -- Kubernetes secrets names that might be used as suffixes or for other purposes.
 # For the ENR, the secret name is either defined in 'charon.enr.existingSecret.name' 
@@ -411,13 +411,6 @@ configMaps:
   # more suitable for cluster-lock files which can be several megabytes.
   clusterlock: ""
   
-  # -- Name of the ConfigMap containing the lock-hash
-  # Alternative method for large cluster-lock files (>1MB).
-  # The ConfigMap should contain a key 'lock-hash' with the lock_hash value
-  # from your cluster-lock.json
-  # Example: kubectl create configmap cluster-lock-hash --from-literal=lock-hash=$LOCK_HASH
-  # Note: Using charon.lockHash directly is recommended over this method
-  lockHash: ""
 
 # -- Persistence configuration for DKG artifacts and charon data
 persistence:
@@ -512,3 +505,51 @@ tests:
 
 # -- Configuration for the DKG Mock API Server used in tests.
 # This is relevant if you are using the mock server deployment included in this chart for testing.
+
+# -- NetworkPolicy configuration for pod network isolation
+networkPolicy:
+  # -- Enable NetworkPolicy to restrict network traffic
+  enabled: false
+  # -- Selector for validator client pods that can access the validator API
+  validatorClientSelector: {}
+    # app: validator-client
+  # -- Namespace selector for validator client access
+  validatorClientNamespaceSelector: {}
+    # name: validators
+  # -- Monitoring configuration
+  monitoring:
+    # -- Enable access from monitoring tools
+    enabled: true
+    # -- Pod selector for monitoring tools (e.g., Prometheus)
+    podSelector: {}
+      # app: prometheus
+    # -- Namespace selector for monitoring namespace
+    namespaceSelector: {}
+      # name: monitoring
+  # -- Beacon node configuration
+  beaconNodes:
+    # -- Enable egress to beacon nodes
+    enabled: true
+    # -- Pod selector for beacon nodes
+    podSelector: {}
+    # -- Namespace selector for beacon nodes
+    namespaceSelector: {}
+    # -- IP block for external beacon nodes
+    ipBlock: {}
+      # cidr: 0.0.0.0/0
+      # except:
+      #   - 169.254.169.254/32
+    # -- Port for beacon node connections (leave empty for any port)
+    port: null
+  # -- Obol API configuration
+  obolApi:
+    # -- Enable egress to Obol API for DKG
+    enabled: true
+    # -- CIDR block for Obol API access
+    cidr: "0.0.0.0/0"
+    # -- IP ranges to exclude
+    except: []
+  # -- Custom ingress rules to add
+  customIngress: []
+  # -- Custom egress rules to add
+  customEgress: []

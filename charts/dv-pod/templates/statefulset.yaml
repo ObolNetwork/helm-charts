@@ -64,8 +64,8 @@ spec:
           image: "{{ .Values.charon.dkgSidecar.image.repository }}:{{ .Values.charon.dkgSidecar.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.charon.dkgSidecar.image.pullPolicy }}
           securityContext:
-            runAsUser: 0
-            runAsGroup: 0
+            runAsUser: 1000
+            runAsGroup: 1000
           args:
             - "{{ .Values.charon.operatorAddress }}"
             - "/enr-from-job/enr.txt"
@@ -132,16 +132,36 @@ spec:
         {{- end }}
         {{- if .Values.validatorClient.enabled }}
         # Keystore Import Init Container
+        # This container prepares the validator data directory with proper ownership
+        # It runs as root only to set ownership, then the actual import runs as non-root
+        {{- if .Values.validatorClient.enabled }}
+        - name: prepare-validator-data
+          image: busybox:1.37.0
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Preparing validator data directory..."
+              mkdir -p /validator-data
+              chown -R 1000:1000 /validator-data
+              echo "Directory prepared with correct ownership"
+          volumeMounts:
+            - name: validator-data
+              mountPath: /validator-data
+        {{- end }}
         # This container imports validator keystores for the validator client.
         # It handles different validator client formats and sources:
         # 1. Pre-existing keystores from a Secret
         # 2. DKG-generated keystores from /charon-data/validator_keys/
         - name: import-keystores
-          image: busybox:1.34.0
+          image: busybox:1.37.0
           imagePullPolicy: IfNotPresent
           securityContext:
-            runAsUser: 0
-            runAsGroup: 0
+            runAsUser: 1000
+            runAsGroup: 1000
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -194,8 +214,24 @@ spec:
                   mkdir -p /validator-data/validators /validator-data/secrets
                   cp -v $KEYSTORE_DIR/keystore-*.json /validator-data/validators/ 2>/dev/null || echo "No keystore JSON files found"
                   cp -v $KEYSTORE_DIR/keystore-*.txt /validator-data/secrets/ 2>/dev/null || echo "No keystore password files found"
-                  chmod -R 600 /validator-data/validators/* /validator-data/secrets/*
-                  chown -R 1000:1000 /validator-data
+                  # Create validator_definitions.yml for Lighthouse
+                  echo "---" > /validator-data/validators/validator_definitions.yml
+                  for keystore in /validator-data/validators/keystore-*.json; do
+                    if [ -f "$keystore" ]; then
+                      keystore_name=$(basename "$keystore")
+                      password_name=$(basename "$keystore" .json).txt
+                      echo "- enabled: true" >> /validator-data/validators/validator_definitions.yml
+                      echo "  voting_public_key: \"0x$(cat "$keystore" | grep -o '"pubkey": *"[^"]*"' | cut -d'"' -f4)\"" >> /validator-data/validators/validator_definitions.yml
+                      echo "  type: local_keystore" >> /validator-data/validators/validator_definitions.yml
+                      echo "  voting_keystore_path: /validator-data/validators/$keystore_name" >> /validator-data/validators/validator_definitions.yml
+                      echo "  voting_keystore_password_path: /validator-data/secrets/$password_name" >> /validator-data/validators/validator_definitions.yml
+                    fi
+                  done
+                  echo "Created validator_definitions.yml"
+                  cat /validator-data/validators/validator_definitions.yml
+                  chmod -R 400 /validator-data/validators/*.json 2>/dev/null || true
+                  chmod -R 600 /validator-data/secrets/*.txt 2>/dev/null || true
+                  chmod 600 /validator-data/validators/validator_definitions.yml
                   ;;
                   
                 "lodestar")
@@ -204,7 +240,7 @@ spec:
                   for keystore in $KEYSTORE_DIR/keystore-*.json; do
                     if [ -f "$keystore" ]; then
                       # Extract pubkey from keystore
-                      pubkey=$(grep -o '"pubkey":"[^"]*"' "$keystore" | cut -d'"' -f4)
+                      pubkey=$(cat "$keystore" | grep -o '"pubkey": *"[^"]*"' | cut -d'"' -f4)
                       if [ -n "$pubkey" ]; then
                         echo "Processing keystore for pubkey: $pubkey"
                         mkdir -p "/validator-data/keystores/$pubkey"
@@ -214,12 +250,11 @@ spec:
                         if [ -f "$password_file" ]; then
                           cp "$password_file" "/validator-data/secrets/$pubkey"
                         fi
-                        chmod 600 "/validator-data/keystores/$pubkey/voting-keystore.json"
+                        chmod 400 "/validator-data/keystores/$pubkey/voting-keystore.json"
                         chmod 600 "/validator-data/secrets/$pubkey"
                       fi
                     fi
                   done
-                  chown -R 1000:1000 /validator-data
                   ;;
                   
                 "teku")
@@ -227,8 +262,8 @@ spec:
                   mkdir -p /validator-data/keys /validator-data/passwords
                   cp -v $KEYSTORE_DIR/keystore-*.json /validator-data/keys/ 2>/dev/null || echo "No keystore JSON files found"
                   cp -v $KEYSTORE_DIR/keystore-*.txt /validator-data/passwords/ 2>/dev/null || echo "No keystore password files found"
-                  chmod -R 600 /validator-data/keys/* /validator-data/passwords/*
-                  chown -R 1000:1000 /validator-data
+                  chmod -R 400 /validator-data/keys/*.json 2>/dev/null || true
+                  chmod -R 600 /validator-data/passwords/*.txt 2>/dev/null || true
                   ;;
                   
                 "prysm")
@@ -237,8 +272,8 @@ spec:
                   # Prysm expects a specific wallet structure, for now just copy keystores
                   cp -v $KEYSTORE_DIR/keystore-*.json /validator-data/wallets/ 2>/dev/null || echo "No keystore JSON files found"
                   cp -v $KEYSTORE_DIR/keystore-*.txt /validator-data/wallets/ 2>/dev/null || echo "No keystore password files found"
-                  chmod -R 600 /validator-data/wallets/*
-                  chown -R 1000:1000 /validator-data
+                  chmod -R 400 /validator-data/wallets/*.json 2>/dev/null || true
+                  chmod -R 600 /validator-data/wallets/*.txt 2>/dev/null || true
                   ;;
                   
                 "nimbus")
@@ -246,8 +281,8 @@ spec:
                   mkdir -p /validator-data/validators /validator-data/secrets
                   cp -v $KEYSTORE_DIR/keystore-*.json /validator-data/validators/ 2>/dev/null || echo "No keystore JSON files found"
                   cp -v $KEYSTORE_DIR/keystore-*.txt /validator-data/secrets/ 2>/dev/null || echo "No keystore password files found"
-                  chmod -R 600 /validator-data/validators/* /validator-data/secrets/*
-                  chown -R 1000:1000 /validator-data
+                  chmod -R 400 /validator-data/validators/*.json 2>/dev/null || true
+                  chmod -R 600 /validator-data/secrets/*.txt 2>/dev/null || true
                   ;;
                   
                 *)
@@ -396,7 +431,7 @@ spec:
               readOnly: true
           {{- with .Values.resources }}
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            {{- toYaml . | nindent 12 }}
           {{- end }}
         {{- if .Values.validatorClient.enabled }}
         # Validator Client Container
