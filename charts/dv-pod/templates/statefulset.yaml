@@ -214,8 +214,24 @@ spec:
                   mkdir -p /validator-data/validators /validator-data/secrets
                   cp -v $KEYSTORE_DIR/keystore-*.json /validator-data/validators/ 2>/dev/null || echo "No keystore JSON files found"
                   cp -v $KEYSTORE_DIR/keystore-*.txt /validator-data/secrets/ 2>/dev/null || echo "No keystore password files found"
+                  # Create validator_definitions.yml for Lighthouse
+                  echo "---" > /validator-data/validators/validator_definitions.yml
+                  for keystore in /validator-data/validators/keystore-*.json; do
+                    if [ -f "$keystore" ]; then
+                      keystore_name=$(basename "$keystore")
+                      password_name=$(basename "$keystore" .json).txt
+                      echo "- enabled: true" >> /validator-data/validators/validator_definitions.yml
+                      echo "  voting_public_key: \"0x$(cat "$keystore" | grep -o '"pubkey": *"[^"]*"' | cut -d'"' -f4)\"" >> /validator-data/validators/validator_definitions.yml
+                      echo "  type: local_keystore" >> /validator-data/validators/validator_definitions.yml
+                      echo "  voting_keystore_path: /validator-data/validators/$keystore_name" >> /validator-data/validators/validator_definitions.yml
+                      echo "  voting_keystore_password_path: /validator-data/secrets/$password_name" >> /validator-data/validators/validator_definitions.yml
+                    fi
+                  done
+                  echo "Created validator_definitions.yml"
+                  cat /validator-data/validators/validator_definitions.yml
                   chmod -R 400 /validator-data/validators/*.json 2>/dev/null || true
                   chmod -R 600 /validator-data/secrets/*.txt 2>/dev/null || true
+                  chmod 600 /validator-data/validators/validator_definitions.yml
                   ;;
                   
                 "lodestar")
@@ -224,7 +240,7 @@ spec:
                   for keystore in $KEYSTORE_DIR/keystore-*.json; do
                     if [ -f "$keystore" ]; then
                       # Extract pubkey from keystore
-                      pubkey=$(grep -o '"pubkey":"[^"]*"' "$keystore" | cut -d'"' -f4)
+                      pubkey=$(cat "$keystore" | grep -o '"pubkey": *"[^"]*"' | cut -d'"' -f4)
                       if [ -n "$pubkey" ]; then
                         echo "Processing keystore for pubkey: $pubkey"
                         mkdir -p "/validator-data/keystores/$pubkey"
@@ -415,7 +431,7 @@ spec:
               readOnly: true
           {{- with .Values.resources }}
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            {{- toYaml . | nindent 12 }}
           {{- end }}
         {{- if .Values.validatorClient.enabled }}
         # Validator Client Container
