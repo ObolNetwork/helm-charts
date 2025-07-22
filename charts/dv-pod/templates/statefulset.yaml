@@ -379,11 +379,21 @@ spec:
               {{- if .Values.charon.validatorApiAddress }}
               --validator-api-address={{ .Values.charon.validatorApiAddress }}
               {{- end }}
+              {{- if and .Values.charon.beaconNodeHeaders (not .Values.charon.beaconNodeHeadersSecretName) }}
+              --beacon-node-headers={{ .Values.charon.beaconNodeHeaders | quote }}
+              {{- end }}
           env:
           - name: NODE_NAME
             valueFrom:
               fieldRef:
                 fieldPath: metadata.name
+          {{- if .Values.charon.beaconNodeHeadersSecretName }}
+          - name: CHARON_BEACON_NODE_HEADERS
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.charon.beaconNodeHeadersSecretName }}
+                key: {{ .Values.charon.beaconNodeHeadersSecretKey }}
+          {{- end }}
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           name: {{ .Chart.Name }}
           {{- with .Values.containerSecurityContext }}
