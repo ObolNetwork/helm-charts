@@ -231,6 +231,21 @@ charon:
   # Example:
   # - "https://ethereum-beacon-api.publicnode.com"
   # - "http://backup-beacon-2:5052"
+  
+  # -- Beacon node authentication headers
+  # WARNING: These headers will be sent to ALL beacon nodes, which could leak credentials
+  # Format: "Authorization=Basic <base64_encoded_credentials>"
+  # To generate: echo -n "username:password" | base64
+  # Example: "Authorization=Basic am9objpkb2U="
+  beaconNodeHeaders: ""
+  
+  # -- Optional: Name of the secret containing beacon node headers
+  # Use this for secure credential storage instead of beaconNodeHeaders
+  # The secret should contain a key specified by beaconNodeHeadersSecretKey
+  beaconNodeHeadersSecretName: ""
+  
+  # -- Key within the beacon node headers secret
+  beaconNodeHeadersSecretKey: "headers"
   # -- Configuration for the DKG Sidecar init container
   # This init container orchestrates the Distributed Key Generation (DKG) process for Charon clusters.
   #
