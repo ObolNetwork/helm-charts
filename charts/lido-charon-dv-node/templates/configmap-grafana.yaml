@@ -1,0 +1,56 @@
+{{- if .Values.grafana.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "lido-charon-dv-node.fullname" . }}-grafana-config
+  labels:
+    {{- include "lido-charon-dv-node.labels" . | nindent 4 }}
+    app.kubernetes.io/component: grafana
+data:
+  grafana.ini: |
+    [auth.anonymous]
+    enabled = {{ .Values.grafana.anonymousEnabled }}
+    org_role = {{ .Values.grafana.anonymousOrgRole }}
+    
+    [security]
+    admin_user = {{ .Values.grafana.adminUser }}
+    admin_password = {{ .Values.grafana.adminPassword }}
+    
+    [server]
+    root_url = %(protocol)s://%(domain)s:%(http_port)s/
+    
+    [paths]
+    data = /var/lib/grafana
+    logs = /var/log/grafana
+    plugins = /var/lib/grafana/plugins
+    provisioning = /etc/grafana/provisioning
+  
+  datasource.yml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://{{ include "lido-charon-dv-node.fullname" . }}-prometheus:9090
+        isDefault: true
+        editable: false
+      {{- if .Values.loki.enabled }}
+      - name: Loki
+        type: loki
+        access: proxy
+        url: http://{{ include "lido-charon-dv-node.fullname" . }}-loki:3100
+        editable: false
+      {{- end }}
+  
+  dashboards.yml: |
+    apiVersion: 1
+    providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 10
+        options:
+          path: /etc/dashboards
+{{- end }}

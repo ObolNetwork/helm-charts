@@ -1,0 +1,19 @@
+{{- if .Values.validatorEjector.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "lido-charon-dv-node.fullname" . }}-validator-ejector
+  labels:
+    {{- include "lido-charon-dv-node.labels" . | nindent 4 }}
+    app.kubernetes.io/component: validator-ejector
+spec:
+  type: {{ .Values.validatorEjector.service.type }}
+  ports:
+    - port: {{ .Values.validatorEjector.service.ports.metrics.port }}
+      targetPort: {{ .Values.validatorEjector.service.ports.metrics.targetPort }}
+      protocol: TCP
+      name: metrics
+  selector:
+    {{- include "lido-charon-dv-node.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: validator-ejector
+{{- end }}

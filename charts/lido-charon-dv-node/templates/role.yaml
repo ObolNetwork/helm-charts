@@ -1,0 +1,39 @@
+{{- if .Values.rbac.create -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "lido-charon-dv-node.fullname" . }}
+  labels:
+    {{- include "lido-charon-dv-node.labels" . | nindent 4 }}
+rules:
+  # Required to get information about the services nodePort
+  - apiGroups: [""]
+    resources:
+      - "services"
+    verbs:
+      - "get"
+      - "list"
+      - "watch"
+  # Required to manage secrets (JWT, keys)
+  - apiGroups: [""]
+    resources:
+      - "secrets"
+    verbs:
+      - "get"
+      - "list"
+      - "watch"
+      - "create"
+      - "update"
+      - "patch"
+  # Required to manage configmaps
+  - apiGroups: [""]
+    resources:
+      - "configmaps"
+    verbs:
+      - "get"
+      - "list"
+      - "watch"
+      - "create"
+      - "update"
+      - "patch"
+{{- end }}

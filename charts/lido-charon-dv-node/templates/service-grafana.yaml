@@ -1,0 +1,19 @@
+{{- if .Values.grafana.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "lido-charon-dv-node.fullname" . }}-grafana
+  labels:
+    {{- include "lido-charon-dv-node.labels" . | nindent 4 }}
+    app.kubernetes.io/component: grafana
+spec:
+  type: {{ .Values.grafana.service.type }}
+  ports:
+    - port: {{ .Values.grafana.service.ports.http.port }}
+      targetPort: {{ .Values.grafana.service.ports.http.targetPort }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "lido-charon-dv-node.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: grafana
+{{- end }}

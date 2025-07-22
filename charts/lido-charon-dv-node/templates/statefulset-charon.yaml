@@ -1,0 +1,153 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "lido-charon-dv-node.fullname" . }}-charon
+  labels:
+    {{- include "lido-charon-dv-node.labels" . | nindent 4 }}
+    app.kubernetes.io/component: charon
+spec:
+  serviceName: {{ include "lido-charon-dv-node.fullname" . }}-charon
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{- include "lido-charon-dv-node.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: charon
+  template:
+    metadata:
+      annotations:
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "lido-charon-dv-node.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: charon
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "lido-charon-dv-node.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: charon
+          {{- with .Values.containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.charon.image.repository }}:{{ .Values.charon.image.tag }}"
+          imagePullPolicy: {{ .Values.charon.image.pullPolicy }}
+          command:
+            - charon
+            - run
+          args:
+            {{- if .Values.lighthouse.enabled }}
+            - --beacon-node-endpoints=http://{{ include "lido-charon-dv-node.fullname" . }}-lighthouse:5052
+            {{- else }}
+            - --beacon-node-endpoints={{ join "," .Values.charon.beaconNodeEndpoints }}
+            {{- end }}
+            {{- if .Values.charon.fallbackBeaconNodeEndpoints }}
+            - --fallback-beacon-node-endpoints={{ join "," .Values.charon.fallbackBeaconNodeEndpoints }}
+            {{- end }}
+            - --log-level={{ .Values.charon.logLevel }}
+            - --log-format={{ .Values.charon.logFormat }}
+            - --p2p-relays={{ .Values.charon.p2p.relays }}
+            {{- if .Values.charon.p2p.externalHostname }}
+            - --p2p-external-hostname={{ .Values.charon.p2p.externalHostname }}
+            {{- end }}
+            {{- if .Values.charon.p2p.externalIp }}
+            - --p2p-external-ip={{ .Values.charon.p2p.externalIp }}
+            {{- end }}
+            - --p2p-tcp-address=0.0.0.0:{{ .Values.charon.p2p.tcpPort }}
+            - --validator-api-address=0.0.0.0:3600
+            - --monitoring-address=0.0.0.0:3620
+            {{- if .Values.charon.builderApi }}
+            - --builder-api={{ .Values.charon.builderApi }}
+            {{- end }}
+            - --feature-set={{ .Values.charon.featureSet }}
+            {{- if .Values.charon.featureSetEnable }}
+            - --feature-set-enable={{ .Values.charon.featureSetEnable }}
+            {{- end }}
+            {{- if .Values.charon.lokiAddresses }}
+            - --loki-addresses={{ .Values.charon.lokiAddresses }}
+            {{- end }}
+            {{- if .Values.charon.lokiService }}
+            - --loki-service={{ .Values.charon.lokiService }}
+            {{- end }}
+            {{- if .Values.charon.nickname }}
+            - --nickname={{ .Values.charon.nickname }}
+            {{- end }}
+          ports:
+            - name: validator-api
+              containerPort: 3600
+              protocol: TCP
+            - name: p2p-tcp
+              containerPort: {{ .Values.charon.p2p.tcpPort }}
+              protocol: TCP
+            - name: monitoring
+              containerPort: 3620
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: 3620
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 3620
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          volumeMounts:
+            - name: data
+              mountPath: /opt/charon/.charon
+          {{- with .Values.charon.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            {{- with .Values.extraEnvVars }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        {{- if not .Values.charon.persistence.enabled }}
+        - name: data
+          emptyDir: {}
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+  {{- if .Values.charon.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: {{ .Values.charon.persistence.accessModes }}
+        {{- if .Values.charon.persistence.storageClassName }}
+        storageClassName: {{ .Values.charon.persistence.storageClassName }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.charon.persistence.size }}
+  {{- end }}

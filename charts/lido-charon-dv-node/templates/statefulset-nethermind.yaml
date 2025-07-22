@@ -1,0 +1,166 @@
+{{- if .Values.nethermind.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "lido-charon-dv-node.fullname" . }}-nethermind
+  labels:
+    {{- include "lido-charon-dv-node.labels" . | nindent 4 }}
+    app.kubernetes.io/component: nethermind
+spec:
+  serviceName: {{ include "lido-charon-dv-node.fullname" . }}-nethermind
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{- include "lido-charon-dv-node.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: nethermind
+  template:
+    metadata:
+      annotations:
+        checksum/jwt: {{ include (print $.Template.BasePath "/secret-jwt.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "lido-charon-dv-node.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: nethermind
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "lido-charon-dv-node.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if not .Values.global.jwtSecret }}
+      initContainers:
+        - name: init-jwt
+          image: busybox:1.36
+          imagePullPolicy: IfNotPresent
+          command: ['sh', '/scripts/init-jwt.sh']
+          volumeMounts:
+            - name: jwt
+              mountPath: /jwt
+            - name: jwt-init-script
+              mountPath: /scripts
+      {{- end }}
+      containers:
+        - name: nethermind
+          {{- with .Values.containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.nethermind.image.repository }}:{{ .Values.nethermind.image.tag }}"
+          imagePullPolicy: {{ .Values.nethermind.image.pullPolicy }}
+          command:
+            - /nethermind/nethermind
+          args:
+            - --config={{ include "lido-charon-dv-node.network" . }}
+            - --datadir=/nethermind/data
+            - --HealthChecks.Enabled=true
+            - --JsonRpc.Enabled=true
+            - --JsonRpc.JwtSecretFile=/jwt/jwt.hex
+            - --JsonRpc.EngineHost=0.0.0.0
+            - --JsonRpc.EnginePort=8551
+            - --JsonRpc.Host=0.0.0.0
+            - --JsonRpc.Port=8545
+            - --Metrics.Enabled=true
+            - --Metrics.ExposePort=8008
+            - --Sync.SnapSync=true
+            - --Sync.AncientBodiesBarrier=4367322
+            - --Sync.AncientReceiptsBarrier=4367322
+            {{- range .Values.nethermind.extraArgs }}
+            - {{ . }}
+            {{- end }}
+          ports:
+            - name: p2p-tcp
+              containerPort: 30303
+              protocol: TCP
+            - name: p2p-udp
+              containerPort: 30303
+              protocol: UDP
+            - name: http-rpc
+              containerPort: 8545
+              protocol: TCP
+            - name: engine-rpc
+              containerPort: 8551
+              protocol: TCP
+            - name: metrics
+              containerPort: 8008
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8545
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8545
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          volumeMounts:
+            - name: data
+              mountPath: /nethermind/data
+            - name: jwt
+              mountPath: /jwt
+              readOnly: true
+          {{- with .Values.nethermind.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.extraEnvVars }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: jwt
+          {{- if .Values.global.jwtSecret }}
+          secret:
+            secretName: {{ include "lido-charon-dv-node.jwtSecretName" . }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- if not .Values.global.jwtSecret }}
+        - name: jwt-init-script
+          configMap:
+            name: {{ include "lido-charon-dv-node.fullname" . }}-jwt-init
+            defaultMode: 0755
+        {{- end }}
+        {{- if not .Values.nethermind.persistence.enabled }}
+        - name: data
+          emptyDir: {}
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+  {{- if .Values.nethermind.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: {{ .Values.nethermind.persistence.accessModes }}
+        {{- if .Values.nethermind.persistence.storageClassName }}
+        storageClassName: {{ .Values.nethermind.persistence.storageClassName }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.nethermind.persistence.size }}
+  {{- end }}
+{{- end }}

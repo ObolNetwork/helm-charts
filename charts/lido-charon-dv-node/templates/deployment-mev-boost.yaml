@@ -1,0 +1,85 @@
+{{- if .Values.mevBoost.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "lido-charon-dv-node.fullname" . }}-mev-boost
+  labels:
+    {{- include "lido-charon-dv-node.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mev-boost
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "lido-charon-dv-node.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: mev-boost
+  template:
+    metadata:
+      annotations:
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "lido-charon-dv-node.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: mev-boost
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "lido-charon-dv-node.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: mev-boost
+          {{- with .Values.containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.mevBoost.image.repository }}:{{ .Values.mevBoost.image.tag }}"
+          imagePullPolicy: {{ .Values.mevBoost.image.pullPolicy }}
+          args:
+            - -{{ include "lido-charon-dv-node.network" . }}
+            - -loglevel=debug
+            - -addr=0.0.0.0:18550
+            - -relay-check
+            - -relays={{ include "lido-charon-dv-node.mevBoostRelays" . }}
+            - -request-timeout-getheader={{ .Values.mevBoost.timeouts.getHeader }}
+            - -request-timeout-getpayload={{ .Values.mevBoost.timeouts.getPayload }}
+            - -request-timeout-regval={{ .Values.mevBoost.timeouts.regVal }}
+          ports:
+            - name: http
+              containerPort: 18550
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: 18550
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: 18550
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          {{- with .Values.mevBoost.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.extraEnvVars }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

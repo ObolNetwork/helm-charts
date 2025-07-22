@@ -1,0 +1,49 @@
+{{- if .Values.lighthouse.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "lido-charon-dv-node.fullname" . }}-lighthouse
+  labels:
+    {{- include "lido-charon-dv-node.labels" . | nindent 4 }}
+    app.kubernetes.io/component: lighthouse
+spec:
+  type: {{ .Values.lighthouse.service.type }}
+  ports:
+    - port: {{ .Values.lighthouse.service.ports.http.port }}
+      targetPort: {{ .Values.lighthouse.service.ports.http.targetPort }}
+      protocol: TCP
+      name: http
+    - port: {{ .Values.lighthouse.service.ports.metrics.port }}
+      targetPort: {{ .Values.lighthouse.service.ports.metrics.targetPort }}
+      protocol: TCP
+      name: metrics
+  selector:
+    {{- include "lido-charon-dv-node.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: lighthouse
+---
+{{- if .Values.lighthouse.nodePort.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "lido-charon-dv-node.fullname" . }}-lighthouse-p2p
+  labels:
+    {{- include "lido-charon-dv-node.labels" . | nindent 4 }}
+    app.kubernetes.io/component: lighthouse
+spec:
+  type: NodePort
+  ports:
+    - port: {{ .Values.lighthouse.service.ports.p2p.port }}
+      targetPort: {{ .Values.lighthouse.service.ports.p2p.targetPort }}
+      protocol: TCP
+      nodePort: {{ .Values.lighthouse.nodePort.port }}
+      name: p2p-tcp
+    - port: {{ .Values.lighthouse.service.ports.p2pUdp.port }}
+      targetPort: {{ .Values.lighthouse.service.ports.p2pUdp.targetPort }}
+      protocol: UDP
+      nodePort: {{ .Values.lighthouse.nodePort.port }}
+      name: p2p-udp
+  selector:
+    {{- include "lido-charon-dv-node.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: lighthouse
+{{- end }}
+{{- end }}

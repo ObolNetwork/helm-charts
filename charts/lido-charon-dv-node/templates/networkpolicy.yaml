@@ -1,0 +1,140 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "lido-charon-dv-node.fullname" . }}
+  labels:
+    {{- include "lido-charon-dv-node.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "lido-charon-dv-node.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow internal communication between pods
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "lido-charon-dv-node.selectorLabels" . | nindent 14 }}
+      ports:
+        - protocol: TCP
+    
+    # Allow Nethermind P2P
+    {{- if .Values.nethermind.enabled }}
+    - from:
+        - namespaceSelector: {}
+          podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 30303
+        - protocol: UDP
+          port: 30303
+    {{- end }}
+    
+    # Allow Lighthouse P2P
+    {{- if .Values.lighthouse.enabled }}
+    - from:
+        - namespaceSelector: {}
+          podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 9000
+        - protocol: UDP
+          port: 9000
+    {{- end }}
+    
+    # Allow Charon P2P
+    - from:
+        - namespaceSelector: {}
+          podSelector: {}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.charon.p2p.tcpPort }}
+    
+    # Allow monitoring access to metrics
+    {{- if and .Values.prometheus.enabled .Values.serviceMonitor.enabled }}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: prometheus-operator
+      ports:
+        - protocol: TCP
+          port: 8008  # Nethermind metrics
+        - protocol: TCP
+          port: 5054  # Lighthouse metrics
+        - protocol: TCP
+          port: 3620  # Charon metrics
+        - protocol: TCP
+          port: 5064  # Lodestar metrics
+        - protocol: TCP
+          port: 8989  # Validator Ejector metrics
+    {{- end }}
+    
+    # Allow Grafana access
+    {{- if .Values.grafana.enabled }}
+    - from:
+        - namespaceSelector: {}
+          podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 3000
+    {{- end }}
+    
+    {{- with .Values.networkPolicy.customIngress }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  
+  egress:
+    # Allow DNS resolution
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+    
+    # Allow internal communication
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "lido-charon-dv-node.selectorLabels" . | nindent 14 }}
+      ports:
+        - protocol: TCP
+    
+    # Allow external internet access for:
+    # - Nethermind sync
+    # - Lighthouse sync
+    # - Charon P2P relays
+    # - MEV relays
+    # - Obol monitoring
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80
+        - protocol: TCP
+          port: 30303  # Nethermind P2P
+        - protocol: UDP
+          port: 30303  # Nethermind P2P
+        - protocol: TCP
+          port: 9000   # Lighthouse P2P
+        - protocol: UDP
+          port: 9000   # Lighthouse P2P
+        - protocol: TCP
+          port: {{ .Values.charon.p2p.tcpPort }}  # Charon P2P
+    
+    {{- with .Values.networkPolicy.customEgress }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{- end }}

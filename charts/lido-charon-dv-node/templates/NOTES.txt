@@ -1,0 +1,54 @@
+1. Get the application URL by running these commands:
+{{- if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  {{- range .paths }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- else if contains "NodePort" .Values.grafana.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "lido-charon-dv-node.fullname" . }}-grafana)
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.grafana.service.type }}
+     NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+           You can watch the status of by running 'kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "lido-charon-dv-node.fullname" . }}-grafana'
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "lido-charon-dv-node.fullname" . }}-grafana --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+  echo http://$SERVICE_IP:{{ .Values.grafana.service.ports.http.port }}
+{{- else if contains "ClusterIP" .Values.grafana.service.type }}
+  echo "Visit http://127.0.0.1:3000 to use Grafana"
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "lido-charon-dv-node.fullname" . }}-grafana 3000:{{ .Values.grafana.service.ports.http.port }}
+{{- end }}
+
+2. Grafana credentials:
+  Username: {{ .Values.grafana.adminUser }}
+  Password: {{ .Values.grafana.adminPassword }}
+
+3. Check the status of your validators:
+  kubectl --namespace {{ .Release.Namespace }} logs -f deployment/{{ include "lido-charon-dv-node.fullname" . }}-charon
+
+4. Monitor metrics:
+  {{- if .Values.prometheus.enabled }}
+  Prometheus: kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "lido-charon-dv-node.fullname" . }}-prometheus 9090:{{ .Values.prometheus.service.ports.http.port }}
+  {{- end }}
+  {{- if .Values.grafana.enabled }}
+  Grafana: kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "lido-charon-dv-node.fullname" . }}-grafana 3000:{{ .Values.grafana.service.ports.http.port }}
+  {{- end }}
+
+{{- if not .Values.validatorEjector.locatorAddress }}
+
+WARNING: Validator Ejector is enabled but locatorAddress is not set. 
+Please update your values with:
+  validatorEjector:
+    locatorAddress: "YOUR_LIDO_LOCATOR_ADDRESS"
+    operatorId: "YOUR_OPERATOR_ID"
+    oracleAddressesAllowlist: "ORACLE_ADDRESSES"
+{{- end }}
+
+{{- if not .Values.charon.persistence.enabled }}
+
+WARNING: Charon persistence is disabled. This means cluster lock and validator keys will be lost on pod restart!
+Enable persistence in production:
+  charon:
+    persistence:
+      enabled: true
+{{- end }}

@@ -1,0 +1,19 @@
+{{- if .Values.mevBoost.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "lido-charon-dv-node.fullname" . }}-mev-boost
+  labels:
+    {{- include "lido-charon-dv-node.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mev-boost
+spec:
+  type: {{ .Values.mevBoost.service.type }}
+  ports:
+    - port: {{ .Values.mevBoost.service.ports.http.port }}
+      targetPort: {{ .Values.mevBoost.service.ports.http.targetPort }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "lido-charon-dv-node.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: mev-boost
+{{- end }}

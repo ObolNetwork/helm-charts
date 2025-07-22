@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "lido-charon-dv-node.fullname" . }}-charon
+  labels:
+    {{- include "lido-charon-dv-node.labels" . | nindent 4 }}
+    app.kubernetes.io/component: charon
+spec:
+  type: {{ .Values.charon.service.type }}
+  ports:
+    - port: {{ .Values.charon.service.ports.validatorApi.port }}
+      targetPort: {{ .Values.charon.service.ports.validatorApi.targetPort }}
+      protocol: TCP
+      name: validator-api
+    - port: {{ .Values.charon.service.ports.p2pTcp.port }}
+      targetPort: {{ .Values.charon.service.ports.p2pTcp.targetPort }}
+      protocol: TCP
+      name: p2p-tcp
+    - port: {{ .Values.charon.service.ports.monitoring.port }}
+      targetPort: {{ .Values.charon.service.ports.monitoring.targetPort }}
+      protocol: TCP
+      name: monitoring
+  selector:
+    {{- include "lido-charon-dv-node.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: charon

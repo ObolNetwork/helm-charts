@@ -1,0 +1,140 @@
+{{- if .Values.validatorEjector.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "lido-charon-dv-node.fullname" . }}-validator-ejector
+  labels:
+    {{- include "lido-charon-dv-node.labels" . | nindent 4 }}
+    app.kubernetes.io/component: validator-ejector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "lido-charon-dv-node.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: validator-ejector
+  template:
+    metadata:
+      annotations:
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "lido-charon-dv-node.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: validator-ejector
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "lido-charon-dv-node.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: validator-ejector
+          {{- with .Values.containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.validatorEjector.image.repository }}:{{ .Values.validatorEjector.image.tag }}"
+          imagePullPolicy: {{ .Values.validatorEjector.image.pullPolicy }}
+          ports:
+            - name: metrics
+              containerPort: 8989
+              protocol: TCP
+          env:
+            {{- if .Values.nethermind.enabled }}
+            - name: EXECUTION_NODE
+              value: "http://{{ include "lido-charon-dv-node.fullname" . }}-nethermind:8545"
+            {{- else }}
+            - name: EXECUTION_NODE
+              value: {{ required "An execution node URL must be provided" .Values.validatorEjector.executionNodeUrl }}
+            {{- end }}
+            {{- if .Values.lighthouse.enabled }}
+            - name: CONSENSUS_NODE
+              value: "http://{{ include "lido-charon-dv-node.fullname" . }}-lighthouse:5052"
+            {{- else }}
+            - name: CONSENSUS_NODE
+              value: {{ required "A consensus node URL must be provided" .Values.validatorEjector.consensusNodeUrl }}
+            {{- end }}
+            - name: LOCATOR_ADDRESS
+              value: {{ required "Lido Locator contract address must be provided" .Values.validatorEjector.locatorAddress | quote }}
+            - name: STAKING_MODULE_ID
+              value: {{ .Values.validatorEjector.stakingModuleId | quote }}
+            - name: OPERATOR_ID
+              value: {{ required "Operator ID must be provided" .Values.validatorEjector.operatorId | quote }}
+            - name: ORACLE_ADDRESSES_ALLOWLIST
+              value: {{ required "Oracle addresses allowlist must be provided" .Values.validatorEjector.oracleAddressesAllowlist | quote }}
+            - name: MESSAGES_LOCATION
+              value: "/exitmessages"
+            - name: RUN_METRICS
+              value: "true"
+            - name: HTTP_PORT
+              value: "8989"
+            - name: DISABLE_SECURITY_DONT_USE_IN_PRODUCTION
+              value: {{ .Values.validatorEjector.disableSecurity | quote }}
+            {{- with .Values.extraEnvVars }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: 8989
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: 8989
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          volumeMounts:
+            - name: exit-messages
+              mountPath: /exitmessages
+          {{- with .Values.validatorEjector.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: exit-messages
+          {{- if .Values.validatorEjector.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "lido-charon-dv-node.fullname" . }}-validator-ejector-messages
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+---
+{{- if .Values.validatorEjector.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "lido-charon-dv-node.fullname" . }}-validator-ejector-messages
+  labels:
+    {{- include "lido-charon-dv-node.labels" . | nindent 4 }}
+    app.kubernetes.io/component: validator-ejector
+spec:
+  accessModes: {{ .Values.validatorEjector.persistence.accessModes }}
+  {{- if .Values.validatorEjector.persistence.storageClassName }}
+  storageClassName: {{ .Values.validatorEjector.persistence.storageClassName }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.validatorEjector.persistence.size }}
+{{- end }}
+{{- end }}

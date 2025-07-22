@@ -1,0 +1,168 @@
+{{- if .Values.lighthouse.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "lido-charon-dv-node.fullname" . }}-lighthouse
+  labels:
+    {{- include "lido-charon-dv-node.labels" . | nindent 4 }}
+    app.kubernetes.io/component: lighthouse
+spec:
+  serviceName: {{ include "lido-charon-dv-node.fullname" . }}-lighthouse
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{- include "lido-charon-dv-node.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: lighthouse
+  template:
+    metadata:
+      annotations:
+        checksum/jwt: {{ include (print $.Template.BasePath "/secret-jwt.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "lido-charon-dv-node.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: lighthouse
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "lido-charon-dv-node.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if not .Values.global.jwtSecret }}
+      initContainers:
+        - name: wait-for-jwt
+          image: busybox:1.36
+          imagePullPolicy: IfNotPresent
+          command: ['sh', '-c', 'until [ -f /jwt/jwt.hex ]; do echo "Waiting for JWT..."; sleep 5; done']
+          volumeMounts:
+            - name: jwt
+              mountPath: /jwt
+              readOnly: true
+      {{- end }}
+      containers:
+        - name: lighthouse
+          {{- with .Values.containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.lighthouse.image.repository }}:{{ .Values.lighthouse.image.tag }}"
+          imagePullPolicy: {{ .Values.lighthouse.image.pullPolicy }}
+          command:
+            - lighthouse
+            - bn
+          args:
+            - --network={{ include "lido-charon-dv-node.network" . }}
+            - --checkpoint-sync-url={{ include "lido-charon-dv-node.checkpointSyncUrl" . }}
+            - --checkpoint-sync-url-timeout=600
+            {{- if .Values.nethermind.enabled }}
+            - --execution-endpoint=http://{{ include "lido-charon-dv-node.fullname" . }}-nethermind:8551
+            {{- else }}
+            - --execution-endpoint={{ required "An execution endpoint must be provided if nethermind is disabled" .Values.lighthouse.executionEndpoint }}
+            {{- end }}
+            - --execution-jwt=/jwt/jwt.hex
+            - --datadir=/opt/app/beacon/
+            {{- if .Values.mevBoost.enabled }}
+            - --builder=http://{{ include "lido-charon-dv-node.fullname" . }}-mev-boost:18550
+            {{- end }}
+            - --http
+            - --http-address=0.0.0.0
+            - --http-port=5052
+            - --metrics
+            - --metrics-address=0.0.0.0
+            - --metrics-port=5054
+            - --metrics-allow-origin=*
+            - --suggested-fee-recipient={{ include "lido-charon-dv-node.lidoExecutionRewardsAddress" . }}
+            {{- range .Values.lighthouse.extraArgs }}
+            - {{ . }}
+            {{- end }}
+          ports:
+            - name: p2p-tcp
+              containerPort: 9000
+              protocol: TCP
+            - name: p2p-udp
+              containerPort: 9000
+              protocol: UDP
+            - name: http
+              containerPort: 5052
+              protocol: TCP
+            - name: metrics
+              containerPort: 5054
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /eth/v1/node/health
+              port: 5052
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /eth/v1/node/health
+              port: 5052
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          volumeMounts:
+            - name: data
+              mountPath: /opt/app/beacon
+            - name: jwt
+              mountPath: /jwt
+              readOnly: true
+          {{- with .Values.lighthouse.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.extraEnvVars }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: jwt
+          {{- if .Values.global.jwtSecret }}
+          secret:
+            secretName: {{ include "lido-charon-dv-node.jwtSecretName" . }}
+          {{- else if .Values.nethermind.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "lido-charon-dv-node.fullname" . }}-nethermind-jwt
+          {{- else }}
+          secret:
+            secretName: {{ required "JWT secret must be provided if nethermind is disabled" .Values.lighthouse.jwtSecretName }}
+          {{- end }}
+        {{- if not .Values.lighthouse.persistence.enabled }}
+        - name: data
+          emptyDir: {}
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+  {{- if .Values.lighthouse.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: {{ .Values.lighthouse.persistence.accessModes }}
+        {{- if .Values.lighthouse.persistence.storageClassName }}
+        storageClassName: {{ .Values.lighthouse.persistence.storageClassName }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.lighthouse.persistence.size }}
+  {{- end }}
+{{- end }}

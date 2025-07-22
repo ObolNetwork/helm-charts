@@ -1,0 +1,101 @@
+{{- if .Values.lidoDvExit.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "lido-charon-dv-node.fullname" . }}-lido-dv-exit
+  labels:
+    {{- include "lido-charon-dv-node.labels" . | nindent 4 }}
+    app.kubernetes.io/component: lido-dv-exit
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "lido-charon-dv-node.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: lido-dv-exit
+  template:
+    metadata:
+      annotations:
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "lido-charon-dv-node.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: lido-dv-exit
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "lido-charon-dv-node.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: lido-dv-exit
+          {{- with .Values.containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.lidoDvExit.image.repository }}:{{ .Values.lidoDvExit.image.tag }}"
+          imagePullPolicy: {{ .Values.lidoDvExit.image.pullPolicy }}
+          env:
+            {{- if .Values.lighthouse.enabled }}
+            - name: LIDODVEXIT_BEACON_NODE_URL
+              value: "http://{{ include "lido-charon-dv-node.fullname" . }}-lighthouse:5052"
+            {{- else }}
+            - name: LIDODVEXIT_BEACON_NODE_URL
+              value: {{ required "A beacon node URL must be provided" .Values.lidoDvExit.beaconNodeUrl }}
+            {{- end }}
+            - name: LIDODVEXIT_CHARON_RUNTIME_DIR
+              value: "/charon"
+            - name: LIDODVEXIT_EJECTOR_EXIT_PATH
+              value: "/exitmessages"
+            {{- if .Values.lidoDvExit.exitEpoch }}
+            - name: LIDODVEXIT_EXIT_EPOCH
+              value: {{ .Values.lidoDvExit.exitEpoch | quote }}
+            {{- end }}
+            - name: LIDODVEXIT_LOG_LEVEL
+              value: {{ .Values.lidoDvExit.logLevel }}
+            - name: LIDODVEXIT_VALIDATOR_QUERY_CHUNK_SIZE
+              value: {{ .Values.lidoDvExit.validatorQueryChunkSize | quote }}
+            {{- with .Values.extraEnvVars }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          volumeMounts:
+            - name: exit-messages
+              mountPath: /exitmessages
+            - name: charon-data
+              mountPath: /charon
+              readOnly: true
+          {{- with .Values.lidoDvExit.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: exit-messages
+          {{- if .Values.validatorEjector.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "lido-charon-dv-node.fullname" . }}-validator-ejector-messages
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: charon-data
+          persistentVolumeClaim:
+            claimName: {{ include "lido-charon-dv-node.fullname" . }}-charon-data-{{ include "lido-charon-dv-node.fullname" . }}-charon-0
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+{{- end }}

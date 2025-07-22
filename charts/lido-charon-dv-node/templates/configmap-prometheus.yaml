@@ -1,0 +1,56 @@
+{{- if .Values.prometheus.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "lido-charon-dv-node.fullname" . }}-prometheus-config
+  labels:
+    {{- include "lido-charon-dv-node.labels" . | nindent 4 }}
+    app.kubernetes.io/component: prometheus
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 30s
+      evaluation_interval: 30s
+    
+    {{- if and .Values.prometheus.remoteWrite.enabled .Values.prometheus.remoteWrite.url }}
+    remote_write:
+      - url: {{ .Values.prometheus.remoteWrite.url }}
+        {{- if .Values.prometheus.remoteWrite.token }}
+        authorization:
+          credentials: {{ .Values.prometheus.remoteWrite.token }}
+        {{- end }}
+        write_relabel_configs:
+          - source_labels: [job]
+            regex: "charon|nethermind|lighthouse|lodestar"
+            action: keep
+    {{- end }}
+    
+    scrape_configs:
+      {{- if .Values.nethermind.enabled }}
+      - job_name: "nethermind"
+        static_configs:
+          - targets: ["{{ include "lido-charon-dv-node.fullname" . }}-nethermind:8008"]
+      {{- end }}
+      
+      {{- if .Values.lighthouse.enabled }}
+      - job_name: "lighthouse"
+        static_configs:
+          - targets: ["{{ include "lido-charon-dv-node.fullname" . }}-lighthouse:5054"]
+      {{- end }}
+      
+      - job_name: "charon"
+        static_configs:
+          - targets: ["{{ include "lido-charon-dv-node.fullname" . }}-charon:3620"]
+      
+      {{- if .Values.lodestar.enabled }}
+      - job_name: "lodestar"
+        static_configs:
+          - targets: ["{{ include "lido-charon-dv-node.fullname" . }}-lodestar:5064"]
+      {{- end }}
+      
+      {{- if .Values.validatorEjector.enabled }}
+      - job_name: "validator-ejector"
+        static_configs:
+          - targets: ["{{ include "lido-charon-dv-node.fullname" . }}-validator-ejector:8989"]
+      {{- end }}
+{{- end }}

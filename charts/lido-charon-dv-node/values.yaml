@@ -1,0 +1,525 @@
+# Default values for lido-charon-dv-node.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Global configuration
+global:
+  # Network to use: mainnet, hoodi
+  network: "mainnet"
+  # JWT secret for execution/consensus client authentication
+  # If not provided, will be auto-generated
+  jwtSecret: ""
+  # Service suffix for DNS resolution
+  serviceSuffix: ""
+
+# Nethermind execution client configuration
+nethermind:
+  enabled: true
+  image:
+    repository: nethermind/nethermind
+    tag: "1.32.2"
+    pullPolicy: IfNotPresent
+  
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 4000m
+      memory: 8Gi
+    requests:
+      cpu: 2000m
+      memory: 4Gi
+  
+  # Persistence configuration
+  persistence:
+    enabled: true
+    size: 500Gi
+    # storageClassName: ""
+    accessModes:
+      - ReadWriteOnce
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    ports:
+      p2p:
+        port: 30303
+        targetPort: 30303
+        protocol: TCP
+      p2pUdp:
+        port: 30303
+        targetPort: 30303
+        protocol: UDP
+      http:
+        port: 8545
+        targetPort: 8545
+      engine:
+        port: 8551
+        targetPort: 8551
+      metrics:
+        port: 8008
+        targetPort: 8008
+  
+  # Additional CLI arguments
+  extraArgs: []
+  
+  # Node ports for P2P (if needed)
+  nodePort:
+    enabled: false
+    port: 30303
+
+# Lighthouse beacon node configuration
+lighthouse:
+  enabled: true
+  image:
+    repository: sigp/lighthouse
+    tag: "v7.0.1"
+    pullPolicy: IfNotPresent
+  
+  # Checkpoint sync URL
+  checkpointSyncUrl: "https://mainnet.checkpoint.sigp.io"
+  
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+  
+  # Persistence configuration
+  persistence:
+    enabled: true
+    size: 200Gi
+    # storageClassName: ""
+    accessModes:
+      - ReadWriteOnce
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    ports:
+      p2p:
+        port: 9000
+        targetPort: 9000
+        protocol: TCP
+      p2pUdp:
+        port: 9000
+        targetPort: 9000
+        protocol: UDP
+      http:
+        port: 5052
+        targetPort: 5052
+      metrics:
+        port: 5054
+        targetPort: 5054
+  
+  # Additional CLI arguments
+  extraArgs: []
+  
+  # Node ports for P2P (if needed)
+  nodePort:
+    enabled: false
+    port: 9000
+
+# Charon configuration
+charon:
+  image:
+    repository: obolnetwork/charon
+    tag: "v1.5.1"
+    pullPolicy: IfNotPresent
+  
+  # Beacon node endpoints (defaults to local lighthouse)
+  beaconNodeEndpoints: 
+    - "http://{{ include \"lido-charon-dv-node.fullname\" . }}-lighthouse:5052"
+  
+  # Fallback beacon node endpoints
+  fallbackBeaconNodeEndpoints: []
+  
+  # P2P configuration
+  p2p:
+    relays: "https://0.relay.obol.tech,https://1.relay.obol.tech/"
+    externalHostname: ""
+    externalIp: ""
+    tcpPort: 3610
+  
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+  
+  # Persistence configuration
+  persistence:
+    enabled: true
+    size: 10Gi
+    # storageClassName: ""
+    accessModes:
+      - ReadWriteOnce
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    ports:
+      validatorApi:
+        port: 3600
+        targetPort: 3600
+      p2pTcp:
+        port: 3610
+        targetPort: 3610
+      monitoring:
+        port: 3620
+        targetPort: 3620
+  
+  # Charon specific settings
+  logLevel: "debug"
+  logFormat: "console"
+  builderApi: true
+  featureSet: "stable"
+  featureSetEnable: "eager_double_linear,consensus_participate"
+  
+  # Loki configuration for log aggregation
+  lokiAddresses: "http://{{ include \"lido-charon-dv-node.fullname\" . }}-loki:3100/loki/api/v1/push"
+  lokiService: "charon"
+  
+  # Node nickname (optional)
+  nickname: ""
+
+# Lodestar validator client configuration
+lodestar:
+  enabled: true
+  image:
+    repository: chainsafe/lodestar
+    tag: "v1.31.0"
+    pullPolicy: IfNotPresent
+  
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+  
+  # Persistence configuration
+  persistence:
+    enabled: true
+    size: 10Gi
+    # storageClassName: ""
+    accessModes:
+      - ReadWriteOnce
+  
+  # Builder configuration
+  builderSelection: "builderalways"
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    ports:
+      metrics:
+        port: 5064
+        targetPort: 5064
+
+# MEV-Boost configuration
+mevBoost:
+  enabled: true
+  image:
+    repository: flashbots/mev-boost
+    tag: "1.9"
+    pullPolicy: IfNotPresent
+  
+  # MEV relay configuration
+  relays: "https://0xac6e77dfe25ecd6110b8e780608cce0dab71fdd5ebea22a16c0205200f2f8e2e3ad3b71d3499c54ad14d6c21b41a37ae@boost-relay.flashbots.net,https://0x8b5d2e73e2a3a55c6c87b8b6eb92e0149a125c852751db1422fa951e42a09b82c142c3ea98d0d9930b056a3bc9896b8f@bloxroute.max-profit.blxrbdn.com,https://0xb0b07cd0abef743db4260b0ed50619cf6ad4d82064cb4fbec9d3ec530f7c5e6793d9f286c4e082c0244ffb9f2658fe88@bloxroute.regulated.blxrbdn.com"
+  
+  # Timeout configuration
+  timeouts:
+    getHeader: 950
+    getPayload: 4000
+    regVal: 3000
+  
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    ports:
+      http:
+        port: 18550
+        targetPort: 18550
+
+# Validator Ejector configuration
+validatorEjector:
+  enabled: true
+  image:
+    repository: lidofinance/validator-ejector
+    tag: "1.7.0"
+    pullPolicy: IfNotPresent
+  
+  # Lido specific configuration
+  # IMPORTANT: These MUST be configured for your operator
+  locatorAddress: ""  # Required: Lido Locator contract address
+  stakingModuleId: "2"  # CSM module ID
+  operatorId: ""  # Required: Your operator ID
+  oracleAddressesAllowlist: ""  # Required: Comma-separated list of oracle addresses
+  
+  # Disable security for testing (NEVER use in production)
+  disableSecurity: false
+  
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  
+  # Persistence configuration for exit messages
+  persistence:
+    enabled: true
+    size: 1Gi
+    # storageClassName: ""
+    accessModes:
+      - ReadWriteOnce
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    ports:
+      metrics:
+        port: 8989
+        targetPort: 8989
+
+# Lido DV Exit configuration
+lidoDvExit:
+  enabled: true
+  image:
+    repository: obolnetwork/lido-dv-exit
+    tag: "v0.3.0"
+    pullPolicy: IfNotPresent
+  
+  # Exit epoch configuration (optional)
+  exitEpoch: ""
+  
+  # Log level
+  logLevel: "info"
+  
+  # Validator query chunk size
+  validatorQueryChunkSize: 5
+  
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Prometheus configuration
+prometheus:
+  enabled: true
+  image:
+    repository: prom/prometheus
+    tag: "v2.46.0"
+    pullPolicy: IfNotPresent
+  
+  # Remote write configuration
+  remoteWrite:
+    enabled: true
+    url: "https://vm.monitoring.gcp.obol.tech/write"
+    token: ""  # Required if remote write is enabled
+  
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+  
+  # Persistence configuration
+  persistence:
+    enabled: true
+    size: 50Gi
+    # storageClassName: ""
+    accessModes:
+      - ReadWriteOnce
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    ports:
+      http:
+        port: 9090
+        targetPort: 9090
+
+# Grafana configuration
+grafana:
+  enabled: true
+  image:
+    repository: grafana/grafana
+    tag: "10.4.0"
+    pullPolicy: IfNotPresent
+  
+  # Admin configuration
+  adminUser: "admin"
+  adminPassword: "admin"  # Change in production
+  
+  # Anonymous access
+  anonymousEnabled: true
+  anonymousOrgRole: "Admin"
+  
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  
+  # Persistence configuration
+  persistence:
+    enabled: true
+    size: 10Gi
+    # storageClassName: ""
+    accessModes:
+      - ReadWriteOnce
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    ports:
+      http:
+        port: 3000
+        targetPort: 3000
+
+# Loki configuration
+loki:
+  enabled: true
+  image:
+    repository: grafana/loki
+    tag: "2.8.2"
+    pullPolicy: IfNotPresent
+  
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  
+  # Persistence configuration
+  persistence:
+    enabled: true
+    size: 20Gi
+    # storageClassName: ""
+    accessModes:
+      - ReadWriteOnce
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    ports:
+      http:
+        port: 3100
+        targetPort: 3100
+
+# Service account configuration
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use
+  name: ""
+
+# RBAC configuration
+rbac:
+  # Specifies whether RBAC resources should be created
+  create: true
+
+# Pod security context
+podSecurityContext:
+  fsGroup: 1000
+  runAsUser: 1000
+  runAsGroup: 1000
+  runAsNonRoot: true
+
+# Container security context
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop:
+    - ALL
+
+# Image pull secrets
+imagePullSecrets: []
+
+# Pod annotations
+podAnnotations: {}
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Network policy
+networkPolicy:
+  enabled: false
+  # Define ingress/egress rules as needed
+
+# Service Monitor for Prometheus Operator
+serviceMonitor:
+  enabled: false
+  interval: 30s
+  scrapeTimeout: 10s
+  labels: {}
+  annotations: {}
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: grafana.example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+          service: grafana
+  tls: []
+
+# Additional environment variables for all containers
+extraEnvVars: []
+
+# Additional volumes
+extraVolumes: []
+
+# Additional volume mounts
+extraVolumeMounts: []

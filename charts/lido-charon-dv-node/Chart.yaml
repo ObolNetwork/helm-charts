@@ -1,0 +1,28 @@
+apiVersion: v2
+name: lido-charon-dv-node
+description: A Helm chart for deploying Lido's Charon distributed validator node with full monitoring stack
+icon: https://raw.githubusercontent.com/ObolNetwork/charon/main/docs/images/charonlogo.svg
+home: https://obol.tech/
+sources:
+  - https://github.com/ObolNetwork/charon
+  - https://github.com/lidofinance/lido-charon-distributed-validator-node
+maintainers:
+  - name: Eth2DevOps
+    email: devops@obol.tech
+keywords:
+  - ethereum
+  - blockchain
+  - obol
+  - charon
+  - dvt
+  - distributed-validator
+  - lido
+  - nethermind
+  - lighthouse
+  - lodestar
+  - mev-boost
+  - monitoring
+
+type: application
+version: 0.1.0
+appVersion: "1.5.1"

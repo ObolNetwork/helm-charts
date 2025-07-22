@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "lido-charon-dv-node.fullname" . }}-test-connection"
+  labels:
+    {{- include "lido-charon-dv-node.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    {{- if .Values.nethermind.enabled }}
+    - name: test-nethermind
+      image: busybox:1.36
+      command: ['wget']
+      args: ['-qO-', 'http://{{ include "lido-charon-dv-node.fullname" . }}-nethermind:8545']
+    {{- end }}
+    
+    {{- if .Values.lighthouse.enabled }}
+    - name: test-lighthouse
+      image: busybox:1.36
+      command: ['wget']
+      args: ['-qO-', 'http://{{ include "lido-charon-dv-node.fullname" . }}-lighthouse:5052/eth/v1/node/version']
+    {{- end }}
+    
+    - name: test-charon
+      image: busybox:1.36
+      command: ['wget']
+      args: ['-qO-', 'http://{{ include "lido-charon-dv-node.fullname" . }}-charon:3620/metrics']
+    
+    {{- if .Values.prometheus.enabled }}
+    - name: test-prometheus
+      image: busybox:1.36
+      command: ['wget']
+      args: ['-qO-', 'http://{{ include "lido-charon-dv-node.fullname" . }}-prometheus:9090/-/healthy']
+    {{- end }}
+    
+    {{- if .Values.grafana.enabled }}
+    - name: test-grafana
+      image: busybox:1.36
+      command: ['wget']
+      args: ['-qO-', 'http://{{ include "lido-charon-dv-node.fullname" . }}-grafana:3000/api/health']
+    {{- end }}
+  restartPolicy: Never

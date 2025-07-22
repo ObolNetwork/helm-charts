@@ -1,0 +1,53 @@
+{{- if .Values.nethermind.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "lido-charon-dv-node.fullname" . }}-nethermind
+  labels:
+    {{- include "lido-charon-dv-node.labels" . | nindent 4 }}
+    app.kubernetes.io/component: nethermind
+spec:
+  type: {{ .Values.nethermind.service.type }}
+  ports:
+    - port: {{ .Values.nethermind.service.ports.http.port }}
+      targetPort: {{ .Values.nethermind.service.ports.http.targetPort }}
+      protocol: TCP
+      name: http-rpc
+    - port: {{ .Values.nethermind.service.ports.engine.port }}
+      targetPort: {{ .Values.nethermind.service.ports.engine.targetPort }}
+      protocol: TCP
+      name: engine-rpc
+    - port: {{ .Values.nethermind.service.ports.metrics.port }}
+      targetPort: {{ .Values.nethermind.service.ports.metrics.targetPort }}
+      protocol: TCP
+      name: metrics
+  selector:
+    {{- include "lido-charon-dv-node.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: nethermind
+---
+{{- if .Values.nethermind.nodePort.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "lido-charon-dv-node.fullname" . }}-nethermind-p2p
+  labels:
+    {{- include "lido-charon-dv-node.labels" . | nindent 4 }}
+    app.kubernetes.io/component: nethermind
+spec:
+  type: NodePort
+  ports:
+    - port: {{ .Values.nethermind.service.ports.p2p.port }}
+      targetPort: {{ .Values.nethermind.service.ports.p2p.targetPort }}
+      protocol: TCP
+      nodePort: {{ .Values.nethermind.nodePort.port }}
+      name: p2p-tcp
+    - port: {{ .Values.nethermind.service.ports.p2pUdp.port }}
+      targetPort: {{ .Values.nethermind.service.ports.p2pUdp.targetPort }}
+      protocol: UDP
+      nodePort: {{ .Values.nethermind.nodePort.port }}
+      name: p2p-udp
+  selector:
+    {{- include "lido-charon-dv-node.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: nethermind
+{{- end }}
+{{- end }}
