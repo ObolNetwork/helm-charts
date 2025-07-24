@@ -2,20 +2,6 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-# Sub-chart configurations for execution and consensus layers
-erigon:
-  enabled: false
-  extraArgs:
-    - --chain=hoodi
-    - --beacon.api=beacon,builder,config,debug,node,validator,lighthouse
-  persistence:
-    enabled: true
-    size: 200Gi
-    # storageClassName: "your-storage-class" # Uncomment and set if you have a specific storage class
-  # Add any erigon specific default values here if needed in the future
-
-
-
 # -- Validator client configuration
 validatorClient:
   # -- Enable the validator client container
