@@ -1,0 +1,88 @@
+{{- if .Values.promtail.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "lido-charon-dv-node.fullname" . }}-promtail
+  labels:
+    {{- include "lido-charon-dv-node.labels" . | nindent 4 }}
+    app.kubernetes.io/component: promtail
+data:
+  config.yml: |
+    server:
+      http_listen_port: 3101
+      grpc_listen_port: 0
+
+    positions:
+      filename: /tmp/positions.yaml
+
+    clients:
+      - url: ${CHARON_LOKI_ADDRESSES}
+        batchwait: 1s
+        batchsize: 102400
+        timeout: 10s
+        backoff_config:
+          min_period: 500ms
+          max_period: 5s
+          max_retries: 5
+        external_labels:
+          cluster_name: ${CLUSTER_NAME}
+          cluster_peer: ${CLUSTER_PEER}
+          node: ${HOSTNAME}
+
+    scrape_configs:
+      - job_name: containers
+        static_configs:
+          - targets:
+              - localhost
+            labels:
+              job: containerlogs
+              __path__: /var/lib/docker/containers/*/*log
+        
+        pipeline_stages:
+          # Extract container ID from the log file path
+          - regex:
+              source: filename
+              expression: '/var/lib/docker/containers/(?P<container_id>[a-zA-Z0-9]+)/.*'
+          
+          # Parse JSON logs
+          - json:
+              expressions:
+                output: log
+                stream: stream
+                timestamp: time
+                attrs:
+          
+          # Extract container name from attrs if present
+          - json:
+              source: attrs
+              expressions:
+                tag: "tag"
+          
+          # Parse container name from tag
+          - regex:
+              source: tag
+              expression: '^(?P<image_name>([^|]+))\|(?P<container_name>([^|]+))\|(?P<container_id>([^|]+))$'
+          
+          # Filter based on promtail-monitored label
+          - match:
+              selector: '{container_name=~".*(nethermind|lighthouse|charon|lodestar|mev-boost|validator-ejector|lido-dv-exit).*"}'
+              stages:
+                - labels:
+                    container_name:
+                    image_name:
+                
+                # Parse log level if present
+                - regex:
+                    expression: '(?i)(?P<level>(debug|info|warn|warning|error|fatal))'
+                - labels:
+                    level:
+                
+                # Set timestamp
+                - timestamp:
+                    source: timestamp
+                    format: RFC3339Nano
+                    fallback_formats:
+                      - UnixMs
+                      - UnixUs
+                      - UnixNs
+{{- end }}

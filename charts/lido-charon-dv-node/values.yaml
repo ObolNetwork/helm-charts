@@ -17,7 +17,7 @@ nethermind:
   enabled: true
   image:
     repository: nethermind/nethermind
-    tag: "1.32.2"
+    tag: "1.32.3"
     pullPolicy: IfNotPresent
   
   # Resource limits and requests
@@ -72,7 +72,7 @@ lighthouse:
   enabled: true
   image:
     repository: sigp/lighthouse
-    tag: "v7.0.1"
+    tag: "v7.1.0"
     pullPolicy: IfNotPresent
   
   # Checkpoint sync URL
@@ -193,7 +193,7 @@ lodestar:
   enabled: true
   image:
     repository: chainsafe/lodestar
-    tag: "v1.31.0"
+    tag: "v1.32.0"
     pullPolicy: IfNotPresent
   
   # Resource limits and requests
@@ -263,7 +263,7 @@ validatorEjector:
   enabled: true
   image:
     repository: lidofinance/validator-ejector
-    tag: "1.7.0"
+    tag: "1.8.0"
     pullPolicy: IfNotPresent
   
   # Lido specific configuration
@@ -332,13 +332,13 @@ prometheus:
   enabled: true
   image:
     repository: prom/prometheus
-    tag: "v2.46.0"
+    tag: "v3.5.0"
     pullPolicy: IfNotPresent
   
   # Remote write configuration
   remoteWrite:
-    enabled: true
-    url: "https://vm.monitoring.gcp.obol.tech/write"
+    enabled: false
+    url: ""  # Contact Obol team for monitoring endpoint
     token: ""  # Required if remote write is enabled
   
   # Resource limits and requests
@@ -371,7 +371,7 @@ grafana:
   enabled: true
   image:
     repository: grafana/grafana
-    tag: "10.4.0"
+    tag: "12.1.0"
     pullPolicy: IfNotPresent
   
   # Admin configuration
@@ -412,7 +412,7 @@ loki:
   enabled: true
   image:
     repository: grafana/loki
-    tag: "2.8.2"
+    tag: "3.5.3"
     pullPolicy: IfNotPresent
   
   # Resource limits and requests
@@ -523,3 +523,27 @@ extraVolumes: []
 
 # Additional volume mounts
 extraVolumeMounts: []
+
+# Promtail configuration
+promtail:
+  enabled: true
+  image:
+    repository: grafana/promtail
+    tag: "3.5.3"
+    pullPolicy: IfNotPresent
+  
+  # Loki address (defaults to local loki service)
+  lokiAddress: ""
+  
+  # Cluster identification
+  clusterName: ""
+  clusterPeer: ""
+  
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi

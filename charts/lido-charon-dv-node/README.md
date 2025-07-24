@@ -34,10 +34,11 @@ This chart deploys the following components:
 
 ### Quick Start
 
-1. Add the Helm repository (when published):
+1. Add the Helm repository:
 ```bash
-helm repo add obol https://charts.obol.tech
-helm repo update
+# Note: The Helm repository is not yet published. Clone the repository directly:
+git clone https://github.com/ObolNetwork/helm-charts
+cd helm-charts
 ```
 
 2. Create a values file with your configuration:
@@ -59,7 +60,7 @@ prometheus:
 
 3. Install the chart:
 ```bash
-helm install my-dv-node obol/lido-charon-dv-node -f my-values.yaml
+helm install my-dv-node ./charts/lido-charon-dv-node -f my-values.yaml
 ```
 
 ### Installation from Source
@@ -143,7 +144,7 @@ Configure remote write to Obol monitoring:
 prometheus:
   remoteWrite:
     enabled: true
-    url: https://vm.monitoring.gcp.obol.tech/write
+    url: # Contact Obol team for monitoring endpoint
     token: "your-token-here"
 ```
 
