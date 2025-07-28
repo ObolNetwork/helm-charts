@@ -67,11 +67,6 @@ A Helm chart for deploying a single distributed validator pod with Charon middle
 | configMaps | object | `{"clusterlock":""}` | Kubernetes configMaps names for non-sensitive configuration data. |
 | configMaps.clusterlock | string | `""` | Name of the ConfigMap containing the cluster-lock.json file Set this to the name of an existing ConfigMap to skip the DKG process. Example: If you have created a ConfigMap named "my-cluster-lock":   kubectl create configmap my-cluster-lock --from-file=cluster-lock.json Then set: clusterlock: "my-cluster-lock" If not set or if the ConfigMap doesn't exist, the DKG process will run. Note: ConfigMaps support larger file sizes than Secrets (up to 1MB compressed), making them more suitable for cluster-lock files which can be several megabytes. |
 | containerSecurityContext | object | See `values.yaml` | The security context for containers |
-| erigon.enabled | bool | `false` |  |
-| erigon.extraArgs[0] | string | `"--chain=hoodi"` |  |
-| erigon.extraArgs[1] | string | `"--beacon.api=beacon,builder,config,debug,node,validator,lighthouse"` |  |
-| erigon.persistence.enabled | bool | `true` |  |
-| erigon.persistence.size | string | `"200Gi"` |  |
 | fullnameOverride | string | `""` | Provide a name to substitute for the full names of resources |
 | image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.5.1"}` | Charon image repository, pull policy, and tag version |
 | imagePullSecrets | list | `[]` | Credentials to fetch images from private registry # ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ |
