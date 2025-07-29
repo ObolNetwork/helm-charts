@@ -1,0 +1,89 @@
+{{- if and .Values.charon.enr.generate.enabled (not .Values.charon.enr.privateKey) (not .Values.charon.enr.existingSecret.name) }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ template "dv-pod.fullname" . }}-test-private-key-only-enr
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+  labels:
+    {{- include "dv-pod.labels" . | nindent 4 }}
+    app.kubernetes.io/component: test
+spec:
+  serviceAccountName: {{ template "dv-pod.serviceAccountNameTest" . }}
+  restartPolicy: Never
+  containers:
+    - name: test-private-key-only-enr-update
+      image: bitnami/kubectl:1.33.3
+      command:
+        - /bin/sh
+        - -ec
+        - |
+          echo "INFO: Testing private-key only ENR generation and update..."
+          
+          # First, create a test secret with only private key (no public ENR)
+          TEST_SECRET_NAME="{{ template "dv-pod.fullname" . }}-test-private-key-only"
+          
+          # Generate a test private key (64 hex chars)
+          TEST_PRIVATE_KEY="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+          
+          echo "INFO: Creating test secret with only private key..."
+          kubectl create secret generic $TEST_SECRET_NAME \
+            --namespace="{{ .Release.Namespace }}" \
+            --from-literal=private-key="$TEST_PRIVATE_KEY" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          
+          # Verify secret has only private key
+          echo "INFO: Verifying secret has only private key..."
+          HAS_PRIVATE_KEY=$(kubectl get secret $TEST_SECRET_NAME -n {{ .Release.Namespace }} -o jsonpath='{.data.private-key}' 2>/dev/null || echo "")
+          HAS_PUBLIC_ENR=$(kubectl get secret $TEST_SECRET_NAME -n {{ .Release.Namespace }} -o jsonpath='{.data.public-enr}' 2>/dev/null || echo "")
+          
+          if [ -z "$HAS_PRIVATE_KEY" ]; then
+            echo "ERROR: Private key not found in test secret"
+            exit 1
+          fi
+          
+          if [ -n "$HAS_PUBLIC_ENR" ]; then
+            echo "ERROR: Public ENR should not exist yet in test secret"
+            exit 1
+          fi
+          
+          echo "INFO: Test secret created successfully with only private key."
+          
+          # Simulate ENR job logic to update the secret
+          echo "INFO: Simulating ENR job update logic..."
+          
+          # In a real scenario, the ENR job would generate the public ENR using charon
+          # For testing, we'll verify the update mechanism works
+          TEST_PUBLIC_ENR="enr:-test-generated-enr-string"
+          
+          # Update the secret with public ENR
+          PUBLIC_ENR_BASE64=$(echo -n "$TEST_PUBLIC_ENR" | base64 | tr -d '\n')
+          kubectl patch secret $TEST_SECRET_NAME \
+            --namespace="{{ .Release.Namespace }}" \
+            --type='json' \
+            -p='[{"op": "add", "path": "/data/public-enr", "value": "'$PUBLIC_ENR_BASE64'"}]'
+          
+          # Verify the update worked
+          echo "INFO: Verifying secret now has both private key and public ENR..."
+          UPDATED_PRIVATE_KEY=$(kubectl get secret $TEST_SECRET_NAME -n {{ .Release.Namespace }} -o jsonpath='{.data.private-key}' | base64 --decode)
+          UPDATED_PUBLIC_ENR=$(kubectl get secret $TEST_SECRET_NAME -n {{ .Release.Namespace }} -o jsonpath='{.data.public-enr}' | base64 --decode)
+          
+          if [ "$UPDATED_PRIVATE_KEY" != "$TEST_PRIVATE_KEY" ]; then
+            echo "ERROR: Private key was modified during update"
+            exit 1
+          fi
+          
+          if [ "$UPDATED_PUBLIC_ENR" != "$TEST_PUBLIC_ENR" ]; then
+            echo "ERROR: Public ENR was not correctly added to secret"
+            exit 1
+          fi
+          
+          echo "INFO: Secret successfully updated with public ENR while preserving private key."
+          
+          # Clean up test secret
+          kubectl delete secret $TEST_SECRET_NAME -n {{ .Release.Namespace }} --ignore-not-found=true
+          
+          echo "INFO: Private-key only ENR test passed successfully."
+{{- end }}

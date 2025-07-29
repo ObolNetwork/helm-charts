@@ -1,4 +1,9 @@
 {{- if eq (include "dv-pod.shouldCreateEnrJob" .) "true" -}}
+# This Job handles ENR (Ethereum Node Record) generation for Charon
+# It supports three scenarios:
+# 1. Secret already exists with both private-key and public-enr: Skip generation
+# 2. Secret exists with only private-key: Generate public-enr and update the secret
+# 3. Secret doesn't exist: Generate new ENR (or use provided private key) and create secret
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -46,10 +51,23 @@ spec:
               # Check if the secret already exists
               echo "Checking if secret '$SECRET_NAME' already exists in namespace '$NAMESPACE'..."
               if kubectl get secret "${SECRET_NAME}" -n "${NAMESPACE}" >/dev/null 2>&1; then
-                echo "INFO: Secret '$SECRET_NAME' already exists. Skipping ENR generation."
-                echo "INFO: The existing secret will be used by the pod."
-                # Create a marker file to signal other containers to skip
-                touch /enr-shared/skip-generation
+                # Check if it has both private-key and public-enr
+                HAS_PRIVATE_KEY=$(kubectl get secret "${SECRET_NAME}" -n "${NAMESPACE}" -o jsonpath='{.data.private-key}' 2>/dev/null || echo "")
+                HAS_PUBLIC_ENR=$(kubectl get secret "${SECRET_NAME}" -n "${NAMESPACE}" -o jsonpath='{.data.public-enr}' 2>/dev/null || echo "")
+                
+                if [ -n "${HAS_PRIVATE_KEY}" ] && [ -n "${HAS_PUBLIC_ENR}" ]; then
+                  echo "INFO: Secret '$SECRET_NAME' already exists with both private key and public ENR."
+                  echo "INFO: The existing secret will be used by the pod."
+                  touch /enr-shared/skip-generation
+                elif [ -n "${HAS_PRIVATE_KEY}" ] && [ -z "${HAS_PUBLIC_ENR}" ]; then
+                  echo "INFO: Secret '$SECRET_NAME' exists with private key only. Will generate public ENR."
+                  # Extract private key for ENR generation
+                  kubectl get secret "${SECRET_NAME}" -n "${NAMESPACE}" -o jsonpath='{.data.private-key}' | base64 -d > /enr-shared/existing-private-key
+                  touch /enr-shared/generate-enr-only
+                else
+                  echo "ERROR: Secret '$SECRET_NAME' exists but is missing private key."
+                  exit 1
+                fi
               else
                 echo "Secret '$SECRET_NAME' does not exist. ENR generation will proceed."
               fi
@@ -72,7 +90,15 @@ spec:
               fi
               
               mkdir -p /enr-output
-              if [ -n "{{ .Values.charon.enr.privateKey }}" ]; then
+              
+              # Check if we only need to generate ENR from existing private key
+              if [ -f /enr-shared/generate-enr-only ]; then
+                echo "INFO: Using existing private key from secret to generate ENR."
+                cp /enr-shared/existing-private-key /enr-output/charon-enr-private-key
+                chmod 600 /enr-output/charon-enr-private-key
+                echo "INFO: Generating public ENR from existing private key using 'charon enr --data-dir /enr-output' ..."
+                PUBLIC_ENR_STRING=$(charon enr --data-dir /enr-output)
+              elif [ -n "{{ .Values.charon.enr.privateKey }}" ]; then
                 echo "INFO: Using provided ENR private key."
                 # Remove 0x prefix and write to the default location within data-dir
                 echo "{{ .Values.charon.enr.privateKey | trimPrefix "0x" }}" > /enr-output/charon-enr-private-key
@@ -131,18 +157,24 @@ spec:
               
               # Check if we should skip (double-check in case secret was created between containers)
               if [ -f /enr-shared/skip-generation ]; then
-                echo "INFO: Skipping secret creation as it already exists."
+                echo "INFO: Skipping secret creation as it already exists with both keys."
                 exit 0
               fi
               
-              # Check again if the secret already exists (race condition protection)
-              echo "Double-checking if secret '$SECRET_NAME' already exists in namespace '$NAMESPACE'..."
-              if kubectl get secret "${SECRET_NAME}" -n "${NAMESPACE}" >/dev/null 2>&1; then
-                echo "INFO: Secret '$SECRET_NAME' already exists. Skipping."
-                exit 0
+              # Determine if we're updating existing secret or creating new
+              UPDATE_MODE=false
+              if [ -f /enr-shared/generate-enr-only ]; then
+                UPDATE_MODE=true
+                echo "INFO: Will update existing secret with generated public ENR."
+              else
+                # Check again if the secret already exists (race condition protection)
+                echo "Double-checking if secret '$SECRET_NAME' already exists in namespace '$NAMESPACE'..."
+                if kubectl get secret "${SECRET_NAME}" -n "${NAMESPACE}" >/dev/null 2>&1; then
+                  echo "INFO: Secret '$SECRET_NAME' already exists. Skipping."
+                  exit 0
+                fi
+                echo "Secret '$SECRET_NAME' does not exist. Creating from generated ENR..."
               fi
-              
-              echo "Secret '$SECRET_NAME' does not exist. Creating from generated ENR..."
               echo "Waiting for ENR key files in /enr-input..."
               # Wait for the private key file and the public ENR string file
               while [ ! -f /enr-input/charon-enr-private-key ] || [ ! -f /enr-input/enr_public_string ]; do
@@ -168,16 +200,30 @@ spec:
                 exit 1
               fi
 
-              echo "Creating/updating secret '$SECRET_NAME' in namespace '$NAMESPACE'..."
-              
-              # Using kubectl create secret generic with --dry-run and kubectl apply for idempotency
-              kubectl create secret generic "${SECRET_NAME}" \
-                --namespace="${NAMESPACE}" \
-                --from-literal=private-key="${PRIVATE_KEY}" \
-                --from-literal=public-enr="${PUBLIC_ENR_CLEANED}" \
-                --dry-run=client -o yaml | kubectl apply -f -
-
-              echo "Secret '$SECRET_NAME' created/updated successfully."
+              if [ "$UPDATE_MODE" = "true" ]; then
+                echo "Updating existing secret '$SECRET_NAME' with generated public ENR..."
+                # Use kubectl patch to add the public-enr field to existing secret
+                # First base64 encode the public ENR
+                PUBLIC_ENR_BASE64=$(echo -n "${PUBLIC_ENR_CLEANED}" | base64 | tr -d '\n')
+                
+                # Patch the secret to add the public-enr field
+                kubectl patch secret "${SECRET_NAME}" \
+                  --namespace="${NAMESPACE}" \
+                  --type='json' \
+                  -p='[{"op": "add", "path": "/data/public-enr", "value": "'${PUBLIC_ENR_BASE64}'"}]'
+                
+                echo "Secret '$SECRET_NAME' updated successfully with public ENR."
+              else
+                echo "Creating new secret '$SECRET_NAME' in namespace '$NAMESPACE'..."
+                # Using kubectl create secret generic with --dry-run and kubectl apply for idempotency
+                kubectl create secret generic "${SECRET_NAME}" \
+                  --namespace="${NAMESPACE}" \
+                  --from-literal=private-key="${PRIVATE_KEY}" \
+                  --from-literal=public-enr="${PUBLIC_ENR_CLEANED}" \
+                  --dry-run=client -o yaml | kubectl apply -f -
+                
+                echo "Secret '$SECRET_NAME' created successfully."
+              fi
           volumeMounts:
             - name: enr-data
               mountPath: /enr-input

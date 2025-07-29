@@ -289,6 +289,20 @@ charon:
     enabled: true
 
   # --- Configuration for ENR management ---
+  # ENR (Ethereum Node Record) is a P2P identity for Charon nodes.
+  # Each node in the cluster must have its own unique ENR.
+  #
+  # ENR Secret Management:
+  # The chart supports three ways to provide ENR:
+  # 1. Provide privateKey directly in values (not recommended for production)
+  # 2. Reference an existing secret via existingSecret.name
+  # 3. Auto-generate ENR if generate.enabled=true
+  #
+  # Simplified ENR Secret Creation:
+  # Users can now create a secret with only the private key:
+  #   kubectl create secret generic charon-enr-private-key \
+  #     --from-file=private-key=node0/charon-enr-private-key
+  # The ENR job will automatically generate the public ENR and update the secret.
   enr:
     # -- Provide the ENR private key directly (hex format, e.g., 0x...). 
     # If set, 'generate' and 'existingSecret' are ignored.
@@ -306,6 +320,10 @@ charon:
     # This is active only if 'privateKey' and 'existingSecret.name' are NOT set.
     # The generated key will be stored in a secret (e.g., "{{ .Release.Name }}-dv-pod-enr-key") 
     # with data keys 'private-key' (for the hex key) and 'public-enr' (for the ENR string).
+    # 
+    # NEW: If a secret exists with only 'private-key' (no 'public-enr'), the ENR job will
+    # automatically generate the public ENR from the private key and update the secret.
+    # This allows users to provide only the private key without needing to generate the ENR manually.
     generate:
       enabled: true
       image:

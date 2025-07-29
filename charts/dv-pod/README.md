@@ -364,6 +364,44 @@ When running DKG through the chart, keystores are automatically generated and im
 - **Prysm**: Keystores in `/validator-data/wallets/`
 - **Nimbus**: Similar to Lighthouse structure
 
+## Migration Guide
+
+### Simplified ENR Secret Creation (New in v0.2.0)
+
+The chart now supports automatic ENR generation from a private key only. Previously, users had to provide both the private key and the public ENR when creating secrets. Now you can create a secret with just the private key, and the chart will automatically generate the public ENR.
+
+#### Old Method (Still Supported)
+```bash
+# Previously required both private key and public ENR
+kubectl create secret generic charon-enr-private-key \
+  --from-file=private-key=node0/charon-enr-private-key \
+  --from-literal=public-enr="enr:-HW4..."
+```
+
+#### New Simplified Method
+```bash
+# Now only requires the private key
+kubectl create secret generic charon-enr-private-key \
+  --from-file=private-key=node0/charon-enr-private-key
+```
+
+The ENR job will automatically:
+1. Detect that the secret has only a private key
+2. Generate the public ENR using `charon enr`
+3. Update the secret with the generated public ENR
+
+This simplification works because the `charon enr` command is deterministic - it always generates the same ENR from a given private key.
+
+### Migration Steps
+
+If you have existing deployments:
+1. No action required - existing secrets with both private key and public ENR will continue to work
+2. For new deployments, you can use the simplified method with private key only
+3. To migrate existing secrets to the new format (optional):
+   - Delete the existing secret
+   - Recreate it with only the private key
+   - The ENR job will automatically generate and add the public ENR
+
 ## Advanced Usage
 
 ### Use an External Validator Client
