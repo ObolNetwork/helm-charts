@@ -38,7 +38,7 @@ A Helm chart for deploying a single distributed validator pod with Charon middle
 | charon.dkgSidecar.retryDelaySeconds | int | `10` | Delay in seconds between polling retries |
 | charon.dkgSidecar.serviceAccount | object | `{"create":true}` | Service account settings for test pods |
 | charon.enr.existingSecret | object | `{"dataKey":"private-key","name":""}` | Point to an existing Kubernetes secret that holds the ENR private key. If 'privateKey' above is not set and this 'existingSecret.name' is provided, 'generate' is ignored. NOTE: If not set, the chart will automatically check for a secret named 'charon-enr-private-key' (configurable via secrets.defaultEnrPrivateKey) and use it if it exists. |
-| charon.enr.generate | object | `{"enabled":true,"image":{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.5.1"},"kubectlImage":{"pullPolicy":"IfNotPresent","repository":"bitnami/kubectl","tag":"1.33.3"}}` | Enable automatic generation of an ENR private key. This is active only if 'privateKey' and 'existingSecret.name' are NOT set. The generated key will be stored in a secret (e.g., "{{ .Release.Name }}-dv-pod-enr-key")  with data keys 'private-key' (for the hex key) and 'public-enr' (for the ENR string). |
+| charon.enr.generate | object | `{"enabled":true,"image":{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.5.1"},"kubectlImage":{"pullPolicy":"IfNotPresent","repository":"bitnami/kubectl","tag":"1.33.3"}}` | Enable automatic generation of an ENR private key. This is active only if 'privateKey' and 'existingSecret.name' are NOT set. The generated key will be stored in a secret (e.g., "{{ .Release.Name }}-dv-pod-enr-key")  with data keys 'private-key' (for the hex key) and 'public-enr' (for the ENR string).  NEW: If a secret exists with only 'private-key' (no 'public-enr'), the ENR job will automatically generate the public ENR from the private key and update the secret. This allows users to provide only the private key without needing to generate the ENR manually. |
 | charon.enr.generate.kubectlImage | object | `{"pullPolicy":"IfNotPresent","repository":"bitnami/kubectl","tag":"1.33.3"}` | Image to use for kubectl operations within the ENR generation job This image must contain a compatible kubectl binary. |
 | charon.enr.privateKey | string | `""` | Provide the ENR private key directly (hex format, e.g., 0x...).  If set, 'generate' and 'existingSecret' are ignored. |
 | charon.enrJob.enabled | bool | `true` | Enable or disable the Kubernetes Job that generates/manages the ENR. Note: This is typically not needed as the job automatically detects existing secrets. The job will check if the ENR secret already exists and skip generation if found. Only set to false for advanced use cases where you need to completely disable the job. |
@@ -363,44 +363,6 @@ When running DKG through the chart, keystores are automatically generated and im
 - **Teku**: Keystores in `/validator-data/keys/`, passwords in `/validator-data/passwords/`
 - **Prysm**: Keystores in `/validator-data/wallets/`
 - **Nimbus**: Similar to Lighthouse structure
-
-## Migration Guide
-
-### Simplified ENR Secret Creation (New in v0.2.0)
-
-The chart now supports automatic ENR generation from a private key only. Previously, users had to provide both the private key and the public ENR when creating secrets. Now you can create a secret with just the private key, and the chart will automatically generate the public ENR.
-
-#### Old Method (Still Supported)
-```bash
-# Previously required both private key and public ENR
-kubectl create secret generic charon-enr-private-key \
-  --from-file=private-key=node0/charon-enr-private-key \
-  --from-literal=public-enr="enr:-HW4..."
-```
-
-#### New Simplified Method
-```bash
-# Now only requires the private key
-kubectl create secret generic charon-enr-private-key \
-  --from-file=private-key=node0/charon-enr-private-key
-```
-
-The ENR job will automatically:
-1. Detect that the secret has only a private key
-2. Generate the public ENR using `charon enr`
-3. Update the secret with the generated public ENR
-
-This simplification works because the `charon enr` command is deterministic - it always generates the same ENR from a given private key.
-
-### Migration Steps
-
-If you have existing deployments:
-1. No action required - existing secrets with both private key and public ENR will continue to work
-2. For new deployments, you can use the simplified method with private key only
-3. To migrate existing secrets to the new format (optional):
-   - Delete the existing secret
-   - Recreate it with only the private key
-   - The ENR job will automatically generate and add the public ENR
 
 ## Advanced Usage
 
