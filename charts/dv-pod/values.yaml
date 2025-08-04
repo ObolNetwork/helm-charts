@@ -321,7 +321,7 @@ charon:
     # The generated key will be stored in a secret (e.g., "{{ .Release.Name }}-dv-pod-enr-key") 
     # with data keys 'private-key' (for the hex key) and 'public-enr' (for the ENR string).
     # 
-    # NEW: If a secret exists with only 'private-key' (no 'public-enr'), the ENR job will
+    # If a secret exists with only 'private-key' (no 'public-enr'), the ENR job will
     # automatically generate the public ENR from the private key and update the secret.
     # This allows users to provide only the private key without needing to generate the ENR manually.
     generate:
