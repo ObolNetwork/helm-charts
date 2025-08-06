@@ -21,6 +21,7 @@ A Helm chart for deploying a single distributed validator pod with Charon middle
 | centralMonitoring.enabled | bool | `false` | Specifies whether central monitoring should be enabled |
 | centralMonitoring.promEndpoint | string | `"https://vm.monitoring.gcp.obol.tech/write"` | https endpoint to obol central prometheus  |
 | centralMonitoring.token | string | `""` | The authentication token to the central prometheus |
+| chainId | int | `560048` | Chain ID for the network (1: Mainnet, 100: Gnosis, 560048: Hoodi) |
 | charon.beaconNodeEndpoints | list | `["http://beacon-node:5052"]` | Beacon node endpoints (used when sub-charts are disabled) These will be used by both Charon and the validator client |
 | charon.beaconNodeHeaders | string | `""` | Beacon node authentication headers WARNING: These headers will be sent to ALL beacon nodes, which could leak credentials Format: "Authorization=Basic <base64_encoded_credentials>" To generate: echo -n "username:password" | base64 Example: "Authorization=Basic am9objpkb2U=" |
 | charon.beaconNodeHeadersSecretKey | string | `"headers"` | Key within the beacon node headers secret |
