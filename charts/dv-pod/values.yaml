@@ -51,6 +51,9 @@ image:
   pullPolicy: IfNotPresent
   tag: v1.5.1
 
+# -- Chain ID for the network (1: Mainnet, 100: Gnosis, 560048: Hoodi)
+chainId: 560048  # Default to Hoodi
+
 # -- Credentials to fetch images from private registry
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []

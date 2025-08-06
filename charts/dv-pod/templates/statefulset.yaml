@@ -104,6 +104,8 @@ spec:
               value: "/charon-data"
             - name: CHARON_PRIVATE_KEY_FILE
               value: "/charon-data/charon-enr-private-key"
+            - name: CHAIN_ID
+              value: "{{ .Values.chainId }}"
           volumeMounts:
             - name: enr-data
               mountPath: /enr-from-job
