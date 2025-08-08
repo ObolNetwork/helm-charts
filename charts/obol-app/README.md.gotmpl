@@ -1,0 +1,28 @@
+Obol App
+===========
+{{ template "chart.deprecationWarning" . }}
+
+{{ template "chart.versionBadge" . }}{{ template "chart.typeBadge" . }}{{ template "chart.appVersionBadge" . }}
+
+{{ template "chart.description" . }}
+
+Try it with:
+
+```sh
+# Add the Obol Chart Repo
+helm repo add obol https://obolnetwork.github.io/helm-charts/
+
+# Specify the docker image you want to run
+export DOCKER_IMAGE="busybox"
+
+# Install it with `helm install`
+helm install obol/obol-app --generate-name --name-template "obol-app-$DOCKER_IMAGE-{{`{{ now | date \"20060102\" }}`}}" --namespace "obol-app-$DOCKER_IMAGE" --create-namespace --set-string image.repository=$DOCKER_IMAGE
+```
+
+{{ template "chart.homepageLine" . }}
+
+{{ template "chart.sourcesSection" . }}
+
+{{ template "chart.requirementsSection" . }}
+
+{{ template "chart.valuesSection" . }}
