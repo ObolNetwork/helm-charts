@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "obol-app.fullname" . }}-test-connection"
+  labels:
+    {{- include "obol-app.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['--no-check-certificate', '-S', '-O', '-', '{{ include "obol-app.fullname" . }}:{{ .Values.service.port }}']
+      env:
+      {{- if .Values.obol.stack.enabled }}
+      - name: OBOL_ETH_RPC_URL
+        value: {{ .Values.obol.stack.ethRpcUrl | quote }}
+      - name: OBOL_MONITORING_URL
+        value: {{ .Values.obol.stack.monitoringUrl | quote }}
+      {{- end }}
+  restartPolicy: Never
