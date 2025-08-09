@@ -1,0 +1,15 @@
+{{- if not .Values.charon.beaconNodeEndpoints }}
+{{- fail ".Values.charon.beaconNodeEndpoints is required" }}
+{{- end }}
+
+
+
+{{- if and (not .Values.charon.operatorAddress) (not .Values.tests) }}
+{{- fail ".Values.charon.operatorAddress is required" }}
+{{- end }}
+
+{{- if .Values.centralMonitoring.enabled }}
+{{- if not .Values.centralMonitoring.token }}
+{{- fail ".Values.centralMonitoring.token is required" }}
+{{- end }}
+{{- end }}

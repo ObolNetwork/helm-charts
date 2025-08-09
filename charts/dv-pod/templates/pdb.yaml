@@ -1,0 +1,18 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "dv-pod.fullname" . }}
+  labels:
+    {{- include "dv-pod.labels" . | nindent 4 }}
+spec:
+{{- if .Values.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+{{- end }}
+{{- if .Values.clusterThreshold }}
+  maxUnavailable: {{ .Values.clusterThreshold }}
+{{- end }}
+  selector:
+    matchLabels:
+      {{- include "dv-pod.selectorLabels" . | nindent 6 }}
+{{- end }}
