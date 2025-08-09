@@ -1,0 +1,58 @@
+{{- define "dv-pod.clusterNotes" -}}
+Your Obol distributed validator pod "{{ template "dv-pod.fullname" . }}" has been deployed.
+
+⚠️ **NAMESPACE REQUIREMENT**: ENR secrets MUST be in the same namespace as this Helm release ({{ .Release.Namespace }}).
+   If you have ENR secrets in a different namespace, they will NOT be detected and new ones will be generated.
+
+1. ENR (Ethereum Node Record) Configuration:
+   {{- if .Values.charon.enr.existingSecret.name }}
+   Using existing ENR secret: {{ .Values.charon.enr.existingSecret.name }}
+   {{- else if (include "dv-pod.enrSecretName" .) }}
+   ENR secret name: {{ include "dv-pod.enrSecretName" . }}
+   {{- end }}
+
+   {{- if eq (include "dv-pod.shouldCreateEnrJob" .) "true" }}
+   The ENR generation job will create a new ENR private key and derive the public ENR.
+   {{- else }}
+   The ENR generation job detected an existing secret and will use it.
+   {{- end }}
+
+   To retrieve the public ENR string:
+   kubectl get secret -n {{ .Release.Namespace }} {{ include "dv-pod.enrSecretName" . }} -o jsonpath='{.data.public-enr}' | base64 --decode
+   echo ""
+
+   {{- if not .Values.configMaps.clusterlock }}
+   {{- if not .Values.charon.lockHash }}
+   **IMPORTANT ACTION REQUIRED:** You **MUST** take this public ENR string and submit it during the cluster formation process on the Obol Launchpad (https://launchpad.obol.org/) for the operator address '{{ .Values.charon.operatorAddress }}'.
+   {{- end }}
+   {{- end }}
+
+2. Cluster Orchestration Process:
+   The Charon node includes an orchestrator init container. This orchestrator will:
+   a. Use the ENR (obtained as described in step 1) to identify this node.
+   b. Poll the Obol API ({{ .Values.charon.dkgSidecar.apiEndpoint }}) for a cluster definition associated with operator '{{ .Values.charon.operatorAddress }}' where this node's ENR is registered and signed by your operator.
+   c. Wait for that cluster definition to be fully signed by ALL participating operators.
+   d. Once fully signed, it will initiate the DKG (Distributed Key Generation) process using 'charon dkg'. DKG artifacts (like 'cluster-lock.json') will be stored in '/charon-data/'.
+   e. After successful DKG, the main Charon node will start using the generated '/charon-data/cluster-lock.json'.
+
+   Monitor the orchestrator logs:
+     kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ template "dv-pod.name" . }},app.kubernetes.io/instance={{ .Release.Name }} -c dkg-sidecar -f
+
+3. Charon Node Status:
+   Once orchestration is complete, the main Charon container ('{{ .Chart.Name }}') will start.
+   Monitor its logs:
+     kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ template "dv-pod.name" . }},app.kubernetes.io/instance={{ .Release.Name }} -c {{ .Chart.Name }} -f
+
+   {{- if .Values.persistence.enabled }}
+   Persistence is ENABLED.
+   DKG artifacts and other Charon data are stored in a PersistentVolumeClaim, which should persist across pod restarts.
+   PVC Name: charon-data-{{ template "dv-pod.fullname" . }}-0 (for StatefulSet pod 0)
+   {{- else}}
+   WARNING: Persistence is DISABLED (.Values.persistence.enabled is false).
+   DKG artifacts and Charon data will be stored in an emptyDir volume and will be LOST if the pod restarts. It is STRONGLY recommended to enable persistence for any non-testing deployment.
+   {{- end }}
+
+For troubleshooting and more details, refer to the Obol Network documentation: https://docs.obol.tech/
+{{- end -}}
+
+{{- include "dv-pod.clusterNotes" . }}
