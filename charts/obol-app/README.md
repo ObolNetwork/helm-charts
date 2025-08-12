@@ -1,21 +1,69 @@
 Obol App
 ===========
 
-![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: latest](https://img.shields.io/badge/AppVersion-latest-informational?style=flat-square)
+![Version: 0.3.0](https://img.shields.io/badge/Version-0.3.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: latest](https://img.shields.io/badge/AppVersion-latest-informational?style=flat-square)
 
 A chart for running any Docker image within the Obol Stack.
 
-Try it with:
+## Usage Examples
 
+### Basic Usage
 ```sh
 # Add the Obol Chart Repo
 helm repo add obol https://obolnetwork.github.io/helm-charts/
 
-# Specify the docker image you want to run
-export DOCKER_IMAGE="busybox"
+# Install with default nginx image
+helm install my-app obol/obol-app
 
-# Install it with `helm install`
-helm install obol/obol-app --generate-name --name-template "obol-app-$DOCKER_IMAGE-{{ now | date \"20060102\" }}" --namespace "obol-app-$DOCKER_IMAGE" --create-namespace --set-string image.repository=$DOCKER_IMAGE
+# Install with custom image
+helm install my-app obol/obol-app --set image.repository=busybox --set image.tag=latest
+```
+
+### Override Docker Entrypoint
+```sh
+# Override the Docker image's ENTRYPOINT
+helm install my-custom-app obol/obol-app \
+  --set image.repository=alpine \
+  --set-json 'image.entrypoint=["/bin/sh"]' \
+  --set-json 'image.args=["-c", "echo Hello from custom entrypoint && sleep 300"]'
+```
+
+### Override Docker Command (CMD)
+```sh
+# Override the Docker image's CMD
+helm install my-cmd-app obol/obol-app \
+  --set image.repository=busybox \
+  --set-json 'image.command=["sleep", "3600"]'
+```
+
+### Append Arguments to Default Entrypoint
+```sh
+# Add arguments to the default Docker entrypoint
+helm install my-args-app obol/obol-app \
+  --set image.repository=nginx \
+  --set-json 'image.args=["-g", "daemon off;"]'
+```
+
+### Custom Environment Variables
+```sh
+# Add custom environment variables to your container
+helm install my-env-app obol/obol-app \
+  --set image.repository=alpine \
+  --set-json 'image.entrypoint=["/bin/sh"]' \
+  --set-json 'image.args=["-c", "env && sleep 300"]' \
+  --set-json 'image.environment=[{"name":"CUSTOM_VAR","value":"custom-value"},{"name":"OBOL_BEACON_API_URL","value":"http://l1-full-node-consensus.l1.svc.cluster.local:5052"}]'
+```
+
+### Complex Configuration with Custom Registry
+```sh
+# Full custom configuration
+helm install my-complex-app obol/obol-app \
+  --set image.registry=gcr.io/my-project \
+  --set image.repository=my-custom-app \
+  --set image.tag=v1.0.0 \
+  --set-json 'image.entrypoint=["/app/entrypoint.sh"]' \
+  --set-json 'image.command=["--config", "/app/config.yaml"]' \
+  --set-json 'image.args=["--verbose"]'
 ```
 
 **Homepage:** <https://obol.org/>
@@ -34,8 +82,12 @@ helm install obol/obol-app --generate-name --name-template "obol-app-$DOCKER_IMA
 | autoscaling.minReplicas | int | `1` |  |
 | autoscaling.targetCPUUtilizationPercentage | int | `80` |  |
 | fullnameOverride | string | `""` |  |
+| image.args | list | `[]` |  |
 | image.auth.enabled | bool | `false` |  |
 | image.auth.secretName | string | `""` |  |
+| image.command | list | `[]` |  |
+| image.entrypoint | list | `[]` |  |
+| image.environment | list | `[]` |  |
 | image.pullPolicy | string | `"IfNotPresent"` |  |
 | image.registry | string | `""` |  |
 | image.repository | string | `"nginx"` |  |
@@ -52,7 +104,6 @@ helm install obol/obol-app --generate-name --name-template "obol-app-$DOCKER_IMA
 | livenessProbe.httpGet.port | string | `"http"` |  |
 | nameOverride | string | `""` |  |
 | nodeSelector | object | `{}` |  |
-| obol.environment.custom | list | `[]` |  |
 | obol.stack.enabled | bool | `true` |  |
 | obol.stack.ethRpcUrl | string | `"http://rpc.l1.svc.cluster.local"` |  |
 | podAnnotations | object | `{}` |  |

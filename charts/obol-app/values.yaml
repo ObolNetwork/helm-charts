@@ -20,6 +20,27 @@ image:
     # Kubernetes secret name containing registry credentials
     secretName: ""
 
+  # Container execution configuration
+  # Override the Docker image's ENTRYPOINT
+  # Example: ["/custom-entrypoint.sh"]
+  entrypoint: []
+
+  # Append additional arguments to the default entrypoint
+  # Example: ["--verbose", "--timeout", "30"]
+  args: []
+
+  # Override the Docker image's CMD
+  # Example: ["--config", "/app/config.yaml"]
+  command: []
+
+  # Custom environment variables for the container
+  environment: []
+  # Example values
+  # - name: OBOL_BEACON_API_URL
+  #   value: "http://l1-full-node-consensus.l1.svc.cluster.local:5052"
+  # - name: ETH_RPC_URL
+  #   value: "http://rpc.l1.svc.cluster.local/rpc/mainnet"
+
 # This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
 # This is to override the chart name.
@@ -136,14 +157,5 @@ obol:
     # Inject Obol environment variables
     enabled: true
     # This value is made available to the container as `OBOL_ETH_RPC_URL` in its environment
-    ethRpcUrl: "http://rpc.l1.svc.cluster.local"
+    ethRpcUrl: "http://rpc.l1.svc.cluster.local/rpc/mainnet"
   
-  # Inject custom environment variables for this Obol App
-  environment:
-    # Additional env vars the application might need
-    custom: []
-    # Example values
-    # - name: OBOL_BEACON_API_URL
-    #   value: "http://l1-full-node-consensus.l1.svc.cluster.local:5052"
-    # - name: OBOL_P2P_EXTERNAL_IP
-    #   value: "auto-detect"
