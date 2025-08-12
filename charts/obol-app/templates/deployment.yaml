@@ -45,12 +45,35 @@ spec:
           {{- end }}
           image: "{{ include "obol-app.image" . }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.image.entrypoint }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if and (not .Values.image.entrypoint) .Values.image.command }}
+          command:
+            {{- toYaml .Values.image.command | nindent 12 }}
+          {{- end }}
+          {{- if or .Values.image.args (and .Values.image.entrypoint .Values.image.command) }}
+          args:
+          {{- if and .Values.image.entrypoint .Values.image.command }}
+            {{- range .Values.image.command }}
+            - {{ . | quote }}
+            {{- end }}
+            {{- range .Values.image.args }}
+            - {{ . | quote }}
+            {{- end }}
+          {{- else if .Values.image.args }}
+            {{- range .Values.image.args }}
+            - {{ . | quote }}
+            {{- end }}
+          {{- end }}
+          {{- end }}
           env:
           {{- if .Values.obol.stack.enabled }}
           - name: OBOL_ETH_RPC_URL
             value: {{ .Values.obol.stack.ethRpcUrl | quote }}
           {{- end }}
-          {{- with .Values.obol.environment.custom }}
+          {{- with .Values.image.environment }}
           {{- toYaml . | nindent 10 }}
           {{- end }}
           ports:
