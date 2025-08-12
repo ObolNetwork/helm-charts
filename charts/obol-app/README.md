@@ -24,8 +24,10 @@ helm install my-app obol/obol-app --set image.repository=busybox
 #### Expose an image with a UI
 ```sh
 # Enabling the ingress exposes the app on http://obol.stack/obol-app. The default docker port is 80, and can be changed with --set service.port
-helm install my-app obol/obol-app \
-  --set ingress.enabled=true
+helm install obol-frontend obol/obol-app \
+  --set image.repository=obolnetwork/obol-stack-front-end \
+  --set ingress.enabled=true \
+  --set service.port=3000
 ```
 
 #### Custom Environment Variables
@@ -103,7 +105,7 @@ helm install my-foundry-app obol/obol-app \
 | image.tag | string | `""` |  |
 | imagePullSecrets | list | `[]` |  |
 | ingress.annotations | object | `{}` |  |
-| ingress.className | string | `""` |  |
+| ingress.className | string | `"nginx"` |  |
 | ingress.enabled | bool | `false` |  |
 | ingress.hosts[0].host | string | `"obol.stack"` |  |
 | ingress.hosts[0].paths[0].path | string | `"/obol-app"` |  |
