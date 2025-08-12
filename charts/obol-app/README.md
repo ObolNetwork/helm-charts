@@ -1,7 +1,7 @@
 Obol App
 ===========
 
-![Version: 0.3.0](https://img.shields.io/badge/Version-0.3.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: latest](https://img.shields.io/badge/AppVersion-latest-informational?style=flat-square)
+![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: latest](https://img.shields.io/badge/AppVersion-latest-informational?style=flat-square)
 
 A chart for running any Docker image within the Obol Stack.
 
@@ -9,42 +9,26 @@ A chart for running any Docker image within the Obol Stack.
 
 ### Basic Usage
 ```sh
-# Add the Obol Chart Repo
+# Add the Obol Chart Repo (if not using obolup)
 helm repo add obol https://obolnetwork.github.io/helm-charts/
 
 # Install with default nginx image
 helm install my-app obol/obol-app
 
 # Install with custom image
-helm install my-app obol/obol-app --set image.repository=busybox --set image.tag=latest
+helm install my-app obol/obol-app --set image.repository=busybox
 ```
 
-### Override Docker Entrypoint
+### Advanced Usage
+
+#### Expose an image with a UI
 ```sh
-# Override the Docker image's ENTRYPOINT
-helm install my-custom-app obol/obol-app \
-  --set image.repository=alpine \
-  --set-json 'image.entrypoint=["/bin/sh"]' \
-  --set-json 'image.args=["-c", "echo Hello from custom entrypoint && sleep 300"]'
+# Enabling the ingress exposes the app on http://obol.stack/obol-app. The default docker port is 80, and can be changed with --set service.port
+helm install my-app obol/obol-app \
+  --set ingress.enabled=true
 ```
 
-### Override Docker Command (CMD)
-```sh
-# Override the Docker image's CMD
-helm install my-cmd-app obol/obol-app \
-  --set image.repository=busybox \
-  --set-json 'image.command=["sleep", "3600"]'
-```
-
-### Append Arguments to Default Entrypoint
-```sh
-# Add arguments to the default Docker entrypoint
-helm install my-args-app obol/obol-app \
-  --set image.repository=nginx \
-  --set-json 'image.args=["-g", "daemon off;"]'
-```
-
-### Custom Environment Variables
+#### Custom Environment Variables
 ```sh
 # Add custom environment variables to your container
 helm install my-env-app obol/obol-app \
@@ -54,16 +38,41 @@ helm install my-env-app obol/obol-app \
   --set-json 'image.environment=[{"name":"CUSTOM_VAR","value":"custom-value"},{"name":"OBOL_BEACON_API_URL","value":"http://l1-full-node-consensus.l1.svc.cluster.local:5052"}]'
 ```
 
-### Complex Configuration with Custom Registry
+#### Override the Default Docker Entrypoint
+```sh
+# Override the Docker image's ENTRYPOINT
+helm install my-app obol/obol-app \
+  --set image.repository=alpine \
+  --set-json 'image.entrypoint=["/bin/sh"]' \
+  --set-json 'image.args=["-c", "echo Hello from custom entrypoint && sleep 300"]'
+```
+
+#### Override the Docker Command (CMD)
+```sh
+# Override the Docker image's CMD
+helm install my-cmd-app obol/obol-app \
+  --set image.repository=busybox \
+  --set-json 'image.command=["sleep", "3600"]'
+```
+
+#### Append Arguments to Default Entrypoint
+```sh
+# Add arguments to the default Docker entrypoint
+helm install my-args-app obol/obol-app \
+  --set image.repository=nginx \
+  --set-json 'image.args=["-g", "daemon off;"]'
+```
+
+#### Complex Configuration with Custom Registry
 ```sh
 # Full custom configuration
-helm install my-complex-app obol/obol-app \
-  --set image.registry=gcr.io/my-project \
-  --set image.repository=my-custom-app \
-  --set image.tag=v1.0.0 \
-  --set-json 'image.entrypoint=["/app/entrypoint.sh"]' \
-  --set-json 'image.command=["--config", "/app/config.yaml"]' \
-  --set-json 'image.args=["--verbose"]'
+helm install my-foundry-app obol/obol-app \
+  --set image.registry="gchr.io" \
+  --set image.repository=foundry-rs/foundry \
+  --set image.tag=latest \
+  --set-json 'image.entrypoint=["/bin/sh"]' \
+  --set-json 'image.args=["-c", "foundry"]' \
+  --set-json 'image.environment=[{"name":"ETH_RPC_URL","value":"http://rpc.l1.svc.cluster.local/rpc/mainnet"}]'
 ```
 
 **Homepage:** <https://obol.org/>
@@ -105,7 +114,7 @@ helm install my-complex-app obol/obol-app \
 | nameOverride | string | `""` |  |
 | nodeSelector | object | `{}` |  |
 | obol.stack.enabled | bool | `true` |  |
-| obol.stack.ethRpcUrl | string | `"http://rpc.l1.svc.cluster.local"` |  |
+| obol.stack.ethRpcUrl | string | `"http://rpc.l1.svc.cluster.local/rpc/mainnet"` |  |
 | podAnnotations | object | `{}` |  |
 | podLabels | object | `{}` |  |
 | podSecurityContext | object | `{}` |  |
