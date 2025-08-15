@@ -9,7 +9,7 @@ replicaCount: 1
 image:
   # Custom registry support (optional)
   registry: ""
-  repository: nginx
+  repository: busybox
   # This sets the pull policy for images.
   pullPolicy: IfNotPresent
   # Specifies the Docker Image tag. (default "latest")
@@ -29,9 +29,9 @@ image:
   # Example: ["--verbose", "--timeout", "30"]
   args: []
 
-  # Override the Docker image's CMD
+  # Override the Docker image's CMD - configured to display ASCII art and exit after 30 seconds
   # Example: ["--config", "/app/config.yaml"]
-  command: []
+  command: ["sh", "-c", "echo '.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo'; echo '  ___  ____   ___  _            _    ____  ____  '; echo ' / _ \\| __ ) / _ \\| |          / \\  |  _ \\|  _ \\  Run a Docker container'; echo '| | | |  _ \\| | | | |   _____ / _ \\ | |_) | |_) |   in the Obol Stack'; echo '| |_| | |_) | |_| | |__|_____/ ___ \\|  __/|  __/       using Helm'; echo ' \\___/|____/ \\___/|_____|   /_/   \\_\\_|   |_|    '; echo ''; echo '.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo'; echo ''; echo '  This is an example Obol App!'; echo 'Choose a more exciting docker image to run next.'; echo ''; echo 'Exiting after 30 seconds...'; sleep 30; exit 0"]
 
   # Custom environment variables for the container
   environment: []

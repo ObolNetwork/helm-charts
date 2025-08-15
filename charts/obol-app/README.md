@@ -21,8 +21,8 @@ helm repo update
 
 **Install the chart:**
 ```sh
-# Install with default nginx image for testing
-helm install my-web-app obol/obol-app
+# Install with default busybox image (displays Obol ASCII art for 30 seconds)
+helm install my-demo-app obol/obol-app
 
 # Or install with a custom image
 helm install my-app obol/obol-app --set image.repository=alpine
@@ -213,12 +213,14 @@ helm list | grep obol-app | awk '{print $1}' | xargs -n1 helm uninstall
 | image.args | list | `[]` |  |
 | image.auth.enabled | bool | `false` |  |
 | image.auth.secretName | string | `""` |  |
-| image.command | list | `[]` |  |
+| image.command[0] | string | `"sh"` |  |
+| image.command[1] | string | `"-c"` |  |
+| image.command[2] | string | `"echo '.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo'; echo '  ___  ____   ___  _            _    ____  ____  '; echo ' / _ \\| __ ) / _ \\| |          / \\  |  _ \\|  _ \\  Run a Docker container'; echo '| | | |  _ \\| | | | |   _____ / _ \\ | |_) | |_) |   in the Obol Stack'; echo '| |_| | |_) | |_| | |__|_____/ ___ \\|  __/|  __/       using Helm'; echo ' \\___/|____/ \\___/|_____|   /_/   \\_\\_|   |_|    '; echo ''; echo '.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo'; echo ''; echo '  This is an example Obol App!'; echo 'Choose a more exciting docker image to run next.'; echo ''; echo 'Exiting after 30 seconds...'; sleep 30; exit 0"` |  |
 | image.entrypoint | list | `[]` |  |
 | image.environment | list | `[]` |  |
 | image.pullPolicy | string | `"IfNotPresent"` |  |
 | image.registry | string | `""` |  |
-| image.repository | string | `"nginx"` |  |
+| image.repository | string | `"busybox"` |  |
 | image.tag | string | `""` |  |
 | imagePullSecrets | list | `[]` |  |
 | ingress.annotations | object | `{}` |  |
