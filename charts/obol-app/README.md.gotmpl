@@ -8,74 +8,191 @@ Obol App
 
 ## Usage Examples
 
-### Basic Usage
+The `obol-app` chart is designed to run any containerized application within the Obol distributed validator stack. It provides automatic integration with Obol services and flexible configuration options.
+
+### Quick Start
+
+**If using obol-stack:** The Helm repository is automatically configured - skip to the install commands below.
+
+**If not using obol-stack:** Add the Obol Helm repository first:
 ```sh
-# Add the Obol Chart Repo (if not using obolup)
 helm repo add obol https://obolnetwork.github.io/helm-charts/
-
-# Install with default nginx image
-helm install my-app obol/obol-app
-
-# Install with custom image
-helm install my-app obol/obol-app --set image.repository=busybox
+helm repo update
 ```
 
-### Advanced Usage
-
-#### Expose an image with a UI
+**Install the chart:**
 ```sh
-# Enabling the ingress exposes the app on http://obol.stack/obol-app. The default docker port is 80, and can be changed with --set service.port
-helm install obol-frontend obol/obol-app \
-  --set image.repository=obolnetwork/obol-stack-front-end \
-  --set ingress.enabled=true \
-  --set service.port=3000
+# Install with default nginx image for testing
+helm install my-web-app obol/obol-app
+
+# Or install with a custom image
+helm install my-app obol/obol-app --set image.repository=alpine
 ```
 
-#### Custom Environment Variables
-```sh
-# Add custom environment variables to your container
-helm install my-env-app obol/obol-app \
-  --set image.repository=alpine \
-  --set-json 'image.entrypoint=["/bin/sh"]' \
-  --set-json 'image.args=["-c", "env && sleep 300"]' \
-  --set-json 'image.environment=[{"name":"CUSTOM_VAR","value":"custom-value"},{"name":"OBOL_BEACON_API_URL","value":"http://l1-full-node-consensus.l1.svc.cluster.local:5052"}]'
-```
+### Real-World Use Cases
 
-#### Override the Default Docker Entrypoint
-```sh
-# Override the Docker image's ENTRYPOINT
-helm install my-app obol/obol-app \
-  --set image.repository=alpine \
-  --set-json 'image.entrypoint=["/bin/sh"]' \
-  --set-json 'image.args=["-c", "echo Hello from custom entrypoint && sleep 300"]'
-```
+#### 1. Ethereum Block Explorer
+Deploy a lightweight Ethereum block explorer connected to your Obol stack:
 
-#### Override the Docker Command (CMD)
 ```sh
-# Override the Docker image's CMD
-helm install my-cmd-app obol/obol-app \
-  --set image.repository=busybox \
-  --set-json 'image.command=["sleep", "3600"]'
-```
-
-#### Append Arguments to Default Entrypoint
-```sh
-# Add arguments to the default Docker entrypoint
-helm install my-args-app obol/obol-app \
-  --set image.repository=nginx \
-  --set-json 'image.args=["-g", "daemon off;"]'
-```
-
-#### Complex Configuration with Custom Registry
-```sh
-# Full custom configuration
-helm install my-foundry-app obol/obol-app \
-  --set image.registry="gchr.io" \
-  --set image.repository=foundry-rs/foundry \
+helm install block-explorer obol/obol-app \
+  --set image.repository=alethio/ethereum-lite-explorer \
   --set image.tag=latest \
+  --set service.port=8080 \
+  --set ingress.enabled=true \
+  --set ingress.hosts[0].host=explorer.obol.stack \
+  --set ingress.hosts[0].paths[0].path=/ \
+  --set ingress.hosts[0].paths[0].pathType=Prefix \
+  --set-json 'image.environment=[
+    {"name":"APP_NODE_URL","value":"http://rpc.l1.svc.cluster.local/rpc/mainnet"}
+  ]'
+```
+
+#### 2. Monitoring Dashboard
+Run Grafana for monitoring your distributed validators:
+
+```sh
+helm install obol-grafana obol/obol-app \
+  --set image.repository=grafana/grafana \
+  --set image.tag=latest \
+  --set service.port=3000 \
+  --set ingress.enabled=true \
+  --set ingress.hosts[0].host=monitoring.obol.stack \
+  --set-json 'image.environment=[
+    {"name":"GF_SECURITY_ADMIN_PASSWORD","value":"admin123"},
+    {"name":"GF_INSTALL_PLUGINS","value":"grafana-piechart-panel"}
+  ]'
+```
+
+#### 3. Web3 Development Environment
+Set up a Hardhat development environment with Obol RPC access:
+
+```sh
+helm install hardhat-env obol/obol-app \
+  --set image.repository=node \
+  --set image.tag=18-alpine \
   --set-json 'image.entrypoint=["/bin/sh"]' \
-  --set-json 'image.args=["-c", "foundry"]' \
-  --set-json 'image.environment=[{"name":"ETH_RPC_URL","value":"http://rpc.l1.svc.cluster.local/rpc/mainnet"}]'
+  --set-json 'image.args=["-c", "npx hardhat console --network obol"]' \
+  --set-json 'image.environment=[
+    {"name":"HARDHAT_NETWORK","value":"obol"},
+    {"name":"OBOL_RPC_URL","value":"http://rpc.l1.svc.cluster.local/rpc/mainnet"}
+  ]'
+```
+
+#### 4. IPFS Gateway for DApp Assets
+Deploy an IPFS gateway for storing and serving DApp assets:
+
+```sh
+helm install ipfs-gateway obol/obol-app \
+  --set image.repository=ipfs/go-ipfs \
+  --set image.tag=latest \
+  --set service.port=8080 \
+  --set ingress.enabled=true \
+  --set ingress.hosts[0].host=ipfs.obol.stack \
+  --set-json 'image.command=["/usr/local/bin/start_ipfs"]' \
+  --set-json 'image.args=["daemon", "--migrate=true"]'
+```
+
+#### 5. Custom DApp Backend
+Run a Node.js API server that connects to your Ethereum node:
+
+```sh
+helm install dapp-api obol/obol-app \
+  --set image.repository=node \
+  --set image.tag=18-alpine \
+  --set service.port=3001 \
+  --set-json 'image.entrypoint=["/bin/sh"]' \
+  --set-json 'image.args=["-c", "npm start"]' \
+  --set-json 'image.environment=[
+    {"name":"PORT","value":"3001"},
+    {"name":"NODE_ENV","value":"production"}
+  ]'
+```
+
+### Advanced Configuration
+
+#### Health Checks and Monitoring
+Enable liveness and readiness probes for production deployments:
+
+```sh
+helm install production-app obol/obol-app \
+  --set image.repository=nginx \
+  --set-json 'livenessProbe={
+    "httpGet": {
+      "path": "/health",
+      "port": "http"
+    },
+    "initialDelaySeconds": 30,
+    "periodSeconds": 10
+  }' \
+  --set-json 'readinessProbe={
+    "httpGet": {
+      "path": "/ready", 
+      "port": "http"
+    },
+    "initialDelaySeconds": 5,
+    "periodSeconds": 5
+  }'
+```
+
+#### Resource Management
+Configure resource limits and requests:
+
+```sh
+helm install resource-managed-app obol/obol-app \
+  --set image.repository=nginx \
+  --set-json 'resources={
+    "limits": {
+      "cpu": "500m",
+      "memory": "512Mi"
+    },
+    "requests": {
+      "cpu": "100m", 
+      "memory": "128Mi"
+    }
+  }'
+```
+
+#### Private Registry with Authentication
+Deploy from a private Docker registry:
+
+```sh
+helm install private-app obol/obol-app \
+  --set image.registry=myregistry.io \
+  --set image.repository=mycompany/myapp \
+  --set image.tag=v1.0.0 \
+  --set image.auth.enabled=true \
+  --set image.auth.secretName=my-registry-secret
+```
+
+### Testing and Validation
+
+#### Quick Health Check
+```sh
+# Test basic connectivity after deployment
+kubectl run test-pod --rm -i --tty --image=curlimages/curl -- \
+  curl http://my-web-app-obol-app.default.svc.cluster.local
+```
+
+#### Environment Variable Verification
+```sh
+# Deploy a debug container to verify environment setup
+helm install env-check obol/obol-app \
+  --set image.repository=alpine \
+  --set-json 'image.entrypoint=["/bin/sh"]' \
+  --set-json 'image.args=["-c", "env | grep OBOL && sleep 300"]'
+
+# Check the logs
+kubectl logs -f env-check-obol-app
+```
+
+### Cleanup Examples
+```sh
+# Remove specific deployment
+helm uninstall block-explorer
+
+# Remove all test deployments
+helm list | grep obol-app | awk '{print $1}' | xargs -n1 helm uninstall
 ```
 
 {{ template "chart.homepageLine" . }}
