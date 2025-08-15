@@ -7,30 +7,37 @@
 
 .oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo
 
-  Your Obol App is now installed!
+Your Obol App is now installed!
+
+Image: {{ .Values.image.repository }}
+Tag: {{ .Values.image.tag }}
 
 {{- if .Values.ingress.enabled }}
-  Access the app in your browser with; 
+
+Access the app in your browser with;
   {{- range $host := .Values.ingress.hosts }}
     {{- range .paths }}
     http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
     {{- end }}
   {{- end }}
 {{- else if contains "NodePort" .Values.service.type }}
-  Run the below commands to get a URI for your app
+
+Run the below commands to get a URI for your app
 
   export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "obol-app.fullname" . }})
   export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
   echo http://$NODE_IP:$NODE_PORT
 
 {{- else if contains "LoadBalancer" .Values.service.type }}
-  Run the below commands to get a URI for your app;
+
+Run the below commands to get a URI for your app;
       NOTE: It may take a few minutes for the LoadBalancer IP to be available.
            You can watch its status by running 'kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "obol-app.fullname" . }}'
   export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "obol-app.fullname" . }} --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
   echo http://$SERVICE_IP:{{ .Values.service.port }}
 {{- else if contains "ClusterIP" .Values.service.type }}
-  Run the commands below to access the app in your browser: 
+
+Run the commands below to access the app in your browser if your app has a UI:
 
   export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "obol-app.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
   export CONTAINER_PORT=$(kubectl get pod --namespace {{ .Release.Namespace }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
