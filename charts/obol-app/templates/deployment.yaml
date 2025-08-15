@@ -80,13 +80,13 @@ spec:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
-          {{- with .Values.livenessProbe }}
+          {{- if and .Values.livenessProbe (not (empty .Values.livenessProbe)) }}
           livenessProbe:
-            {{- toYaml . | nindent 12 }}
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
           {{- end }}
-          {{- with .Values.readinessProbe }}
+          {{- if and .Values.readinessProbe (not (empty .Values.readinessProbe)) }}
           readinessProbe:
-            {{- toYaml . | nindent 12 }}
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
           {{- end }}
           {{- with .Values.resources }}
           resources:
