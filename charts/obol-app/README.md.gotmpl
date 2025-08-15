@@ -22,8 +22,8 @@ helm repo update
 
 **Install the chart:**
 ```sh
-# Install with default nginx image for testing
-helm install my-web-app obol/obol-app
+# Install with default busybox image (displays Obol ASCII art for 30 seconds)
+helm install my-demo-app obol/obol-app
 
 # Or install with a custom image
 helm install my-app obol/obol-app --set image.repository=alpine
