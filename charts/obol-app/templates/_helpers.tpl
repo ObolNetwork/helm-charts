@@ -65,9 +65,15 @@ Create the name of the service account to use
 Enhanced image helper with registry support
 */}}
 {{- define "obol-app.image" -}}
-{{- if .Values.image.registry }}
-{{- printf "%s/%s:%s" .Values.image.registry .Values.image.repository (.Values.image.tag | default "latest") }}
+{{- $tag := .Values.image.tag }}
+{{- if and $tag (ne $tag "") }}
+{{- $tag = $tag }}
 {{- else }}
-{{- printf "%s:%s" .Values.image.repository (.Values.image.tag | default "latest") }}
+{{- $tag = "latest" }}
+{{- end }}
+{{- if .Values.image.registry }}
+{{- printf "%s/%s:%s" .Values.image.registry .Values.image.repository $tag }}
+{{- else }}
+{{- printf "%s:%s" .Values.image.repository $tag }}
 {{- end }}
 {{- end }}

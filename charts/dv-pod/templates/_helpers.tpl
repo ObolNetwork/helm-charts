@@ -94,7 +94,14 @@ Logic:
 Return the data key for the ENR private key within the shared secret.
 */}}
 {{- define "dv-pod.enrSecretDataKey" -}}
-{{- .Values.charon.enr.existingSecret.dataKey | default "private-key" -}}
+{{- .Values.charon.enr.existingSecret.privateKeyDataKey | default "private-key" -}}
+{{- end -}}
+
+{{/*
+Return the data key for the ENR public key within the shared secret.
+*/}}
+{{- define "dv-pod.enrSecretPublicDataKey" -}}
+{{- .Values.charon.enr.existingSecret.publicKeyDataKey | default "public-enr" -}}
 {{- end -}}
 
 {{/*

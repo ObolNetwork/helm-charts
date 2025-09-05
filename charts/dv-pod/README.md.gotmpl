@@ -13,8 +13,6 @@ Charon Cluster
 
 {{ template "chart.requirementsSection" . }}
 
-{{ template "chart.valuesSection" . }}
-
 # How to use this chart
 
 A distributed validator cluster is composed of the following containers:
@@ -31,13 +29,13 @@ A distributed validator cluster is composed of the following containers:
 
 This chart deploys a single distributed validator pod. You have two options for providing the required artifacts:
 
-### Option 1: Pre-existing DKG artifacts (skip DKG process)
+### Option 1: Pre-created keys and artifacts (skips DKG process)
 
-If you already have DKG artifacts from a ceremony, you can provide them to skip the DKG process entirely.
+If you already have private keys and charon artifacts from a central key creation or a DKG ceremony, you can provide them to skip the automated DKG process entirely.
 
-#### Example 1a: From a multi-node cluster output (./cluster/ structure)
+#### Example 1a: From a `charon create cluster` command output (a `./cluster/nodeN` folder structure)
 
-When you've run DKG for multiple nodes and have a `./cluster/` directory:
+When you've created keystores for a full cluster locally and have a `./cluster/` directory:
 
 ```
 ./cluster/
@@ -57,21 +55,21 @@ When you've run DKG for multiple nodes and have a `./cluster/` directory:
 ```
 
 To deploy node0 using this chart:
-```console
-# Create ENR private key secret
+```sh
+# Put the ENR private key in a secret
 kubectl create secret generic charon-enr-private-key --from-file=cluster/node0/charon-enr-private-key
 
 # Create the cluster lock ConfigMap (same for all nodes)
-kubectl create configmap my-cluster-lock --from-file=cluster/node0/cluster-lock.json
+kubectl create configmap cluster-lock --from-file=cluster/node0/cluster-lock.json
 
 # Install the chart, referencing your ConfigMap
 helm install my-dv-pod obol/dv-pod \
-  --set configMaps.clusterlock=my-cluster-lock
+  --set configMaps.clusterlock=cluster-lock
 ```
 
-Note: The validator keys will be loaded from the persistent volume created during DKG.
+That should be enough to get your DV-Pod running, and loaded with the required artifacts, assuming the default beacon node endpoint of the Obol Stack works. 
 
-#### Example 1b: From a single node output (.charon/ structure)
+#### Example 1b: From a Distributed Key Generation ceremony output (a `.charon/` folder structure)
 
 When you have DKG artifacts in a `.charon/` directory:
 
@@ -86,70 +84,28 @@ When you have DKG artifacts in a `.charon/` directory:
 
 Create the required resources:
 
-> ⚠️ **IMPORTANT**: The ENR secret MUST be created in the same namespace where you plan to install the Helm chart. The ENR job will only look for secrets in its own namespace.
-
-```console
-# Create namespace (if needed)
-kubectl create namespace dv-pod
-
-# Create ENR private key secret IN THE SAME NAMESPACE
+```sh
+# Put the charon ENR private key in a kubernetes secret
 kubectl create secret generic charon-enr-private-key \
-  --namespace dv-pod \
   --from-file=.charon/charon-enr-private-key
 
-# Create the cluster lock ConfigMap IN THE SAME NAMESPACE
-kubectl create configmap my-cluster-lock \
-  --namespace dv-pod \
+# Put the private keys in a kubernetes secret 
+kubectl create secret generic validator-keys \
+  --from-file=.charon/validator_keys/keystore-0.json --from-file=.charon/validator_keys/keystore-0.txt
+
+# Put the cluster lock file in a kubernetes ConfigMap
+kubectl create configmap cluster-lock \
   --from-file=.charon/cluster-lock.json
 
-# Install the chart IN THE SAME NAMESPACE
+# Install the chart
 helm install my-dv-pod obol/dv-pod \
-  --namespace dv-pod \
-  --set configMaps.clusterlock=my-cluster-lock
+  --set configMaps.clusterlock=cluster-lock \
+  --set validator.keystores.secretName=validator-keys
 ```
 
-#### Handling Large Cluster-Lock Files (>1MB)
+> [!IMPORTANT]
+> The ENR secret MUST be created in the same namespace where you plan to install the Helm chart. The ENR job can only look for secrets in its own namespace.
 
-If your cluster-lock.json file is larger than 1MB, you may encounter errors when creating the ConfigMap:
-
-```console
-error validating data: ValidationError(ConfigMap.data.cluster-lock.json): invalid type for io.k8s.api.core.v1.ConfigMap.data: got "array", expected "string"
-```
-
-In this case, you have two options:
-
-**Option A: Direct lock hash (Recommended)**
-
-1. Extract the lock_hash from your cluster-lock.json:
-   ```console
-   LOCK_HASH=$(jq -r '.lock_hash' cluster-lock.json)
-   echo $LOCK_HASH
-   ```
-
-2. Install the chart with the lockHash value:
-   ```console
-   helm install my-dv-pod obol/dv-pod \
-     --set charon.lockHash=$LOCK_HASH \
-     --set charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>
-   ```
-
-**Option B: ConfigMap approach**
-
-1. Extract the lock_hash and create a ConfigMap:
-   ```console
-   LOCK_HASH=$(jq -r '.lock_hash' cluster-lock.json)
-   kubectl create configmap cluster-lock-hash \
-     --from-literal=lock-hash=$LOCK_HASH
-   ```
-
-2. Install the chart referencing the ConfigMap:
-   ```console
-   helm install my-dv-pod obol/dv-pod \
-     --set configMaps.lockHash=cluster-lock-hash \
-     --set charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>
-   ```
-
-The DKG sidecar will use the lock hash to fetch the full cluster lock from the Obol API.
 
 ### Option 2: Run DKG through the chart (automatic)
 
@@ -159,7 +115,7 @@ If you don't have pre-existing artifacts, the chart can automatically:
 3. Store the resulting artifacts in a persistent volume
 
 Simply deploy the chart with your operator address:
-```console
+```sh
 helm install my-dv-pod obol/dv-pod \
   --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS
 ```
@@ -217,7 +173,7 @@ The chart supports two methods for providing validator keystores:
 
 If you have existing keystores, create a Kubernetes secret and reference it:
 
-```console
+```sh
 # Create secret with your keystores
 kubectl create secret generic validator-keys \
   --from-file=keystore-0.json \
@@ -285,9 +241,57 @@ For example, if you installed the chart as `my-dv-pod` in namespace `dv-pod`:
 
 Note: The Charon validator API on port 3600 provides the same interface as a beacon node API, allowing standard validator clients to connect without modification.
 
+### Handling Large Cluster-Lock Files (>1MB)
+
+If your `cluster-lock.json` file is larger than 1MB, you may encounter errors when creating the ConfigMap:
+
+```sh
+error validating data: ValidationError(ConfigMap.data.cluster-lock.json): invalid type for io.k8s.api.core.v1.ConfigMap.data: got "array", expected "string"
+```
+
+In this case, you have two options:
+
+**Option A: Direct lock hash (Recommended)**
+
+1. Extract the lock_hash from your cluster-lock.json:
+   ```sh
+   LOCK_HASH=$(jq -r '.lock_hash' cluster-lock.json)
+   echo $LOCK_HASH
+   ```
+
+2. Install the chart with the lockHash value:
+   ```sh
+   helm install my-dv-pod obol/dv-pod \
+     --set charon.lockHash=$LOCK_HASH \
+     --set charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>
+   ```
+
+**Option B: ConfigMap approach**
+
+1. Extract the lock_hash and create a ConfigMap:
+   ```sh
+   LOCK_HASH=$(jq -r '.lock_hash' cluster-lock.json)
+   kubectl create configmap cluster-lock-hash \
+     --from-literal=lock-hash=$LOCK_HASH
+   ```
+
+2. Install the chart referencing the ConfigMap:
+   ```sh
+   helm install my-dv-pod obol/dv-pod \
+     --set configMaps.lockHash=cluster-lock-hash \
+     --set charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>
+   ```
+
+The DKG sidecar will use the lock hash to fetch the full cluster lock from the Obol API.
+
 ## Uninstall the Chart
 To uninstall and delete the `dv-pod` release:
 ```sh
 helm uninstall dv-pod -n dv-pod
 ```
 The command removes all the Kubernetes components associated with the chart and deletes the release.
+
+
+## Full Chart Values Reference
+
+{{ template "chart.valuesSection" . }}
