@@ -112,7 +112,7 @@ spec:
               readOnly: true
             - name: charon-data
               mountPath: /charon-data
-            {{- if .Values.configMaps.clusterlock }}
+            {{- if .Values.configMaps.clusterLock }}
             # Mount pre-existing cluster-lock if provided
             - name: cluster-lock
               mountPath: /charon-data/cluster-lock.json
@@ -419,7 +419,7 @@ spec:
               port: {{ .Values.readinessProbe.httpGet.port }}
         {{- end }}  
           volumeMounts:
-            {{- if .Values.configMaps.clusterlock }}
+            {{- if .Values.configMaps.clusterLock }}
             # Mount cluster-lock configMap if provided
             - name: cluster-lock
               mountPath: /charon-data/cluster-lock.json
@@ -570,12 +570,12 @@ spec:
           {{- end }}
         {{- end }}
       volumes:
-        {{- if .Values.configMaps.clusterlock }}
+        {{- if .Values.configMaps.clusterLock }}
         - name: cluster-lock
           projected:
             sources:
             - configMap:
-                name: {{ .Values.configMaps.clusterlock }}
+                name: {{ .Values.configMaps.clusterLock }}
                 optional: true
         {{- else }}
         - name: cluster-lock

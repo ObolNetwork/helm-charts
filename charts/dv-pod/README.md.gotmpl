@@ -59,6 +59,10 @@ To deploy node0 using this chart:
 # Put the ENR private key in a secret
 kubectl create secret generic charon-enr-private-key --from-file=cluster/node0/charon-enr-private-key
 
+# Put the private keys in a kubernetes secret
+kubectl create secret generic validator-keys \
+  --from-file=cluster/node0/validator_keys/keystore-0.json --from-file=cluster/node0/validator_keys/keystore-0.txt
+
 # Create the cluster lock ConfigMap (same for all nodes)
 kubectl create configmap cluster-lock --from-file=cluster/node0/cluster-lock.json
 

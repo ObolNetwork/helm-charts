@@ -58,6 +58,10 @@ To deploy node0 using this chart:
 # Put the ENR private key in a secret
 kubectl create secret generic charon-enr-private-key --from-file=cluster/node0/charon-enr-private-key
 
+# Put the private keys in a kubernetes secret
+kubectl create secret generic validator-keys \
+  --from-file=cluster/node0/validator_keys/keystore-0.json --from-file=cluster/node0/validator_keys/keystore-0.txt
+
 # Create the cluster lock ConfigMap (same for all nodes)
 kubectl create configmap cluster-lock --from-file=cluster/node0/cluster-lock.json
 
@@ -331,8 +335,8 @@ The command removes all the Kubernetes components associated with the chart and 
 | charon.featureSet | string | `"stable"` | Minimum feature set to enable by default: alpha, beta, or stable. Warning: modify at own risk. (default "stable") |
 | charon.featureSetDisable | string | `""` | Comma-separated list of features to disable, overriding the default minimum feature set. |
 | charon.featureSetEnable | string | `""` | Comma-separated list of features to enable, overriding the default minimum feature set. |
-| charon.lockFile | string | `"/charon-data/cluster-lock.json"` | The path to the cluster lock file defining the distributed validator cluster. (default "/charon-data/cluster-lock.json") |
-| charon.lockHash | string | `""` | Cluster lock hash for large cluster-lock files (>1MB) When provided, the DKG sidecar will fetch the full cluster-lock from Obol API using this hash Extract from cluster-lock.json using: jq -r '.lock_hash' cluster-lock.json Alternative to providing the full cluster-lock.json file via configMaps.clusterlock |
+| charon.lockFile | string | `"/charon-data/cluster-lock.json"` | The path on the pod to the cluster lock file that definesthe distributed validator cluster. (default "/charon-data/cluster-lock.json") |
+| charon.lockHash | string | `""` | Cluster lock hash for large cluster-lock files (>1MB) When provided, the DKG sidecar will fetch the full cluster-lock from Obol API using this hash Extract the hash from a cluster-lock.json using: `jq -r '.lock_hash' cluster-lock.json` Alternative to providing the full cluster-lock.json file via the configMaps.clusterLock value |
 | charon.logFormat | string | `"json"` | Log format; console, logfmt or json (default "json") |
 | charon.logLevel | string | `"info"` | Log level; debug, info, warn or error (default "info") |
 | charon.lokiAddresses | string | `""` | Enables sending of logfmt structured logs to these Loki log aggregation server addresses. This is in addition to normal stderr logs. |
@@ -350,13 +354,13 @@ The command removes all the Kubernetes components associated with the chart and 
 | charon.privateKeyFile | string | `"/data/charon-enr-private-key"` | Path within the Charon container where the ENR private key file will be mounted. |
 | charon.validatorApiAddress | string | `"0.0.0.0:3600"` | Listening address (ip and port) for validator-facing traffic proxying the beacon-node API. (default "127.0.0.1:3600") |
 | clusterThreshold | string | `""` | Maximum number of pods that can be unavailable for cluster threshold Used in pod disruption budget when minAvailable is not specified |
-| configMaps | object | `{"clusterlock":""}` | Kubernetes configMaps names for non-sensitive configuration data. |
-| configMaps.clusterlock | string | `""` | Name of the ConfigMap containing the cluster-lock.json file Set this to the name of an existing ConfigMap to skip the DKG process. Example: kubectl create configmap cluster-lock --from-file=cluster-lock.json Then set: clusterlock: "cluster-lock" If not set or if the ConfigMap doesn't exist, the DKG process will run. NOTE: For large cluster-lock files (>1MB), use charon.lockHash instead |
+| configMaps | object | `{"clusterLock":""}` | Kubernetes configMaps names for non-sensitive configuration data. |
+| configMaps.clusterLock | string | `""` | Name of the ConfigMap containing the cluster-lock.json file Set this to the name of an existing ConfigMap to skip the DKG process. Example: kubectl create configmap cluster-lock --from-file=.charon/cluster-lock.json Then set: clusterLock: "cluster-lock" If not set or if the ConfigMap doesn't exist, the DKG process will run. NOTE: For large cluster-lock files (>1MB), use charon.lockHash instead |
 | containerSecurityContext | object | See `values.yaml` | The security context for containers |
 | fullnameOverride | string | `""` | Provide a name to substitute for the full names of resources |
 | global | object | `{"annotations":{}}` | Global configuration that can be referenced across the chart Used for test configurations and shared settings |
 | global.annotations | object | `{}` | Global annotations applied to resources |
-| image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.5.1"}` | Charon image repository, pull policy, and tag version |
+| image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.6.0"}` | Charon image repository, pull policy, and tag version |
 | imagePullSecrets | list | `[]` | Credentials to fetch images from private registry # ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ |
 | livenessProbe | object | `{"enabled":false,"httpGet":{"path":"/livez","port":3620},"initialDelaySeconds":10,"periodSeconds":5}` | Configure liveness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ |
 | livenessProbe.httpGet.port | int | `3620` | Port for liveness probe HTTP checks |
@@ -401,9 +405,8 @@ The command removes all the Kubernetes components associated with the chart and 
 | readinessProbe | object | `{"enabled":false,"httpGet":{"path":"/readyz","port":3620},"initialDelaySeconds":5,"periodSeconds":3}` | Configure readiness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ |
 | readinessProbe.httpGet.port | int | `3620` | Port for readiness probe HTTP checks |
 | resources | object | `{"limits":{"cpu":"2000m","memory":"4Gi"},"requests":{"cpu":"1000m","memory":"2Gi"}}` | Pod resources limits and requests |
-| secrets | object | `{"defaultEnrPrivateKey":"charon-enr-private-key","enrPrivateKey":"charon-enr-private-key"}` | Kubernetes secrets names that might be used as suffixes or for other purposes. For the ENR, the secret name is either defined in 'charon.enr.existingSecret.name'  or generated by the ENR job (e.g., {{ .Release.Name }}-dv-pod-enr-key). |
+| secrets | object | `{"defaultEnrPrivateKey":"charon-enr-private-key"}` | Kubernetes secrets names For the ENR, the secret name is either defined in 'charon.enr.existingSecret.name' or generated by the ENR job (e.g., {{ .Release.Name }}-dv-pod-enr-key). |
 | secrets.defaultEnrPrivateKey | string | `"charon-enr-private-key"` | Default ENR private key secret name to check for auto-detection IMPORTANT: This secret MUST exist in the same namespace as the Helm release If this secret exists in the release namespace, it will be used automatically unless explicitly overridden by charon.enr.existingSecret.name The ENR job will NOT check other namespaces to prevent unexpected behavior |
-| secrets.enrPrivateKey | string | `"charon-enr-private-key"` | Suffix for ENR private key secret (used internally by templates) |
 | securityContext | object | See `values.yaml` | The security context for pods Note: This must be set to null or omit runAsNonRoot to allow the prepare-validator-data init container to run as root for setting file permissions |
 | service | object | `{"clusterIP":"None","ports":{"monitoring":{"name":"monitoring","port":3620,"protocol":"TCP","targetPort":3620},"p2pTcp":{"name":"p2p-tcp","port":3610,"protocol":"TCP","targetPort":3610},"validatorApi":{"name":"validator-api","port":3600,"protocol":"TCP","targetPort":3600}}}` | Charon service ports |
 | service.clusterIP | string | `"None"` | Headless service to create DNS for each statefulset instance |
