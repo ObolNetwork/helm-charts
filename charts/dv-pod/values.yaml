@@ -272,6 +272,8 @@ charon:
     pageLimit: 10
     # -- API endpoint for the Obol network to fetch cluster definitions
     apiEndpoint: "https://api.obol.tech"
+    # -- Target config hash for DKG validation (optional)
+    targetConfigHash: ""
     # -- Resources for the cluster poller init container
     resources:
       requests:
