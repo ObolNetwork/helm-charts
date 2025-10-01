@@ -319,10 +319,10 @@ charon:
         tag: "v1.5.1"
         pullPolicy: "IfNotPresent"
       # -- Image to use for kubectl operations within the ENR generation job
-      # This image must contain a compatible kubectl binary.
+      # This image must contain a compatible kubectl binary and shell.
       kubectlImage:
-        repository: "bitnami/kubectl"
-        tag: "1.33.3" # Pinned to match stable Kubernetes v1.33.3
+        repository: "alpine/k8s"
+        tag: "1.31.4"
         pullPolicy: "IfNotPresent"
 
   # --- Charon command line options ---
