@@ -37,9 +37,9 @@ charon:
   
   # -- Fallback beacon node endpoints (optional)
   # These will be used if the primary beaconNodeEndpoints are unavailable
-  fallbackBeaconNodeEndpoints: []
+  fallbackBeaconNodeEndpoints:
   # Example:
-  # - "https://ethereum-beacon-api.publicnode.com"
+    - "https://ethereum-beacon-api.publicnode.com"
   # - "http://backup-beacon-2:5052"
   
   # -- Beacon node authentication headers
@@ -70,7 +70,7 @@ charon:
   # The Builder API must also be enabled on your beacon node client(s). 
   # The Beacon node must either be connected to a mev sidecar or a mev relay to access the builder network.
   # More documentation about MEV can be found [here](https://docs.obol.org/advanced-and-troubleshooting/advanced/enable-mev).
-  builderApi: ""
+  builderApi: "true"
   
   # -- Minimum feature set to enable by default: alpha, beta, or stable. Warning: modify at own risk. (default "stable")
   featureSet: "stable"
@@ -162,8 +162,8 @@ charon:
     enabled: true
     image:
       # -- Image repository for the DKG sidecar
-      repository: "ghcr.io/obolnetwork/charon-dkg-sidecar"
-      tag: "v1.0.0"
+      repository: "obolnetwork/charon-dkg-sidecar"
+      tag: "main"
       pullPolicy: "IfNotPresent"
     # -- Initial delay in seconds before the first retry of a polling cycle.
     initialRetryDelaySeconds: 10
@@ -209,13 +209,13 @@ charon:
     existingSecret:
       name: ""           # Name of the K8s secret (e.g., "my-dv-pod-enr-secret")
       # -- Key in the secret's 'data' field holding the private key hex string
-      privateKeyDataKey: "private-key"
+      privateKeyDataKey: "charon-enr-private-key"
       # -- Key in the secret's 'data' field holding the public ENR string
-      publicKeyDataKey: "public-enr"
+      publicKeyDataKey: "enr"
 
     # -- Enable automatic generation of an ENR private key.
     # Only used if 'privateKey' and 'existingSecret.name' are not provided.
-    # The generated key will be stored in a secret with data keys 'private-key' and 'public-enr'.
+    # The generated key will be stored in a secret with data keys 'charon-enr-private-key' and 'enr'.
     generate:
       enabled: true
       # -- Annotations to add to the ENR generation job
@@ -225,13 +225,13 @@ charon:
       image:
         repository: "obolnetwork/charon"
         # Specify a stable tag, e.g., v1.6.0 or check for the latest release [here](https://github.com/ObolNetwork/charon/releases/).
-        tag: "v1.6.0"
+        tag: "v1.6.1"
         pullPolicy: "IfNotPresent"
       # -- Image to use for kubectl operations within the ENR generation job
       # This image must contain a compatible kubectl binary.
       kubectlImage:
-        repository: "bitnami/kubectl"
-        tag: "1.33.3" # Pinned to match stable Kubernetes v1.33.3
+        repository: "bitnamisecure/kubectl"
+        tag: "latest"
         pullPolicy: "IfNotPresent"
 
  
@@ -295,7 +295,7 @@ centralMonitoring:
 image:
   repository: obolnetwork/charon
   pullPolicy: IfNotPresent
-  tag: v1.6.0
+  tag: v1.6.1
 
 # -- Chain ID for the network (1: Mainnet, 11155111: Sepolia, 560048: Hoodi)
 # Used for DKG Ceremony

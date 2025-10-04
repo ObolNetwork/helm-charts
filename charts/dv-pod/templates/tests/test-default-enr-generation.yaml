@@ -44,8 +44,8 @@ spec:
             echo "ERROR: Secret $SECRET_NAME not found"
             exit 1
           fi
-          PRIVATE_KEY=$(kubectl get secret $SECRET_NAME -n {{ .Release.Namespace }} -o jsonpath='{.data.private-key}' | base64 --decode)
-          PUBLIC_ENR=$(kubectl get secret $SECRET_NAME -n {{ .Release.Namespace }} -o jsonpath='{.data.public-enr}' | base64 --decode)
+          PRIVATE_KEY=$(kubectl get secret $SECRET_NAME -n {{ .Release.Namespace }} -o jsonpath='{.data.charon-enr-private-key}' | base64 --decode)
+          PUBLIC_ENR=$(kubectl get secret $SECRET_NAME -n {{ .Release.Namespace }} -o jsonpath='{.data.enr}' | base64 --decode)
 
           if [ -z "$PRIVATE_KEY" ]; then
             echo "ERROR: Private key not found or empty in secret $SECRET_NAME"

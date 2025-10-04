@@ -48,7 +48,7 @@ spec:
           SECRET_NAME="{{ template "dv-pod.enrSecretName" . }}"
           
           # Fetch the private key from the secret and decode it
-          ACTUAL_PRIVATE_KEY_B64=$(kubectl get secret $SECRET_NAME -n {{ .Release.Namespace }} -o jsonpath='{.data.private-key}')
+          ACTUAL_PRIVATE_KEY_B64=$(kubectl get secret $SECRET_NAME -n {{ .Release.Namespace }} -o jsonpath='{.data.charon-enr-private-key}')
           if [ -z "$ACTUAL_PRIVATE_KEY_B64" ]; then
             echo "ERROR: Private key not found in secret $SECRET_NAME"
             exit 1
@@ -69,10 +69,10 @@ spec:
           fi
           echo "INFO: Private key in secret $SECRET_NAME matches provided value."
 
-          if ! kubectl get secret $SECRET_NAME -n {{ .Release.Namespace }} -o jsonpath='{.data.public-enr}' | grep -v '^$'; then
+          if ! kubectl get secret $SECRET_NAME -n {{ .Release.Namespace }} -o jsonpath='{.data.enr}' | grep -v '^$'; then
             echo "ERROR: Public ENR not found or empty in secret $SECRET_NAME (provided key)."
             exit 1
           fi
-          echo "INFO: Found non-empty public-enr in secret $SECRET_NAME (provided key)."
+          echo "INFO: Found non-empty enr in secret $SECRET_NAME (provided key)."
           echo "INFO: Provided ENR test passed."
 {{- end }}

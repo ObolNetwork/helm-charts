@@ -18,7 +18,7 @@ Your Obol distributed validator pod "{{ template "dv-pod.fullname" . }}" has bee
    {{- end }}
 
    To retrieve the public ENR string:
-   kubectl get secret -n {{ .Release.Namespace }} {{ include "dv-pod.enrSecretName" . }} -o jsonpath='{.data.public-enr}' | base64 --decode
+   kubectl get secret -n {{ .Release.Namespace }} {{ include "dv-pod.enrSecretName" . }} -o jsonpath='{.data.enr}' | base64 --decode
    echo ""
 
    {{- if not .Values.configMaps.clusterlock }}
