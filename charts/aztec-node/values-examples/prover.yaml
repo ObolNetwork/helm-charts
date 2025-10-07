@@ -14,7 +14,7 @@ prover:
     # This key will be used to sign and submit rollup proofs
     # WARNING: This is a TEST KEY - DO NOT USE IN PRODUCTION
     # Replace with your actual private key for production use
-    publisherPrivateKey: "0x0000000000000000000000000000000000000000000000000000000000000001"
+    publisherPrivateKey: "0xYOUR_PRIVATE_KEY_HERE"
 
     resources:
       requests:
