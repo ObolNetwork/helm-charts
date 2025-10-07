@@ -14,7 +14,7 @@ A Helm chart for deploying an Aztec node
 | certificate.enabled | bool | `false` |  |
 | customNetwork | object | `{"feeAssetHandlerContractAddress":null,"l1ChainId":null,"registryContractAddress":null,"slashFactoryAddress":null}` | Custom network - (not recommended) - Only for custom testnet usecases Must have deployed your own protocol contracts first |
 | fullnameOverride | string | `""` | Overrides the chart computed fullname |
-| hostNetwork | bool | `false` | Use host network - this will disable nodePort service and use host networking instead |
+| hostNetwork | bool | `true` | Use host network - provides best P2P performance by binding directly to node's network This is the recommended configuration for Aztec nodes |
 | image | object | `{"pullPolicy":"IfNotPresent","repository":"aztecprotocol/aztec","tag":"latest"}` | Image to use for the container |
 | image.pullPolicy | string | `"IfNotPresent"` | Container pull policy |
 | image.repository | string | `"aztecprotocol/aztec"` | Image repository |
@@ -59,7 +59,7 @@ A Helm chart for deploying an Aztec node
 | rbac.clusterRules | list | See `values.yaml` | Required ClusterRole rules |
 | rbac.create | bool | `true` | Specifies whether RBAC resources are to be created |
 | rbac.rules | list | See `values.yaml` | Required ClusterRole rules |
-| role | string | `"fullnode"` | Role determines the type of Aztec node deployment Valid roles: fullnode, sequencer, prover |
+| role | string | `"sequencer"` | Role determines the type of Aztec node deployment Valid roles: fullnode, sequencer, prover |
 | rollupVersion | string | `"canonical"` | Which rollup contract we want to follow from the registry |
 | sequencer.attesterPrivateKey | string | `""` | Ethereum private key for attester (signs blocks and attestations) REQUIRED when role is 'sequencer' |
 | sequencer.feeRecipient | string | `"0x0000000000000000000000000000000000000000000000000000000000000000"` | Aztec address (32 bytes) to receive unburnt transaction fees |
@@ -72,7 +72,8 @@ A Helm chart for deploying an Aztec node
 | service.ingress.hosts | list | `[]` |  |
 | service.p2p.announcePort | int | `40400` |  |
 | service.p2p.enabled | bool | `true` |  |
-| service.p2p.nodePortEnabled | bool | `true` |  |
+| service.p2p.nodePort | int | `30400` |  |
+| service.p2p.nodePortEnabled | bool | `false` |  |
 | service.p2p.port | int | `40400` |  |
 | serviceAccount.annotations | object | `{}` | Annotations for the service account |
 | serviceAccount.create | bool | `true` | Create a service account |
