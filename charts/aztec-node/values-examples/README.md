@@ -20,7 +20,7 @@ A full node participates in the Aztec network by running archiver and node servi
 ```bash
 helm install aztec-fullnode ./charts/aztec-node \
   -f charts/aztec-node/values-examples/fullnode.yaml \
-  -n aztec --create-namespace
+  -n aztec-testnet --create-namespace
 ```
 
 ### 2. Sequencer (`sequencer.yaml`)
@@ -42,7 +42,7 @@ A sequencer produces blocks and attestations for the network.
 helm install aztec-sequencer ./charts/aztec-node \
   -f charts/aztec-node/values-examples/sequencer.yaml \
   --set sequencer.attesterPrivateKey="0xYOUR_PRIVATE_KEY" \
-  -n aztec --create-namespace
+  -n aztec-testnet --create-namespace
 ```
 
 ### 3. Prover (`prover.yaml`)
@@ -66,7 +66,7 @@ The prover role deploys a complete distributed proving system with 3 components:
 helm install aztec-prover ./charts/aztec-node \
   -f charts/aztec-node/values-examples/prover.yaml \
   --set prover.node.publisherPrivateKey="0xYOUR_PRIVATE_KEY" \
-  -n aztec --create-namespace
+  -n aztec-testnet --create-namespace
 ```
 
 **Scale prover agents:**
@@ -76,7 +76,7 @@ helm upgrade aztec-prover ./charts/aztec-node \
   -f charts/aztec-node/values-examples/prover.yaml \
   --set prover.agent.replicas=4 \
   --set prover.node.publisherPrivateKey="0xYOUR_PRIVATE_KEY" \
-  -n aztec
+  -n aztec-testnet
 ```
 
 **Persistence Configuration:**

@@ -12,6 +12,7 @@ This repo contains Helm Charts for deploying Obol Distributed Validator [middlew
 - [`charon`](charts/charon)
 - [`charon-cluster`](charts/charon-cluster)
 - [`charon-relay`](charts/charon-relay)
+- [`aztec-node`](charts/aztec-node) - Aztec network node deployment (Full Node, Sequencer, or Prover)
 
 ## Before you begin
 
