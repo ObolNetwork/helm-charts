@@ -2,13 +2,13 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "chart.fullname" . }}-prover-broker
+  name: {{ include "chart.resourceName" (dict "context" . "component" "broker") }}
   labels:
     {{- include "chart.labels" . | nindent 4 }}
     aztec.network/role: prover
     aztec.network/component: prover-broker
 spec:
-  serviceName: {{ include "chart.fullname" . }}-prover-broker
+  serviceName: {{ include "chart.resourceName" (dict "context" . "component" "broker") }}
   replicas: 1
   podManagementPolicy: {{ .Values.podManagementPolicy }}
   updateStrategy:

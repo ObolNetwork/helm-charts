@@ -3,12 +3,12 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "chart.fullname" . }}
+  name: {{ include "chart.resourceName" . }}
   labels:
     {{- include "chart.labels" . | nindent 4 }}
     aztec.network/role: {{ .Values.role }}
 spec:
-  serviceName: {{ include "chart.fullname" . }}-headless
+  serviceName: {{ include "chart.resourceName" . }}-headless
   replicas: {{ .Values.node.replicas }}
   podManagementPolicy: {{ .Values.podManagementPolicy }}
   updateStrategy:
@@ -225,7 +225,7 @@ spec:
         {{- if eq .Values.role "sequencer" }}
         - name: keystore
           secret:
-            secretName: {{ include "chart.fullname" . }}-keystore
+            secretName: {{ include "chart.resourceName" . }}-keystore
         {{- end }}
   {{- if not .Values.persistence.enabled }}
         - name: storage

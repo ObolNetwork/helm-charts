@@ -2,13 +2,13 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "chart.fullname" . }}-prover-agent
+  name: {{ include "chart.resourceName" (dict "context" . "component" "agent") }}
   labels:
     {{- include "chart.labels" . | nindent 4 }}
     aztec.network/role: prover
     aztec.network/component: prover-agent
 spec:
-  serviceName: {{ include "chart.fullname" . }}-prover-agent
+  serviceName: {{ include "chart.resourceName" (dict "context" . "component" "agent") }}
   replicas: {{ .Values.prover.agent.replicas }}
   podManagementPolicy: {{ .Values.podManagementPolicy }}
   updateStrategy:
@@ -96,7 +96,7 @@ spec:
               value: {{ .Values.prover.agent.pollIntervalMs | quote }}
             # Prover broker is running in the same deployment
             - name: PROVER_BROKER_HOST
-              value: "http://{{ include "chart.fullname" . }}-prover-broker:{{ .Values.service.httpPort }}"
+              value: "http://{{ include "chart.resourceName" (dict "context" . "component" "broker") }}:{{ .Values.service.httpPort }}"
             {{- if .Values.prover.id }}
             - name: PROVER_ID
               value: {{ .Values.prover.id | quote }}

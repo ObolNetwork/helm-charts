@@ -56,7 +56,7 @@ Create the name of the service account to use
 */}}
 {{- define "chart.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "chart.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "chart.resourceName" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
@@ -67,8 +67,33 @@ Create the name of the cluster role.
 It needs to be namespace prefixed to avoid naming conflicts when using the same deployment name across namespaces.
 */}}
 {{- define "chart.clusterRoleName" -}}
-{{ .Release.Namespace }}-{{ include "chart.fullname" . }}
+{{ .Release.Namespace }}-{{ include "chart.resourceName" . }}
 {{- end }}
+
+{{/*
+Generate standardized resource names following pattern: l2-{role}-node-{network}-{component}
+Usage:
+  {{ include "chart.resourceName" . }}  - For fullnode/sequencer
+  {{ include "chart.resourceName" (dict "context" . "component" "broker") }}  - For prover components
+*/}}
+{{- define "chart.resourceName" -}}
+{{- $context := . -}}
+{{- $component := "" -}}
+{{- if hasKey . "context" -}}
+  {{- $context = .context -}}
+  {{- $component = .component | default "" -}}
+{{- end -}}
+{{- $role := $context.Values.role -}}
+{{- if eq $role "fullnode" -}}
+  {{- $role = "full" -}}
+{{- end -}}
+{{- $network := $context.Values.networkName | default "sepolia" -}}
+{{- if $component -}}
+  {{- printf "l2-%s-node-%s-%s" $role $network $component -}}
+{{- else -}}
+  {{- printf "l2-%s-node-%s-node" $role $network -}}
+{{- end -}}
+{{- end -}}
 
 {{/*
 Validate that the role is one of the allowed values

@@ -130,9 +130,9 @@ helm install aztec-prover ./charts/aztec-node \
 ```
 
 **Note:** The prover role creates 3 StatefulSets:
-- `prover-broker` - Manages the job queue
-- `prover-node` - Creates jobs and publishes proofs to L1
-- `prover-agent` - Executes proof generation (can scale replicas)
+- `l2-prover-node-sepolia-broker` - Manages the job queue
+- `l2-prover-node-sepolia-node` - Creates jobs and publishes proofs to L1
+- `l2-prover-node-sepolia-agent` - Executes proof generation (can scale replicas)
 
 ## Architecture
 
@@ -298,10 +298,15 @@ Access node endpoints:
 
 ```bash
 # HTTP RPC endpoint
-kubectl port-forward -n aztec-testnet svc/aztec-node 8080:8080
+# For fullnode
+kubectl port-forward -n aztec svc/l2-full-node-sepolia-node 8080:8080
+# For sequencer
+kubectl port-forward -n aztec svc/l2-sequencer-node-sepolia-node 8080:8080
+# For prover (prover-node component)
+kubectl port-forward -n aztec svc/l2-prover-node-sepolia-node 8080:8080
 
-# Admin endpoint
-kubectl port-forward -n aztec-testnet svc/aztec-node 8081:8081
+# Admin endpoint (example for sequencer)
+kubectl port-forward -n aztec svc/l2-sequencer-node-sepolia-node 8081:8081
 ```
 
 ### Verify Node is Running Properly
@@ -376,12 +381,15 @@ image:
 
 ```bash
 # Force pod restart to pull latest image
-kubectl rollout restart statefulset/aztec-node -n aztec-testnet
+# For fullnode
+kubectl rollout restart statefulset/l2-full-node-sepolia-node -n aztec
+# For sequencer
+kubectl rollout restart statefulset/l2-sequencer-node-sepolia-node -n aztec
 
 # For prover components
-kubectl rollout restart statefulset/aztec-prover-broker -n aztec-testnet
-kubectl rollout restart statefulset/aztec-prover-node -n aztec-testnet
-kubectl rollout restart statefulset/aztec-prover-agent -n aztec-testnet
+kubectl rollout restart statefulset/l2-prover-node-sepolia-broker -n aztec
+kubectl rollout restart statefulset/l2-prover-node-sepolia-node -n aztec
+kubectl rollout restart statefulset/l2-prover-node-sepolia-agent -n aztec
 ```
 
 ### Scale Prover Agents

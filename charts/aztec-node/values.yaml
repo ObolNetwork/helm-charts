@@ -95,6 +95,10 @@ podManagementPolicy: Parallel
 # -- Network name - this is a predefined network - testnet, devnet
 network:
 
+# -- Network identifier used in resource naming (l2-{role}-node-{networkName}-{component})
+# This appears in service/statefulset names for easy identification
+networkName: sepolia
+
 # -- Custom network - (not recommended) - Only for custom testnet usecases
 # Must have deployed your own protocol contracts first
 customNetwork:

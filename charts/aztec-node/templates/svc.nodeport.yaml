@@ -4,7 +4,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "chart.fullname" $ }}-p2p-node-port-{{ $i }}
+  name: {{ include "chart.resourceName" $ }}-p2p-node-port-{{ $i }}
   labels:
     {{- include "chart.labels" $ | nindent 4 }}
     app: node
@@ -26,6 +26,6 @@ spec:
       nodePort: {{ add $.Values.service.p2p.nodePort $i }}
   selector:
     {{- include "chart.selectorLabels" $ | nindent 4 }}
-    statefulset.kubernetes.io/pod-name: "{{ include "chart.fullname" $ }}-{{ $i }}"
+    statefulset.kubernetes.io/pod-name: "{{ include "chart.resourceName" $ }}-{{ $i }}"
 {{- end }}
 {{- end }}
