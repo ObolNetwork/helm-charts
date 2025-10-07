@@ -2,11 +2,12 @@ repos:
   - repo: local
     hooks:
       - id: helm-docs
-        name: Helm Docs
+        name: Helm Docs (auto-regenerates README files)
         args: []
         description: >
           Uses 'helm-docs' to create documentation from the Helm chart's 'values.yaml' file,
           and inserts the result into a corresponding 'README.md' file.
+          If this hook modifies files, stage the changes (git add) and commit again.
         entry: jnorwood/helm-docs:v1.11.0
         files: (README\.md\.gotmpl|(Chart|requirements|values)\.yaml)$
         language: docker_image
