@@ -18,12 +18,12 @@ spec:
       port: {{ $.Values.service.p2p.port }}
       protocol: TCP
       targetPort: p2p-tcp
-      nodePort: {{ add $.Values.service.p2p.port $i }}
+      nodePort: {{ add $.Values.service.p2p.nodePort $i }}
     - name: p2p-udp
       port: {{ $.Values.service.p2p.port }}
       protocol: UDP
       targetPort: p2p-udp
-      nodePort: {{ add $.Values.service.p2p.port $i }}
+      nodePort: {{ add $.Values.service.p2p.nodePort $i }}
   selector:
     {{- include "chart.selectorLabels" $ | nindent 4 }}
     statefulset.kubernetes.io/pod-name: "{{ include "chart.fullname" $ }}-{{ $i }}"

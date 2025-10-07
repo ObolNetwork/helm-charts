@@ -7,6 +7,9 @@ role: fullnode
 # Network to connect to (testnet, devnet, or custom)
 network: testnet
 
+# Use host network for best P2P performance
+hostNetwork: true
+
 # Container image configuration
 image:
   repository: aztecprotocol/aztec
@@ -54,7 +57,7 @@ service:
 
   p2p:
     enabled: true
-    nodePortEnabled: false
+    nodePortEnabled: false  # Not needed with hostNetwork
     port: 40400
 
   admin:

@@ -78,6 +78,9 @@ image:
   tag: latest
   pullPolicy: IfNotPresent  # Use 'Always' for auto-updates, 'IfNotPresent' for stability
 
+# Use host network for best P2P performance (prover-node needs P2P)
+hostNetwork: true
+
 # Node configuration
 node:
   logLevel: "info"
@@ -104,7 +107,7 @@ service:
   # P2P is required for prover-node
   p2p:
     enabled: true
-    nodePortEnabled: false
+    nodePortEnabled: false  # Not needed with hostNetwork
     port: 40400
 
   admin:

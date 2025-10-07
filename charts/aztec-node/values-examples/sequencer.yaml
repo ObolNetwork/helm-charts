@@ -65,21 +65,21 @@ persistence:
   accessModes:
     - ReadWriteOnce
 
+# Use host networking for best P2P performance
+hostNetwork: true
+
 # Service configuration
 service:
   httpPort: 8080
 
   p2p:
     enabled: true
-    nodePortEnabled: true  # Enable for external P2P connectivity
+    nodePortEnabled: false  # Not needed with hostNetwork
     port: 40400
 
   admin:
     enabled: true
     port: 8081
-
-# Use host networking for better P2P performance (optional)
-hostNetwork: false
 
 # Optional: Pin to specific node for persistent storage
 # nodeSelector:
