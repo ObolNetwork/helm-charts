@@ -95,11 +95,6 @@ spec:
               mountPath: /var/lib/keystore
               readOnly: true
             {{- end }}
-            {{- if eq .Values.role "prover-node" }}
-            - name: prover-keystore
-              mountPath: /var/lib/keystore
-              readOnly: true
-            {{- end }}
           env:
             - name: POD_IP
               valueFrom:
@@ -208,24 +203,6 @@ spec:
             - name: FEE_RECIPIENT
               value: {{ .Values.sequencer.feeRecipient | quote }}
             {{- end }}
-            {{- if eq .Values.role "prover-node" }}
-            - name: KEY_STORE_DIRECTORY
-              value: /var/lib/keystore
-            {{- if .Values.prover.id }}
-            - name: PROVER_ID
-              value: {{ .Values.prover.id | quote }}
-            {{- end }}
-            {{- end }}
-            {{- if eq .Values.role "prover-agent" }}
-            - name: PROVER_AGENT_COUNT
-              value: {{ .Values.prover.agent.count | quote }}
-            - name: PROVER_AGENT_POLL_INTERVAL_MS
-              value: {{ .Values.prover.agent.pollIntervalMs | quote }}
-            {{- if .Values.prover.id }}
-            - name: PROVER_ID
-              value: {{ .Values.prover.id | quote }}
-            {{- end }}
-            {{- end }}
             - name: SENTINEL_ENABLED
               value: {{ .Values.node.sentinel.enabled | quote }}
           ports:
@@ -249,11 +226,6 @@ spec:
         - name: keystore
           secret:
             secretName: {{ include "chart.fullname" . }}-keystore
-        {{- end }}
-        {{- if eq .Values.role "prover-node" }}
-        - name: prover-keystore
-          secret:
-            secretName: {{ include "chart.fullname" . }}-prover-keystore
         {{- end }}
   {{- if not .Values.persistence.enabled }}
         - name: storage
