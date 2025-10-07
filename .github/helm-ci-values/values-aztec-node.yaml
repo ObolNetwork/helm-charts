@@ -1,0 +1,51 @@
+# CI test values for aztec-node chart
+# Minimal configuration for fullnode role
+
+# Deployment role
+role: fullnode
+
+# Network to connect to
+network: testnet
+
+# Container image configuration
+image:
+  repository: aztecprotocol/aztec
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# Node configuration
+node:
+  replicas: 1
+  logLevel: "info"
+
+  # L1 Ethereum configuration (mock URLs for CI)
+  l1ExecutionUrls:
+    - "http://mock-l1-execution:8545"
+  l1ConsensusUrls:
+    - "http://mock-l1-consensus:5052"
+
+  # Resource allocation (minimal for CI)
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "200m"
+      memory: "512Mi"
+
+# Persistence disabled for CI
+persistence:
+  enabled: false
+
+# Service configuration
+service:
+  httpPort: 8080
+
+  p2p:
+    enabled: true
+    nodePortEnabled: false
+    port: 40400
+
+  admin:
+    enabled: true
+    port: 8081
