@@ -8,7 +8,7 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
     aztec.network/role: {{ .Values.role }}
 spec:
-  serviceName: {{ include "chart.fullname" . }}
+  serviceName: {{ include "chart.fullname" . }}-headless
   replicas: {{ .Values.node.replicas }}
   podManagementPolicy: {{ .Values.podManagementPolicy }}
   updateStrategy:
