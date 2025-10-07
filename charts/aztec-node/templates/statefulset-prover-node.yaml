@@ -167,6 +167,7 @@ spec:
         - name: storage
           emptyDir: {}
   {{- else if .Values.persistence.existingClaim }}
+      volumes:
         - name: storage
           persistentVolumeClaim:
             claimName: {{ .Values.persistence.existingClaim }}
