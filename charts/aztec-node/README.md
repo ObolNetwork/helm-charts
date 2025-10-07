@@ -22,6 +22,7 @@ A Helm chart for deploying an Aztec node
 | initContainers | list | `[]` | Additional init containers |
 | nameOverride | string | `""` | Overrides the chart name |
 | network | string | `nil` | Network name - this is a predefined network - testnet, devnet |
+| networkName | string | `"sepolia"` | Network identifier used in resource naming (l2-{role}-node-{networkName}-{component}) This appears in service/statefulset names for easy identification |
 | node | object | `{"coinbase":null,"l1ConsensusHostApiKeyHeaders":[],"l1ConsensusHostApiKeys":[],"l1ConsensusUrls":["http://l1-full-node-sepolia-beacon.l1.svc.cluster.local:5052"],"l1ExecutionUrls":["http://l1-full-node-sepolia-execution.l1.svc.cluster.local:8545"],"logLevel":"info","metrics":{"otelCollectorEndpoint":"","otelExcludeMetrics":"","useGcloudLogging":false},"nodeJsOptions":["--no-warnings","--max-old-space-size=4096"],"preStartScript":"","remoteUrl":{"archiver":null,"blobSink":null,"proverBroker":null,"proverCoordinationNodes":[]},"replicas":1,"resources":{},"sentinel":{"enabled":false},"startCmd":[],"startupProbe":{"failureThreshold":20,"periodSeconds":30},"storage":{"archiveStorageMapSize":null,"dataDirectory":"/data","dataStoreMapSize":"134217728","p2pStorageMapSize":null,"worldStateMapSize":"134217728"}}` | Aztec node configuration |
 | node.coinbase | string | `nil` | Address that will receive block or proof rewards For prover roles, this is the PROVER_ID |
 | node.l1ExecutionUrls | list | `["http://l1-full-node-sepolia-execution.l1.svc.cluster.local:8545"]` | L1 Ethereum configuration Ethereum execution layer RPC endpoint(s) - comma separated list |
@@ -130,9 +131,9 @@ helm install aztec-prover ./charts/aztec-node \
 ```
 
 **Note:** The prover role creates 3 StatefulSets:
-- `l2-prover-node-sepolia-broker` - Manages the job queue
-- `l2-prover-node-sepolia-node` - Creates jobs and publishes proofs to L1
-- `l2-prover-node-sepolia-agent` - Executes proof generation (can scale replicas)
+- `l2-prover-node-{networkName}-broker` - Manages the job queue
+- `l2-prover-node-{networkName}-node` - Creates jobs and publishes proofs to L1
+- `l2-prover-node-{networkName}-agent` - Executes proof generation (can scale replicas)
 
 ## Architecture
 
@@ -294,19 +295,19 @@ See detailed configuration examples in [`values-examples/`](./values-examples/):
 
 ## Monitoring
 
-Access node endpoints:
+Access node endpoints (replace `sepolia` with your `networkName` value):
 
 ```bash
 # HTTP RPC endpoint
 # For fullnode
-kubectl port-forward -n aztec svc/l2-full-node-sepolia-node 8080:8080
+kubectl port-forward -n aztec-testnet svc/l2-full-node-sepolia-node 8080:8080
 # For sequencer
-kubectl port-forward -n aztec svc/l2-sequencer-node-sepolia-node 8080:8080
+kubectl port-forward -n aztec-testnet svc/l2-sequencer-node-sepolia-node 8080:8080
 # For prover (prover-node component)
-kubectl port-forward -n aztec svc/l2-prover-node-sepolia-node 8080:8080
+kubectl port-forward -n aztec-testnet svc/l2-prover-node-sepolia-node 8080:8080
 
 # Admin endpoint (example for sequencer)
-kubectl port-forward -n aztec svc/l2-sequencer-node-sepolia-node 8081:8081
+kubectl port-forward -n aztec-testnet svc/l2-sequencer-node-sepolia-node 8081:8081
 ```
 
 ### Verify Node is Running Properly
@@ -380,16 +381,16 @@ image:
 **Trigger an update manually:**
 
 ```bash
-# Force pod restart to pull latest image
+# Force pod restart to pull latest image (replace 'sepolia' with your networkName)
 # For fullnode
-kubectl rollout restart statefulset/l2-full-node-sepolia-node -n aztec
+kubectl rollout restart statefulset/l2-full-node-sepolia-node -n aztec-testnet
 # For sequencer
-kubectl rollout restart statefulset/l2-sequencer-node-sepolia-node -n aztec
+kubectl rollout restart statefulset/l2-sequencer-node-sepolia-node -n aztec-testnet
 
 # For prover components
-kubectl rollout restart statefulset/l2-prover-node-sepolia-broker -n aztec
-kubectl rollout restart statefulset/l2-prover-node-sepolia-node -n aztec
-kubectl rollout restart statefulset/l2-prover-node-sepolia-agent -n aztec
+kubectl rollout restart statefulset/l2-prover-node-sepolia-broker -n aztec-testnet
+kubectl rollout restart statefulset/l2-prover-node-sepolia-node -n aztec-testnet
+kubectl rollout restart statefulset/l2-prover-node-sepolia-agent -n aztec-testnet
 ```
 
 ### Scale Prover Agents
