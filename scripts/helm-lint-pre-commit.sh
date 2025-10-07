@@ -31,16 +31,18 @@ for chart_path in charts/*/; do
 
   # Check if chart should be skipped
   skip_chart=false
-  for skip in "${skip_list[@]}"; do
-    if [[ "$chart" == "$skip" ]]; then
-      skip_chart=true
-      break
-    fi
-  done
+  if [[ ${#skip_list[@]} -gt 0 ]]; then
+    for skip in "${skip_list[@]}"; do
+      if [[ "$chart" == "$skip" ]]; then
+        skip_chart=true
+        break
+      fi
+    done
+  fi
 
   if $skip_chart; then
     echo "⊘ Skipping $chart (listed in skip-charts.txt)"
-    ((skipped_count++))
+    skipped_count=$((skipped_count + 1))
     continue
   fi
 
@@ -70,7 +72,7 @@ for chart_path in charts/*/; do
     fi
   fi
 
-  ((linted_count++))
+  linted_count=$((linted_count + 1))
 done
 
 echo ""
@@ -90,6 +92,11 @@ if [[ ${#failed_charts[@]} -gt 0 ]]; then
   exit 1
 fi
 
-echo "  All charts passed! ✓"
+# Success if no failures (even if all charts were skipped)
+if [[ $linted_count -eq 0 ]]; then
+  echo "  All charts skipped (none to lint) ✓"
+else
+  echo "  All charts passed! ✓"
+fi
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 exit 0
