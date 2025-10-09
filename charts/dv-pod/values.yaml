@@ -177,6 +177,10 @@ charon:
     pageLimit: 10
     # -- API endpoint for the Obol network to fetch cluster definitions
     apiEndpoint: "https://api.obol.tech"
+    # -- Target cluster definition config hash for the DKG sidecar to partake in (optional).
+    # Must be a valid 32-byte hex hash with 0x prefix (66 characters total).
+    # Example: "0x7f0fd29abb11674b4e61000de26bff3600237aab0402427bd1409756665c2115"
+    targetConfigHash: ""
     # -- Resources for the cluster poller init container
     resources:
       requests:
@@ -544,7 +548,10 @@ tests:
     serviceAccount:
       create: true # Whether to specify the test service account for test pods
     # -- Host network setting for dkgSidecar test pods
-    hostNetwork: false 
+    hostNetwork: false
+    # -- Target config hash for testing (optional)
+    # When set, enables test-target-config-hash-set.yaml test and passes hash to DKG sidecar tests
+    targetConfigHash: "0x7f0fd29abb11674b4e61000de26bff3600237aab0402427bd1409756665c2115" 
 
 # -- Configuration for the DKG Mock API Server used in tests.
 # This is relevant if you are using the mock server deployment included in this chart for testing.
