@@ -13,3 +13,15 @@
 {{- fail ".Values.centralMonitoring.token is required" }}
 {{- end }}
 {{- end }}
+
+{{- if .Values.charon.dkgSidecar.targetConfigHash }}
+  {{- if not (hasPrefix "0x" .Values.charon.dkgSidecar.targetConfigHash) }}
+    {{- fail "charon.dkgSidecar.targetConfigHash must start with '0x'" }}
+  {{- end }}
+  {{- if ne (len .Values.charon.dkgSidecar.targetConfigHash) 66 }}
+    {{- fail "charon.dkgSidecar.targetConfigHash must be exactly 66 characters (0x + 64 hex digits)" }}
+  {{- end }}
+  {{- if not (regexMatch "^0x[0-9a-fA-F]{64}$" .Values.charon.dkgSidecar.targetConfigHash) }}
+    {{- fail "charon.dkgSidecar.targetConfigHash must be a valid hex hash (0x followed by 64 hexadecimal characters)" }}
+  {{- end }}
+{{- end }}
