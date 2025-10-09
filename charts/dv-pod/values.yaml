@@ -503,6 +503,9 @@ tests:
   dkgSidecar:
     enabled: true
     operatorAddress: "0x3D1f0598943239806A251899016EAf4920d4726d"
+    # -- Target config hash for testing (optional)
+    # When set, enables test-target-config-hash-set.yaml test and passes hash to DKG sidecar tests
+    targetConfigHash: "0x7f0fd29abb11674b4e61000de26bff3600237aab0402427bd1409756665c2115"
     mockApi:
       port: 3001
       image:
