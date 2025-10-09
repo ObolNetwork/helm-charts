@@ -66,9 +66,10 @@ kubectl create secret generic validator-keys \
 # Create the cluster lock ConfigMap (same for all nodes)
 kubectl create configmap cluster-lock --from-file=cluster/node0/cluster-lock.json
 
-# Install the chart, referencing your ConfigMap
+# Install the chart, referencing your ConfigMap and Secrets
 helm install my-dv-pod obol/dv-pod \
-  --set configMaps.clusterlock=cluster-lock
+  --set configMaps.clusterLock=cluster-lock \
+  --set validatorClient.keystores.secretName=validator-keys
 ```
 
 That should be enough to get your DV-Pod running, and loaded with the required artifacts, assuming the default beacon node endpoint of the Obol Stack works. 
@@ -103,8 +104,8 @@ kubectl create configmap cluster-lock \
 
 # Install the chart
 helm install my-dv-pod obol/dv-pod \
-  --set configMaps.clusterlock=cluster-lock \
-  --set validator.keystores.secretName=validator-keys
+  --set configMaps.clusterLock=cluster-lock \
+  --set validatorClient.keystores.secretName=validator-keys
 ```
 
 > [!IMPORTANT]
@@ -139,9 +140,7 @@ Install a distributed validator pod:
 ```sh
 helm upgrade --install my-dv-pod obol/dv-pod \
   --set='charon.beaconNodeEndpoints[0]=<BEACON_NODE_ENDPOINT>' \
-  --set='charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>' \
-  --create-namespace \
-  --namespace dv-pod
+  --set='charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>'
 ```
 
 ## Validator Client
@@ -188,7 +187,7 @@ kubectl create secret generic validator-keys \
 # Deploy the chart with the keystore secret
 helm install my-dv-pod obol/dv-pod \
   --set validatorClient.keystores.secretName=validator-keys \
-  --set configMaps.clusterlock=my-cluster-lock
+  --set configMaps.clusterLock=my-cluster-lock
 ```
 
 #### Option 2: DKG-Generated Keystores (Automatic)

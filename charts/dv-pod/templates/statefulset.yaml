@@ -321,6 +321,9 @@ spec:
               {{- if .Values.charon.lockFile }}
               --lock-file={{ .Values.charon.lockFile }}
               {{- end }}
+              {{- if .Values.charon.nickname }}
+              --nickname={{ .Values.charon.nickname }}
+              {{- end }}
               {{- if .Values.charon.builderApi }}
               --builder-api={{ .Values.charon.builderApi }}
               {{- end }}
@@ -450,6 +453,7 @@ spec:
             - lighthouse
             - validator_client
             - --beacon-nodes=http://localhost:3600
+            - --suggested-fee-recipient=0x0000000000000000000000000000000000000000
             {{- if .Values.validatorClient.config.network }}
             - --network={{ .Values.validatorClient.config.network }}
             {{- end }}
@@ -495,6 +499,7 @@ spec:
           command:
             - /app/cmd/validator/validator
             - --beacon-rest-api-provider=http://localhost:3600
+            - --enable-beacon-rest-api
             {{- if .Values.validatorClient.config.network }}
             - --chain-config-file=/config/{{ .Values.validatorClient.config.network }}.yaml
             {{- end }}

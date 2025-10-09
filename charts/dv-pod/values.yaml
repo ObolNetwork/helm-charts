@@ -21,6 +21,7 @@ configMaps:
   # Then set: clusterLock: "cluster-lock"
   # If not set or if the ConfigMap doesn't exist, the DKG process will run.
   # NOTE: For large cluster-lock files (>1MB), use charon.lockHash instead
+  # clusterLock: "cluster-lock"
   clusterLock: ""
 
 # This code block control's charon's configuration, including the DKG initcontainer
@@ -28,6 +29,9 @@ charon:
   # -- The Ethereum address of this operator. This MUST be provided by the user to use the auto-dkg functionality.
   operatorAddress: ""  # Set your operator address here. This will be used to sign approvals to DKG invites on the Obol Launchpad.
   
+  # -- The nickname this Charon appears as in monitoring and its peer's logs. Maximum 32 characters.
+  nickname: ""
+
   # -- Beacon node endpoints
   # The default is the Obol Stack full node address. Change this to your own consensus client beacon API(s).
   # All beacon nodes specified here will be called for every charon request, if you want to leverage fallback behaviour
@@ -150,7 +154,9 @@ charon:
   #
   # To provide a pre-existing cluster-lock and skip DKG:
   # 1. Create a configMap: kubectl create configmap cluster-lock --from-file=cluster-lock.json
-  # 2. The sidecar will detect the lock file and exit, allowing Charon to start immediately
+  # 2. Change the `confiMaps.clusterLock: cluster-lock in your values.yaml file,
+  #    or pass --set configMaps.clusterLock=cluster-lock in your helm install command.
+  # 3. The sidecar will detect the mounted lock file and exit, allowing Charon to start immediately
   #
   # To provide a cluster-definition without running DKG through the API:
   # 1. Mount your cluster-definition.json in /charon-data/
@@ -284,6 +290,7 @@ validatorClient:
     # If provided, skip keystore generation and use existing keys
     # The secret should contain keystore-*.json and keystore-*.txt files
     # Example: kubectl create secret generic validator-keys --from-file=keystore-0.json --from-file=keystore-0.txt
+    # secretName: "validator-keys"
     secretName: ""
 
 # -- Central Monitoring

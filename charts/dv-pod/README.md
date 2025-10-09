@@ -65,9 +65,10 @@ kubectl create secret generic validator-keys \
 # Create the cluster lock ConfigMap (same for all nodes)
 kubectl create configmap cluster-lock --from-file=cluster/node0/cluster-lock.json
 
-# Install the chart, referencing your ConfigMap
+# Install the chart, referencing your ConfigMap and Secrets
 helm install my-dv-pod obol/dv-pod \
-  --set configMaps.clusterlock=cluster-lock
+  --set configMaps.clusterLock=cluster-lock \
+  --set validatorClient.keystores.secretName=validator-keys
 ```
 
 That should be enough to get your DV-Pod running, and loaded with the required artifacts, assuming the default beacon node endpoint of the Obol Stack works.
@@ -102,8 +103,8 @@ kubectl create configmap cluster-lock \
 
 # Install the chart
 helm install my-dv-pod obol/dv-pod \
-  --set configMaps.clusterlock=cluster-lock \
-  --set validator.keystores.secretName=validator-keys
+  --set configMaps.clusterLock=cluster-lock \
+  --set validatorClient.keystores.secretName=validator-keys
 ```
 
 > [!IMPORTANT]
@@ -137,9 +138,7 @@ Install a distributed validator pod:
 ```sh
 helm upgrade --install my-dv-pod obol/dv-pod \
   --set='charon.beaconNodeEndpoints[0]=<BEACON_NODE_ENDPOINT>' \
-  --set='charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>' \
-  --create-namespace \
-  --namespace dv-pod
+  --set='charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>'
 ```
 
 ## Validator Client
@@ -186,7 +185,7 @@ kubectl create secret generic validator-keys \
 # Deploy the chart with the keystore secret
 helm install my-dv-pod obol/dv-pod \
   --set validatorClient.keystores.secretName=validator-keys \
-  --set configMaps.clusterlock=my-cluster-lock
+  --set configMaps.clusterLock=my-cluster-lock
 ```
 
 #### Option 2: DKG-Generated Keystores (Automatic)
@@ -311,7 +310,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | charon.beaconNodeHeadersSecretName | string | `""` | Optional: Name of the secret containing beacon node headers Use this for secure credential storage instead of beaconNodeHeaders The secret should contain a key specified by charon.beaconNodeHeadersSecretKey |
 | charon.builderApi | string | `"true"` | Enables the builder api (MEV) for validator proposals. The Builder API must also be enabled on your beacon node client(s).  The Beacon node must either be connected to a mev sidecar or a mev relay to access the builder network. More documentation about MEV can be found [here](https://docs.obol.org/advanced-and-troubleshooting/advanced/enable-mev). |
 | charon.directConnectionEnabled | string | `"true"` | If enabled, it will set p2pExternalHostname value to the pod name and enable direct connection between cluster nodes. This is useful for deployments where pods can directly communicate with each other. |
-| charon.dkgSidecar | object | `{"apiEndpoint":"https://api.obol.tech","enabled":true,"image":{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon-dkg-sidecar","tag":"main"},"initialRetryDelaySeconds":10,"maxRetryDelaySeconds":300,"pageLimit":10,"resources":{"limits":{"cpu":"200m","memory":"256Mi"},"requests":{"cpu":"50m","memory":"128Mi"}},"retryDelayFactor":2,"retryDelaySeconds":10,"serviceAccount":{"create":true},"targetConfigHash":""}` | Configuration for the DKG Sidecar init container This init container orchestrates the Distributed Key Generation (DKG) process for Charon clusters.  The sidecar has three operating modes: 1. If cluster-lock.json exists: Exits immediately (cluster already initialized) 2. If cluster-definition.json exists: Attempts DKG with the existing definition 3. If neither exists: Polls the Obol API for cluster invites and runs DKG when ready  To provide a pre-existing cluster-lock and skip DKG: 1. Create a configMap: kubectl create configmap cluster-lock --from-file=cluster-lock.json 2. The sidecar will detect the lock file and exit, allowing Charon to start immediately  To provide a cluster-definition without running DKG through the API: 1. Mount your cluster-definition.json in /charon-data/ 2. The sidecar will run 'charon dkg' to generate the cluster-lock.json  Note: When providing a pre-existing cluster-lock.json, you must also ensure the associated validator keys are available in the charon-data volume. |
+| charon.dkgSidecar | object | `{"apiEndpoint":"https://api.obol.tech","enabled":true,"image":{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon-dkg-sidecar","tag":"main"},"initialRetryDelaySeconds":10,"maxRetryDelaySeconds":300,"pageLimit":10,"resources":{"limits":{"cpu":"200m","memory":"256Mi"},"requests":{"cpu":"50m","memory":"128Mi"}},"retryDelayFactor":2,"retryDelaySeconds":10,"serviceAccount":{"create":true},"targetConfigHash":""}` | Configuration for the DKG Sidecar init container This init container orchestrates the Distributed Key Generation (DKG) process for Charon clusters.  The sidecar has three operating modes: 1. If cluster-lock.json exists: Exits immediately (cluster already initialized) 2. If cluster-definition.json exists: Attempts DKG with the existing definition 3. If neither exists: Polls the Obol API for cluster invites and runs DKG when ready  To provide a pre-existing cluster-lock and skip DKG: 1. Create a configMap: kubectl create configmap cluster-lock --from-file=cluster-lock.json 2. Change the `confiMaps.clusterLock: cluster-lock in your values.yaml file,    or pass --set configMaps.clusterLock=cluster-lock in your helm install command. 3. The sidecar will detect the mounted lock file and exit, allowing Charon to start immediately  To provide a cluster-definition without running DKG through the API: 1. Mount your cluster-definition.json in /charon-data/ 2. The sidecar will run 'charon dkg' to generate the cluster-lock.json  Note: When providing a pre-existing cluster-lock.json, you must also ensure the associated validator keys are available in the charon-data volume. |
 | charon.dkgSidecar.apiEndpoint | string | `"https://api.obol.tech"` | API endpoint for the Obol network to fetch cluster definitions |
 | charon.dkgSidecar.image.repository | string | `"obolnetwork/charon-dkg-sidecar"` | Image repository for the DKG sidecar |
 | charon.dkgSidecar.initialRetryDelaySeconds | int | `10` | Initial delay in seconds before the first retry of a polling cycle. |
@@ -343,6 +342,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | charon.lokiAddresses | string | `""` | Enables sending of logfmt structured logs to these Loki log aggregation server addresses. This is in addition to normal stderr logs. |
 | charon.lokiService | string | `""` | Service label sent with logs to Loki. |
 | charon.monitoringAddress | string | `"0.0.0.0:3620"` | Listening address (ip and port) for the monitoring API (prometheus, pprof). (default "127.0.0.1:3620") |
+| charon.nickname | string | `""` | The nickname this Charon appears as in monitoring and its peer's logs. Maximum 32 characters. |
 | charon.noVerify | bool | `false` | Disables cluster definition and lock file verification. |
 | charon.operatorAddress | string | `""` | The Ethereum address of this operator. This MUST be provided by the user to use the auto-dkg functionality. |
 | charon.p2pAllowlist | string | `""` | Comma-separated list of CIDR subnets for allowing only certain peer connections. Example: 192.168.0.0/16 would permit connections to peers on your local network only. The default is to accept all connections. |
@@ -356,7 +356,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | charon.validatorApiAddress | string | `"0.0.0.0:3600"` | Listening address (ip and port) for validator-facing traffic proxying the beacon-node API. (default "127.0.0.1:3600") |
 | clusterThreshold | string | `""` | Maximum number of pods that can be unavailable for cluster threshold Used in pod disruption budget when minAvailable is not specified |
 | configMaps | object | `{"clusterLock":""}` | Kubernetes configMaps names for non-sensitive configuration data. |
-| configMaps.clusterLock | string | `""` | Name of the ConfigMap containing the cluster-lock.json file Set this to the name of an existing ConfigMap to skip the DKG process. Example: kubectl create configmap cluster-lock --from-file=.charon/cluster-lock.json Then set: clusterLock: "cluster-lock" If not set or if the ConfigMap doesn't exist, the DKG process will run. NOTE: For large cluster-lock files (>1MB), use charon.lockHash instead |
+| configMaps.clusterLock | string | `""` | Name of the ConfigMap containing the cluster-lock.json file Set this to the name of an existing ConfigMap to skip the DKG process. Example: kubectl create configmap cluster-lock --from-file=.charon/cluster-lock.json Then set: clusterLock: "cluster-lock" If not set or if the ConfigMap doesn't exist, the DKG process will run. NOTE: For large cluster-lock files (>1MB), use charon.lockHash instead clusterLock: "cluster-lock" |
 | containerSecurityContext | object | See `values.yaml` | The security context for containers |
 | fullnameOverride | string | `""` | Provide a name to substitute for the full names of resources |
 | global | object | `{"annotations":{}}` | Global configuration that can be referenced across the chart Used for test configurations and shared settings |
@@ -442,6 +442,6 @@ The command removes all the Kubernetes components associated with the chart and 
 | validatorClient.enabled | bool | `true` | Enable the validator client container If you want to use an externally managed validator client.  Set this to false, and set your external validator to communicate with the 'validator-api' service created by this chart as if it were a beacon node API.  |
 | validatorClient.image | object | `{"pullPolicy":"IfNotPresent","repository":"","tag":""}` | Image configuration for validator client Repository and tag will be auto-selected based on validator client type if not specified |
 | validatorClient.keystores | object | `{"secretName":""}` | Validator keystores configuration |
-| validatorClient.keystores.secretName | string | `""` | Name of the Secret containing validator keystores If provided, skip keystore generation and use existing keys The secret should contain keystore-*.json and keystore-*.txt files Example: kubectl create secret generic validator-keys --from-file=keystore-0.json --from-file=keystore-0.txt |
+| validatorClient.keystores.secretName | string | `""` | Name of the Secret containing validator keystores If provided, skip keystore generation and use existing keys The secret should contain keystore-*.json and keystore-*.txt files Example: kubectl create secret generic validator-keys --from-file=keystore-0.json --from-file=keystore-0.txt secretName: "validator-keys" |
 | validatorClient.resources | object | `{"limits":{"cpu":"1000m","memory":"2Gi"},"requests":{"cpu":"500m","memory":"1Gi"}}` | Resource limits and requests for validator client |
 | validatorClient.type | string | `"lighthouse"` | Type of validator client to use Options: lighthouse, teku, prysm, nimbus, lodestar |
