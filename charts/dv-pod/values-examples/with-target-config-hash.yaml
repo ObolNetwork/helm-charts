@@ -1,0 +1,45 @@
+# Example: Using targetConfigHash to participate in a specific cluster
+#
+# The targetConfigHash parameter allows your DKG sidecar to automatically join a specific
+# cluster definition when polling the Obol API. This is useful when:
+#
+# 1. Multiple clusters are available for your operator address
+# 2. You want to ensure the sidecar joins the correct cluster
+# 3. You're coordinating with other operators on a specific cluster configuration
+#
+# How to get your targetConfigHash:
+# - Visit https://launchpad.obol.tech
+# - Create or view your cluster definition
+# - Copy the config hash from the cluster details
+#
+# Format Requirements:
+# - Must start with "0x"
+# - Must be exactly 66 characters total (0x + 64 hex digits)
+# - Represents a 32-byte Keccak256 hash
+#
+# Example deployment:
+#   helm upgrade --install my-dv-pod obol/dv-pod \
+#     --set charon.dkgSidecar.targetConfigHash="0x7f0fd29abb11674b4e61000de26bff3600237aab0402427bd1409756665c2115" \
+#     --set charon.operatorAddress="0xYourOperatorAddress" \
+#     -n dv-namespace --create-namespace
+
+# Standard Charon configuration
+charon:
+  operatorAddress: "0x0000000000000000000000000000000000000000" # Replace with your operator address
+  beaconNodeEndpoints:
+    - "http://your-beacon-node:5052"
+
+  # DKG Sidecar configuration with target config hash
+  dkgSidecar:
+    enabled: true
+    # Specify the exact cluster definition to join
+    targetConfigHash: "0x7f0fd29abb11674b4e61000de26bff3600237aab0402427bd1409756665c2115"
+    apiEndpoint: "https://api.obol.tech"
+
+    # Adjust polling intervals if needed
+    initialRetryDelaySeconds: 10
+    maxRetryDelaySeconds: 300
+    retryDelayFactor: 2
+
+# Other standard configurations
+chainId: "11155111" # Sepolia

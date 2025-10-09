@@ -1,0 +1,59 @@
+{{- if and .Values.tests.dkgSidecar.enabled .Values.tests.dkgSidecar.targetConfigHash }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ .Release.Name }}-target-config-hash-test"
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": hook-succeeded
+    "helm.sh/hook-weight": "1"
+  labels:
+    app.kubernetes.io/name: {{ template "dv-pod.name" . }}
+    helm.sh/chart: {{ template "dv-pod.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/component: test
+    test-scenario: target-config-hash
+spec:
+  restartPolicy: Never
+  containers:
+    - name: verify-target-config-hash
+      image: busybox
+      command:
+        - sh
+        - -c
+        - |
+          echo "========================================"
+          echo "Testing TARGET_CONFIG_HASH Environment Variable"
+          echo "========================================"
+          echo ""
+          echo "Expected hash: {{ .Values.tests.dkgSidecar.targetConfigHash }}"
+          echo "Actual TARGET_CONFIG_HASH: ${TARGET_CONFIG_HASH:-<NOT SET>}"
+          echo ""
+
+          if [ -z "$TARGET_CONFIG_HASH" ]; then
+            echo "❌ FAIL: TARGET_CONFIG_HASH environment variable is not set"
+            exit 1
+          fi
+
+          EXPECTED_HASH="{{ .Values.tests.dkgSidecar.targetConfigHash }}"
+
+          if [ "$TARGET_CONFIG_HASH" = "$EXPECTED_HASH" ]; then
+            echo "✅ PASS: TARGET_CONFIG_HASH matches expected value"
+            echo ""
+            echo "Hash format validation:"
+            echo "  - Starts with 0x: $(echo $TARGET_CONFIG_HASH | grep -q '^0x' && echo 'YES' || echo 'NO')"
+            echo "  - Length: $(echo -n $TARGET_CONFIG_HASH | wc -c) characters (expected: 66)"
+            echo ""
+            exit 0
+          else
+            echo "❌ FAIL: TARGET_CONFIG_HASH does not match expected value"
+            echo "  Expected: $EXPECTED_HASH"
+            echo "  Got:      $TARGET_CONFIG_HASH"
+            exit 1
+          fi
+      env:
+        - name: TARGET_CONFIG_HASH
+          value: "{{ .Values.tests.dkgSidecar.targetConfigHash }}"
+{{- end }}

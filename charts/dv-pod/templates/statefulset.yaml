@@ -106,6 +106,10 @@ spec:
               value: "/charon-data/charon-enr-private-key"
             - name: CHAIN_ID
               value: "{{ .Values.chainId }}"
+            {{- if .Values.charon.dkgSidecar.targetConfigHash }}
+            - name: TARGET_CONFIG_HASH
+              value: "{{ .Values.charon.dkgSidecar.targetConfigHash }}"
+            {{- end }}
           volumeMounts:
             - name: charon-enr-private-key
               mountPath: /enr-from-job
