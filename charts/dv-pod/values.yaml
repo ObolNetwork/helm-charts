@@ -272,6 +272,10 @@ charon:
     pageLimit: 10
     # -- API endpoint for the Obol network to fetch cluster definitions
     apiEndpoint: "https://api.obol.tech"
+    # -- Target cluster definition config hash for the DKG sidecar to partake in (optional).
+    # Must be a valid 32-byte hex hash with 0x prefix (66 characters total).
+    # Example: "0x7f0fd29abb11674b4e61000de26bff3600237aab0402427bd1409756665c2115"
+    targetConfigHash: ""
     # -- Resources for the cluster poller init container
     resources:
       requests:
@@ -317,10 +321,10 @@ charon:
         tag: "v1.5.1"
         pullPolicy: "IfNotPresent"
       # -- Image to use for kubectl operations within the ENR generation job
-      # This image must contain a compatible kubectl binary.
+      # This image must contain a compatible kubectl binary and shell.
       kubectlImage:
-        repository: "bitnami/kubectl"
-        tag: "1.33.3" # Pinned to match stable Kubernetes v1.33.3
+        repository: "alpine/k8s"
+        tag: "1.31.4"
         pullPolicy: "IfNotPresent"
 
   # --- Charon command line options ---
@@ -499,6 +503,9 @@ tests:
   dkgSidecar:
     enabled: true
     operatorAddress: "0x3D1f0598943239806A251899016EAf4920d4726d"
+    # -- Target config hash for testing (optional)
+    # When set, enables test-target-config-hash-set.yaml test and passes hash to DKG sidecar tests
+    targetConfigHash: "0x7f0fd29abb11674b4e61000de26bff3600237aab0402427bd1409756665c2115"
     mockApi:
       port: 3001
       image:
