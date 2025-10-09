@@ -272,7 +272,9 @@ charon:
     pageLimit: 10
     # -- API endpoint for the Obol network to fetch cluster definitions
     apiEndpoint: "https://api.obol.tech"
-    # -- Target cluster definition config hash for the DKG sidecar to partake in (optional)
+    # -- Target cluster definition config hash for the DKG sidecar to partake in (optional).
+    # Must be a valid 32-byte hex hash with 0x prefix (66 characters total).
+    # Example: "0x7f0fd29abb11674b4e61000de26bff3600237aab0402427bd1409756665c2115"
     targetConfigHash: ""
     # -- Resources for the cluster poller init container
     resources:
