@@ -69,6 +69,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        {{- if .Values.tests.dkgSidecar.targetConfigHash }}
+        - name: TARGET_CONFIG_HASH
+          value: "{{ .Values.tests.dkgSidecar.targetConfigHash }}"
+        {{- end }}
       volumeMounts:
         - name: charon-data
           mountPath: /charon-data
