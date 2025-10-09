@@ -94,19 +94,27 @@ Logic:
 Return the data key for the ENR private key within the shared secret.
 */}}
 {{- define "dv-pod.enrSecretDataKey" -}}
-{{- .Values.charon.enr.existingSecret.dataKey | default "private-key" -}}
+{{- .Values.charon.enr.existingSecret.privateKeyDataKey | default "charon-enr-private-key" -}}
+{{- end -}}
+
+{{/*
+Return the data key for the ENR public key within the shared secret.
+*/}}
+{{- define "dv-pod.enrSecretPublicDataKey" -}}
+{{- .Values.charon.enr.existingSecret.publicKeyDataKey | default "enr" -}}
 {{- end -}}
 
 {{/*
 Determine if the ENR generation job should be created.
-The job should be created only if:
-1. Generate is enabled
-2. No private key is directly provided
-3. No existing secret is explicitly configured
-Note: The job will check at runtime if the default secret exists and skip generation if it does
+The job should be created if:
+1. Generate is enabled AND
+2. No private key is directly provided AND
+3. ENR job is enabled
+Note: The job will run even if an existing secret is specified, as it can handle incomplete secrets
+(secrets with only private key missing the public ENR field)
 */}}
 {{- define "dv-pod.shouldCreateEnrJob" -}}
-{{- if and .Values.charon.enr.generate.enabled (not .Values.charon.enr.privateKey) (not .Values.charon.enr.existingSecret.name) .Values.charon.enrJob.enabled -}}
+{{- if and .Values.charon.enr.generate.enabled (not .Values.charon.enr.privateKey) .Values.charon.enrJob.enabled -}}
 true
 {{- end -}}
 {{- end -}}

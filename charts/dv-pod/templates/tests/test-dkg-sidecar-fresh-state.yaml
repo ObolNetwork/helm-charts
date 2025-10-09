@@ -37,7 +37,7 @@ spec:
           valueFrom:
             secretKeyRef:
               name: {{ template "dv-pod.enrSecretName" . }}
-              key: public-enr
+              key: enr
       volumeMounts:
         - name: enr-from-job
           mountPath: /enr-from-job
