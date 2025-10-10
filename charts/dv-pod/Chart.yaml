@@ -1,12 +1,12 @@
 apiVersion: v2
 name: dv-pod
-description: A Helm chart for deploying a single distributed validator pod with Charon middleware and validator client
+description: A Helm chart for deploying a single distributed validator pod consisting of a Charon middleware client and validator client.
 icon: https://raw.githubusercontent.com/ObolNetwork/charon/main/docs/images/charonlogo.svg
-home: https://obol.tech/
+home: https://docs.obol.org/
 sources:
   - https://github.com/ObolNetwork/charon
 maintainers:
-  - name: Eth2DevOps
+  - name: DV Labs
     email: devops@obol.tech
 keywords:
   - ethereum
@@ -31,7 +31,7 @@ type: application
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: 0.2.0
+version: 0.3.0
 
 
 # This is the version number of the application being deployed. This version number should be
