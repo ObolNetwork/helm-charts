@@ -267,12 +267,16 @@ spec:
                   
                 "prysm")
                   echo "Importing for Prysm..."
-                  mkdir -p /validator-data/wallets
+                  mkdir -p /validator-data/wallet
+                  mkdir -p /validator-data/keystores
                   # Prysm expects a specific wallet structure, for now just copy keystores
-                  cp -v $KEYSTORE_DIR/keystore-*.json /validator-data/wallets/ 2>/dev/null || echo "No keystore JSON files found"
-                  cp -v $KEYSTORE_DIR/keystore-*.txt /validator-data/wallets/ 2>/dev/null || echo "No keystore password files found"
-                  chmod -R 400 /validator-data/wallets/*.json 2>/dev/null || true
-                  chmod -R 600 /validator-data/wallets/*.txt 2>/dev/null || true
+                  cp -v $KEYSTORE_DIR/keystore-*.json /validator-data/keystores/ 2>/dev/null || echo "No keystore JSON files found"
+                  cp -v $KEYSTORE_DIR/keystore-*.txt /validator-data/keystores/ 2>/dev/null || echo "No keystore password files found"
+                  chmod -R 400 /validator-data/keystores/*.json 2>/dev/null || true
+                  chmod -R 600 /validator-data/keystores/*.txt 2>/dev/null || true
+                  # Make a password file for the runtime wallet
+                  dd if=/dev/urandom bs=1 count=48 2>/dev/null | tr -dc 'A-Za-z0-9@%+=-_#' | head -c 24 > /validator-data/wallet/pw.txt
+                  chmod 600 /validator-data/wallet/pw.txt
                   ;;
                   
                 "nimbus")
@@ -500,6 +504,10 @@ spec:
             - /app/cmd/validator/validator
             - --beacon-rest-api-provider=http://localhost:3600
             - --enable-beacon-rest-api
+            - --suggested-fee-recipient=0x0000000000000000000000000000000000000000
+            {{- if .Values.validatorClient.config.prysm.acceptTermsOfUse }}
+            - --accept-terms-of-use
+            {{- end }}
             {{- if .Values.validatorClient.config.network }}
             - --chain-config-file=/config/{{ .Values.validatorClient.config.network }}.yaml
             {{- end }}
@@ -508,10 +516,15 @@ spec:
             - --enable-builder
             {{- end }}
             - --datadir=/validator-data
+            - --wallet-dir=/validator-data/wallet
+            - --wallet-password-file=/validator-data/wallet/pw.txt
             - --monitoring-host=0.0.0.0
             - --monitoring-port=5064
             - --distributed
             {{- range .Values.validatorClient.config.extraArgs }}
+            - {{ . }}
+            {{- end }}
+            {{- range .Values.validatorClient.config.prysm.extraArgs }}
             - {{ . }}
             {{- end }}
           {{- else if eq .Values.validatorClient.type "nimbus" }}

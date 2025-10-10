@@ -158,6 +158,8 @@ You can choose from the following validator clients using the `validatorClient.t
 
 ### Configuration Example
 
+Changing VC with a values.yaml file:
+
 ```yaml
 validatorClient:
   enabled: true
@@ -167,6 +169,18 @@ validatorClient:
     extraArgs:
       - --suggested-fee-recipient=0xYOUR_FEE_RECIPIENT_ADDRESS
 ```
+
+With a `helm install` command for pre-existing artifacts.
+
+```sh
+helm install my-dv-pod obol/dv-pod \
+  --set configMaps.clusterLock=cluster-lock \
+  --set validatorClient.keystores.secretName=validator-keys \
+  --set validatorClient.type=prysm --set validatorClient.config.prysm.acceptTermsOfUse=true
+```
+
+> [!NOTE]
+> To run Prysm VC you must accept their [Terms of Use](https://github.com/OffchainLabs/prysm/blob/develop/TERMS_OF_SERVICE.md).
 
 ### Validator Keystores
 

@@ -271,9 +271,18 @@ validatorClient:
     # -- Network configuration for validator client (e.g., mainnet, sepolia)
     # Used by some validator clients like Teku for network-specific configuration
     network: ""
-    # -- Additional CLI arguments for the validator client 
+    # -- Additional CLI arguments passed to the validator client (regardless of type)
     # (the minimum required mev flags are automatically included when you set .Values.charon.builderApi to true)
     extraArgs: []
+
+    # -- Configuration for the prysm validator client specifically
+    # Used to pass Prysm VC specific configuration
+    prysm:
+      # -- Accepting Terms of Use
+      # To use Prysm as a VC you must agree to these [Terms of Service](https://github.com/OffchainLabs/prysm/blob/develop/TERMS_OF_SERVICE.md).
+      acceptTermsOfUse: false
+      # -- Additional CLI arguments passed to the Prysm validator client only
+      extraArgs: []
   
   # -- Resource limits and requests for validator client
   resources:
@@ -306,7 +315,7 @@ centralMonitoring:
 image:
   repository: obolnetwork/charon
   pullPolicy: IfNotPresent
-  tag: v1.6.1
+  tag: v1.7.0
 
 # -- Chain ID for the network (1: Mainnet, 11155111: Sepolia, 560048: Hoodi)
 # Used for DKG Ceremony
