@@ -234,26 +234,21 @@ spec:
                   ;;
                   
                 "lodestar")
-                  echo "Importing for Lodestar (requires restructuring)..."
+                  echo "Importing for Lodestar..."
                   mkdir -p /validator-data/keystores /validator-data/secrets
-                  for keystore in $KEYSTORE_DIR/keystore-*.json; do
-                    if [ -f "$keystore" ]; then
-                      # Extract pubkey from keystore
-                      pubkey=$(cat "$keystore" | grep -o '"pubkey": *"[^"]*"' | cut -d'"' -f4)
-                      if [ -n "$pubkey" ]; then
-                        echo "Processing keystore for pubkey: $pubkey"
-                        mkdir -p "/validator-data/keystores/$pubkey"
-                        cp "$keystore" "/validator-data/keystores/$pubkey/voting-keystore.json"
-                        # Copy corresponding password file
-                        password_file="${keystore%.json}.txt"
-                        if [ -f "$password_file" ]; then
-                          cp "$password_file" "/validator-data/secrets/$pubkey"
-                        fi
-                        chmod 400 "/validator-data/keystores/$pubkey/voting-keystore.json"
-                        chmod 600 "/validator-data/secrets/$pubkey"
-                      fi
-                    fi
-                  done
+                  
+                  # Keep original keystore naming for import (flat structure)
+                  cp -v $KEYSTORE_DIR/keystore-*.json /validator-data/keystores/ 2>/dev/null || echo "No keystore JSON files found"
+                  
+                  # Create single password file (DKG keystores share same password)
+                  first_password=$(find $KEYSTORE_DIR -name "keystore-*.txt" | head -1)
+                  if [ -f "$first_password" ]; then
+                    cp "$first_password" /validator-data/secrets/password.txt
+                    echo "Created password file from first keystore password"
+                  fi
+                  
+                  chmod -R 400 /validator-data/keystores/*.json 2>/dev/null || true
+                  chmod 600 /validator-data/secrets/password.txt 2>/dev/null || true
                   ;;
                   
                 "teku")
@@ -561,7 +556,7 @@ spec:
             - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
             - --dataDir=/validator-data
             - --importKeystores=/validator-data/keystores
-            - --importKeystoresPassword=/validator-data/secrets
+            - --importKeystoresPassword=/validator-data/secrets/password.txt
             - --metrics=true
             - --metrics.address=0.0.0.0
             - --metrics.port=5064

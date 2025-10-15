@@ -301,6 +301,68 @@ In this case, you have two options:
 
 The DKG sidecar will use the lock hash to fetch the full cluster lock from the Obol API.
 
+## Testing
+
+The chart includes Helm tests to verify correct configuration and functionality.
+
+### Validator Keystore Configuration Test
+
+This test validates that keystores are correctly configured for each validator client type by:
+1. Generating mock EIP-2335 keystores
+2. Running the actual init container import logic
+3. Verifying file structure and permissions
+4. **Starting the actual validator client in Docker** to confirm it can load the keystores
+
+#### Running the Test
+
+To run the validator keystore configuration test:
+
+```bash
+# Install the chart with test enabled
+helm install dv-pod-test obol/dv-pod \
+  --set tests.validatorKeystore.enabled=true \
+  --set tests.validatorKeystore.validatorClientType=lodestar \
+  --set charon.operatorAddress=0x1234567890123456789012345678901234567890 \
+  --namespace test \
+  --create-namespace
+
+# Run the test
+helm test dv-pod-test -n test
+
+# View test results
+kubectl logs -n test dv-pod-test-test-vc-keystore -c test-validator-client-startup
+```
+
+#### What the Test Validates
+
+For Lodestar (currently the only implemented test):
+- ✅ Correct directory structure (`/validator-data/keystores/` and `/validator-data/secrets/`)
+- ✅ Flat keystore structure (no subdirectories)
+- ✅ Keystore files maintain original naming (`keystore-*.json`)
+- ✅ Single password file exists at `/validator-data/secrets/password.txt`
+- ✅ No per-validator password files (old nested structure)
+- ✅ Correct file permissions (400 for keystores, 600 for password.txt)
+- ✅ **Lodestar validator client successfully loads the keystores**
+
+#### Configuration
+
+You can configure the test in your `values.yaml`:
+
+```yaml
+tests:
+  validatorKeystore:
+    # Enable validator keystore configuration tests
+    enabled: true
+    # Validator client type to test (currently only lodestar is implemented)
+    validatorClientType: "lodestar"
+    # Number of mock keystores to generate
+    mockKeystoreCount: 2
+```
+
+#### Extending the Test
+
+The test framework is designed to be extensible. To add tests for other validator clients (Lighthouse, Teku, Prysm, Nimbus), add the corresponding case block to the test's init container and validation logic.
+
 ## Uninstall the Chart
 To uninstall and delete the `dv-pod` release:
 ```sh
