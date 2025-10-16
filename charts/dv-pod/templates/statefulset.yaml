@@ -291,16 +291,16 @@ spec:
                   
                 "prysm")
                   echo "Importing for Prysm..."
-                  mkdir -p /validator-data/wallet
-                  mkdir -p /validator-data/keystores
-                  # Prysm expects a specific wallet structure, for now just copy keystores
-                  cp -v $KEYSTORE_DIR/keystore-*.json /validator-data/keystores/ 2>/dev/null || echo "No keystore JSON files found"
-                  cp -v $KEYSTORE_DIR/keystore-*.txt /validator-data/keystores/ 2>/dev/null || echo "No keystore password files found"
-                  chmod -R 400 /validator-data/keystores/*.json 2>/dev/null || true
-                  chmod -R 600 /validator-data/keystores/*.txt 2>/dev/null || true
-                  # Make a password file for the runtime wallet
-                  dd if=/dev/urandom bs=1 count=48 2>/dev/null | tr -dc 'A-Za-z0-9@%+=-_#' | head -c 24 > /validator-data/wallet/pw.txt
-                  chmod 600 /validator-data/wallet/pw.txt
+
+                  # Just copy keystores to temporary location for now
+                  # The actual import will be done in a separate Prysm init container
+                  mkdir -p /validator-data/keystore-source
+                  cp -v $KEYSTORE_DIR/keystore-*.json /validator-data/keystore-source/ 2>/dev/null || echo "No keystore JSON files found"
+                  cp -v $KEYSTORE_DIR/keystore-*.txt /validator-data/keystore-source/ 2>/dev/null || echo "No keystore password files found"
+                  chmod -R 400 /validator-data/keystore-source/*.json 2>/dev/null || true
+                  chmod -R 600 /validator-data/keystore-source/*.txt 2>/dev/null || true
+
+                  echo "Keystores copied. Prysm wallet creation and import will be done in next init container"
                   ;;
                   
                 "nimbus")
@@ -332,6 +332,100 @@ spec:
               readOnly: true
             - name: validator-data
               mountPath: /validator-data
+
+        # Prysm Wallet Creation and Keystore Import Init Container
+        # Only runs when validator client type is Prysm
+        # Follows Obol reference: https://github.com/ObolNetwork/charon-distributed-validator-node/blob/main/prysm/run.sh
+        {{- if and .Values.validatorClient.enabled (eq .Values.validatorClient.type "prysm") }}
+        - name: prysm-wallet-import
+          image: {{ .Values.validatorClient.image.repository | default "gcr.io/prysmaticlabs/prysm/validator" }}:{{ .Values.validatorClient.image.tag | default "v6.0.4" }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              echo "=== Prysm Wallet Creation and Keystore Import ==="
+
+              # Check if wallet already exists
+              if [ -d "/validator-data/wallet" ] && [ -f "/validator-data/wallet/direct/accounts/all-accounts.keystore.json" ]; then
+                echo "Wallet already exists, skipping import"
+                exit 0
+              fi
+
+              # Check if keystores are available
+              if [ ! -d "/validator-data/keystore-source" ] || [ ! "$(ls -A /validator-data/keystore-source/keystore-*.json 2>/dev/null)" ]; then
+                echo "No keystores found in /validator-data/keystore-source"
+                echo "Skipping Prysm wallet creation"
+                exit 0
+              fi
+
+              # Generate wallet password
+              WALLET_PASSWORD="prysm-wallet-$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 32)"
+              echo "$WALLET_PASSWORD" > /validator-data/wallet-password.txt
+              chmod 600 /validator-data/wallet-password.txt
+
+              echo "Creating Prysm wallet..."
+              /app/cmd/validator/validator wallet create \
+                --wallet-dir=/validator-data/wallet \
+                --wallet-password-file=/validator-data/wallet-password.txt \
+                --keymanager-kind=direct \
+                {{- if .Values.validatorClient.config.prysm.acceptTermsOfUse }}
+                --accept-terms-of-use \
+                {{- end }}
+                || { echo "ERROR: Wallet creation failed"; exit 1; }
+
+              echo "Wallet created successfully"
+
+              # Create temporary directory for per-keystore import
+              mkdir -p /tmp/tmpkeys
+
+              # Import keystores one at a time with per-keystore passwords
+              IMPORTED_COUNT=0
+              for keystore_file in /validator-data/keystore-source/keystore-*.json; do
+                if [ ! -f "$keystore_file" ]; then
+                  continue
+                fi
+
+                echo "Importing keystore: $(basename $keystore_file)"
+
+                # Copy keystore to temporary directory
+                cp "$keystore_file" /tmp/tmpkeys/
+
+                # Get corresponding password file
+                password_file="${keystore_file%.json}.txt"
+                if [ ! -f "$password_file" ]; then
+                  echo "ERROR: Password file not found: $password_file"
+                  exit 1
+                fi
+
+                # Import this specific keystore with its password
+                /app/cmd/validator/validator accounts import \
+                  --wallet-dir=/validator-data/wallet \
+                  --keys-dir=/tmp/tmpkeys \
+                  --account-password-file="$password_file" \
+                  --wallet-password-file=/validator-data/wallet-password.txt \
+                  {{- if .Values.validatorClient.config.prysm.acceptTermsOfUse }}
+                  --accept-terms-of-use \
+                  {{- end }}
+                  || { echo "ERROR: Failed to import $(basename $keystore_file)"; exit 1; }
+
+                # Remove the keystore from tmpkeys for next iteration
+                rm /tmp/tmpkeys/$(basename "$keystore_file")
+
+                IMPORTED_COUNT=$((IMPORTED_COUNT + 1))
+                echo "Successfully imported $(basename $keystore_file)"
+              done
+
+              # Cleanup
+              rm -rf /tmp/tmpkeys
+              rm -rf /validator-data/keystore-source
+
+              echo "=== Prysm import completed: $IMPORTED_COUNT keystores imported ==="
+              echo "Wallet structure:"
+              ls -laR /validator-data/wallet/
+          volumeMounts:
+            - name: validator-data
+              mountPath: /validator-data
+        {{- end }}
         {{- end }}
       containers:
         - command:
@@ -541,7 +635,7 @@ spec:
             {{- end }}
             - --datadir=/validator-data
             - --wallet-dir=/validator-data/wallet
-            - --wallet-password-file=/validator-data/wallet/pw.txt
+            - --wallet-password-file=/validator-data/wallet-password.txt
             - --monitoring-host=0.0.0.0
             - --monitoring-port=5064
             - --distributed
