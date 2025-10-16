@@ -207,10 +207,40 @@ helm install my-dv-pod obol/dv-pod \
 When running DKG through the chart, keystores are automatically generated and imported to the validator client. The import process handles the specific directory structure required by each validator client:
 
 - **Lighthouse**: Keystores in `/validator-data/validators/`, passwords in `/validator-data/secrets/`
-- **Lodestar**: Restructured with pubkey directories under `/validator-data/keystores/`
+- **Lodestar**: Persisted keys backend with nested structure (see Lodestar-specific section below)
 - **Teku**: Keystores in `/validator-data/keys/`, passwords in `/validator-data/passwords/`
 - **Prysm**: Keystores in `/validator-data/wallets/`
 - **Nimbus**: Similar to Lighthouse structure
+
+### Lodestar-Specific Configuration
+
+Lodestar uses a persisted keys backend with the following nested directory structure:
+
+```
+/validator-data/
+├── keystores/
+│   ├── 0x8a1234.../
+│   │   └── voting-keystore.json
+│   └── 0x9b5678.../
+│       └── voting-keystore.json
+└── secrets/
+    ├── 0x8a1234...  (password file)
+    └── 0x9b5678...  (password file)
+```
+
+This structure allows each keystore to have its own password, which is required for Charon DKG output where each keystore is encrypted with a unique password.
+
+The init container automatically creates this structure from Charon's `validator_keys/` output by:
+1. Extracting the public key from each keystore JSON file
+2. Creating a subdirectory named after the public key (e.g., `0x8a1234...`)
+3. Copying the keystore as `voting-keystore.json` within that directory
+4. Copying the corresponding password file to `/validator-data/secrets/` named by the public key
+
+The Lodestar validator client is then started with:
+- `--keystoresDir=/validator-data/keystores` (instead of `--importKeystores`)
+- `--secretsDir=/validator-data/secrets` (instead of `--importKeystoresPassword`)
+
+This implementation follows the [Obol reference implementation](https://github.com/ObolNetwork/charon-distributed-validator-node/blob/main/lodestar/run.sh) for Lodestar integration.
 
 ## Namespace Requirements
 
@@ -334,13 +364,18 @@ kubectl logs -n test dv-pod-test-test-vc-keystore -c test-validator-client-start
 #### What the Test Validates
 
 For Lodestar (currently the only implemented test):
-- ✅ Correct directory structure (`/validator-data/keystores/` and `/validator-data/secrets/`)
-- ✅ Flat keystore structure (no subdirectories)
-- ✅ Keystore files maintain original naming (`keystore-*.json`)
-- ✅ Single password file exists at `/validator-data/secrets/password.txt`
-- ✅ No per-validator password files (old nested structure)
-- ✅ Correct file permissions (400 for keystores, 600 for password.txt)
-- ✅ **Lodestar validator client successfully loads the keystores**
+
+The test validates the complete end-to-end flow:
+1. Generates real EIP-2335 keystores using Charon (with `--insecure-keys` for testing)
+2. Runs the actual init container import logic from the statefulset
+3. Starts the Lodestar validator client with the imported keystores
+4. **Verifies Lodestar successfully loads all keystores with per-keystore passwords**
+
+Success criteria:
+- ✅ Lodestar reports "100% of local keystores imported"
+- ✅ Lodestar shows "X local keystores" (matches expected count)
+- ✅ NO password errors (validates per-keystore password support)
+- ✅ Real Charon-generated keystores work with Lodestar
 
 #### Configuration
 
