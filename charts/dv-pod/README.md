@@ -207,40 +207,10 @@ helm install my-dv-pod obol/dv-pod \
 When running DKG through the chart, keystores are automatically generated and imported to the validator client. The import process handles the specific directory structure required by each validator client:
 
 - **Lighthouse**: Keystores in `/validator-data/validators/`, passwords in `/validator-data/secrets/`
-- **Lodestar**: Persisted keys backend with nested structure (see Lodestar-specific section below)
+- **Lodestar**: Restructured with pubkey directories under `/validator-data/keystores/`
 - **Teku**: Keystores in `/validator-data/keys/`, passwords in `/validator-data/passwords/`
 - **Prysm**: Keystores in `/validator-data/wallets/`
 - **Nimbus**: Similar to Lighthouse structure
-
-### Lodestar-Specific Configuration
-
-Lodestar uses a persisted keys backend with the following nested directory structure:
-
-```
-/validator-data/
-├── keystores/
-│   ├── 0x8a1234.../
-│   │   └── voting-keystore.json
-│   └── 0x9b5678.../
-│       └── voting-keystore.json
-└── secrets/
-    ├── 0x8a1234...  (password file)
-    └── 0x9b5678...  (password file)
-```
-
-This structure allows each keystore to have its own password, which is required for Charon DKG output where each keystore is encrypted with a unique password.
-
-The init container automatically creates this structure from Charon's `validator_keys/` output by:
-1. Extracting the public key from each keystore JSON file
-2. Creating a subdirectory named after the public key (e.g., `0x8a1234...`)
-3. Copying the keystore as `voting-keystore.json` within that directory
-4. Copying the corresponding password file to `/validator-data/secrets/` named by the public key
-
-The Lodestar validator client is then started with:
-- `--keystoresDir=/validator-data/keystores` (instead of `--importKeystores`)
-- `--secretsDir=/validator-data/secrets` (instead of `--importKeystoresPassword`)
-
-This implementation follows the [Obol reference implementation](https://github.com/ObolNetwork/charon-distributed-validator-node/blob/main/lodestar/run.sh) for Lodestar integration.
 
 ## Namespace Requirements
 
@@ -328,73 +298,6 @@ In this case, you have two options:
    ```
 
 The DKG sidecar will use the lock hash to fetch the full cluster lock from the Obol API.
-
-## Testing
-
-The chart includes Helm tests to verify correct configuration and functionality.
-
-### Validator Keystore Configuration Test
-
-This test validates that keystores are correctly configured for each validator client type by:
-1. Generating mock EIP-2335 keystores
-2. Running the actual init container import logic
-3. Verifying file structure and permissions
-4. **Starting the actual validator client in Docker** to confirm it can load the keystores
-
-#### Running the Test
-
-To run the validator keystore configuration test:
-
-```bash
-# Install the chart with test enabled
-helm install dv-pod-test obol/dv-pod \
-  --set tests.validatorKeystore.enabled=true \
-  --set tests.validatorKeystore.validatorClientType=lodestar \
-  --set charon.operatorAddress=0x1234567890123456789012345678901234567890 \
-  --namespace test \
-  --create-namespace
-
-# Run the test
-helm test dv-pod-test -n test
-
-# View test results
-kubectl logs -n test dv-pod-test-test-vc-keystore -c test-validator-client-startup
-```
-
-#### What the Test Validates
-
-For Lodestar (currently the only implemented test):
-
-The test validates the complete end-to-end flow:
-1. Generates real EIP-2335 keystores using Charon (with `--insecure-keys` for testing)
-2. Runs the actual init container import logic from the statefulset
-3. Starts the Lodestar validator client with the imported keystores
-4. **Verifies Lodestar successfully loads all keystores with per-keystore passwords**
-
-Success criteria:
-- ✅ Lodestar reports "100% of local keystores imported"
-- ✅ Lodestar shows "X local keystores" (matches expected count)
-- ✅ NO password errors (validates per-keystore password support)
-- ✅ Real Charon-generated keystores work with Lodestar
-
-#### Configuration
-
-You can configure the test in your `values.yaml`:
-
-```yaml
-tests:
-  validatorKeystore:
-    # Enable validator keystore configuration tests
-    enabled: true
-    # Validator client type to test (currently only lodestar is implemented)
-    validatorClientType: "lodestar"
-    # Number of mock keystores to generate
-    mockKeystoreCount: 2
-```
-
-#### Extending the Test
-
-The test framework is designed to be extensible. To add tests for other validator clients (Lighthouse, Teku, Prysm, Nimbus), add the corresponding case block to the test's init container and validation logic.
 
 ## Uninstall the Chart
 To uninstall and delete the `dv-pod` release:
@@ -538,15 +441,11 @@ The command removes all the Kubernetes components associated with the chart and 
 | serviceMonitor.scheme | string | `"http"` | ServiceMonitor scheme |
 | serviceMonitor.scrapeTimeout | string | `"30s"` | ServiceMonitor scrape timeout |
 | serviceMonitor.tlsConfig | object | `{}` | ServiceMonitor TLS configuration |
-| tests | object | `{"dkgSidecar":{"enabled":true,"hostNetwork":false,"mockApi":{"image":{"pullPolicy":"Always"},"port":3001},"operatorAddress":"0x3D1f0598943239806A251899016EAf4920d4726d","serviceAccount":{"create":true},"targetConfigHash":"0x7f0fd29abb11674b4e61000de26bff3600237aab0402427bd1409756665c2115"},"validatorKeystore":{"enabled":false,"mockKeystoreCount":2,"validatorClientType":"lodestar"}}` | Configuration for running Helm tests. These values are typically only used when `helm test` is run. |
+| tests | object | `{"dkgSidecar":{"enabled":true,"hostNetwork":false,"mockApi":{"image":{"pullPolicy":"Always"},"port":3001},"operatorAddress":"0x3D1f0598943239806A251899016EAf4920d4726d","serviceAccount":{"create":true},"targetConfigHash":"0x7f0fd29abb11674b4e61000de26bff3600237aab0402427bd1409756665c2115"}}` | Configuration for running Helm tests. These values are typically only used when `helm test` is run. |
 | tests.dkgSidecar | object | `{"enabled":true,"hostNetwork":false,"mockApi":{"image":{"pullPolicy":"Always"},"port":3001},"operatorAddress":"0x3D1f0598943239806A251899016EAf4920d4726d","serviceAccount":{"create":true},"targetConfigHash":"0x7f0fd29abb11674b4e61000de26bff3600237aab0402427bd1409756665c2115"}` | The operator address to use for DKG sidecar tests. This should be a valid Ethereum address (0x...). |
 | tests.dkgSidecar.hostNetwork | bool | `false` | Host network setting for dkgSidecar test pods |
 | tests.dkgSidecar.serviceAccount | object | `{"create":true}` | Service account settings for test pods |
 | tests.dkgSidecar.targetConfigHash | string | `"0x7f0fd29abb11674b4e61000de26bff3600237aab0402427bd1409756665c2115"` | Target config hash for testing (optional) When set, enables test-target-config-hash-set.yaml test and passes hash to DKG sidecar tests |
-| tests.validatorKeystore | object | `{"enabled":false,"mockKeystoreCount":2,"validatorClientType":"lodestar"}` | Validator keystore configuration test |
-| tests.validatorKeystore.enabled | bool | `false` | Enable validator keystore configuration tests |
-| tests.validatorKeystore.mockKeystoreCount | int | `2` | Number of mock keystores to generate for testing |
-| tests.validatorKeystore.validatorClientType | string | `"lodestar"` | Validator client type to test (lodestar, lighthouse, teku, prysm, nimbus) Currently only lodestar is implemented |
 | tolerations | object | `{}` | Tolerations for pod assignment # ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/ |
 | updateStrategy | string | `"RollingUpdate"` | allows you to configure and disable automated rolling updates for containers, labels, resource request/limits, and annotations for the Pods in a StatefulSet. |
 | validatorClient | object | `{"config":{"extraArgs":[],"graffiti":"","network":"","prysm":{"acceptTermsOfUse":false,"extraArgs":[]}},"enabled":true,"image":{"pullPolicy":"IfNotPresent","repository":"","tag":""},"keystores":{"secretName":""},"resources":{"limits":{"cpu":"1000m","memory":"2Gi"},"requests":{"cpu":"500m","memory":"1Gi"}},"type":"lighthouse"}` | Validator client configuration |
