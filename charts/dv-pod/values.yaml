@@ -574,7 +574,7 @@ tests:
     # -- Enable validator keystore configuration tests
     enabled: false
     # -- Validator client type to test (lodestar, lighthouse, teku, prysm, nimbus)
-    # Currently lodestar and prysm are implemented
+    # Currently lodestar, prysm, and nimbus are implemented
     validatorClientType: "lodestar"
     # -- Number of mock keystores to generate for testing
     mockKeystoreCount: 2
