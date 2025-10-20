@@ -449,7 +449,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | tests.validatorKeystore | object | `{"enabled":false,"mockKeystoreCount":2,"validatorClientType":"lodestar"}` | Validator keystore configuration test |
 | tests.validatorKeystore.enabled | bool | `false` | Enable validator keystore configuration tests |
 | tests.validatorKeystore.mockKeystoreCount | int | `2` | Number of mock keystores to generate for testing |
-| tests.validatorKeystore.validatorClientType | string | `"lodestar"` | Validator client type to test (lodestar, lighthouse, teku, prysm, nimbus) Currently only lodestar is implemented |
+| tests.validatorKeystore.validatorClientType | string | `"lodestar"` | Validator client type to test (lodestar, lighthouse, teku, prysm, nimbus) Currently lodestar and prysm are implemented |
 | tolerations | object | `{}` | Tolerations for pod assignment # ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/ |
 | updateStrategy | string | `"RollingUpdate"` | allows you to configure and disable automated rolling updates for containers, labels, resource request/limits, and annotations for the Pods in a StatefulSet. |
 | validatorClient | object | `{"config":{"extraArgs":[],"graffiti":"","network":"","prysm":{"acceptTermsOfUse":false,"extraArgs":[]}},"enabled":true,"image":{"pullPolicy":"IfNotPresent","repository":"","tag":""},"keystores":{"secretName":""},"resources":{"limits":{"cpu":"1000m","memory":"2Gi"},"requests":{"cpu":"500m","memory":"1Gi"}},"type":"lighthouse"}` | Validator client configuration |
