@@ -181,8 +181,8 @@ spec:
               elif [ "$VC_TYPE" = "teku" ] && [ -d /validator-data/keys ] && [ "$(ls -A /validator-data/keys 2>/dev/null)" ]; then
                 echo "Keystores already exist in validator data, skipping import"
                 exit 0
-              elif [ "$VC_TYPE" = "prysm" ] && [ -d /validator-data/wallets ] && [ "$(ls -A /validator-data/wallets 2>/dev/null)" ]; then
-                echo "Keystores already exist in validator data, skipping import"
+              elif [ "$VC_TYPE" = "prysm" ] && [ -d /validator-data/wallet ] && [ -f /validator-data/wallet/direct/accounts/all-accounts.keystore.json ]; then
+                echo "Wallet already exists, skipping import"
                 exit 0
               elif [ "$VC_TYPE" = "nimbus" ] && [ -d /validator-data/validators ] && [ "$(ls -A /validator-data/validators 2>/dev/null)" ]; then
                 echo "Keystores already exist in validator data, skipping import"
