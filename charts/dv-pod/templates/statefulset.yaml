@@ -172,14 +172,14 @@ spec:
               echo "Validator client type: $VC_TYPE"
               
               # Check if keystores already exist in validator-data
-              if [ "$VC_TYPE" = "lighthouse" ] && [ -d /validator-data/validators ] && [ "$(ls -A /validator-data/validators 2>/dev/null)" ]; then
-                echo "Keystores already exist in validator data, skipping import"
+              if [ "$VC_TYPE" = "lighthouse" ] && [ -f /validator-data/validators/validator_definitions.yml ]; then
+                echo "Lighthouse validator_definitions.yml already exists, skipping import"
                 exit 0
-              elif [ "$VC_TYPE" = "lodestar" ] && [ -d /validator-data/keystores ] && [ "$(ls -A /validator-data/keystores 2>/dev/null)" ]; then
-                echo "Keystores already exist in validator data, skipping import"
+              elif [ "$VC_TYPE" = "lodestar" ] && [ -d /validator-data/keystores ] && [ -d /validator-data/secrets ] && [ "$(ls -A /validator-data/keystores 2>/dev/null)" ]; then
+                echo "Lodestar keystores and secrets already exist, skipping import"
                 exit 0
-              elif [ "$VC_TYPE" = "teku" ] && [ -d /validator-data/keys ] && [ "$(ls -A /validator-data/keys 2>/dev/null)" ]; then
-                echo "Keystores already exist in validator data, skipping import"
+              elif [ "$VC_TYPE" = "teku" ] && [ -d /validator-data/keys ] && [ -d /validator-data/passwords ] && [ "$(ls -A /validator-data/keys 2>/dev/null)" ]; then
+                echo "Teku keys and passwords already exist, skipping import"
                 exit 0
               elif [ "$VC_TYPE" = "prysm" ] && [ -d /validator-data/wallet ] && [ -f /validator-data/wallet/direct/accounts/all-accounts.keystore.json ]; then
                 echo "Wallet already exists, skipping import"
