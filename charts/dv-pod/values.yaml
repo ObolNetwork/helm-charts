@@ -567,7 +567,17 @@ tests:
     serviceAccount:
       create: true # Whether to specify the test service account for test pods
     # -- Host network setting for dkgSidecar test pods
-    hostNetwork: false 
+    hostNetwork: false
+
+  # -- Validator keystore configuration test
+  validatorKeystore:
+    # -- Enable validator keystore configuration tests
+    enabled: false
+    # -- Validator client type to test (lodestar, lighthouse, teku, prysm, nimbus)
+    # Currently lodestar, prysm, and nimbus are implemented
+    validatorClientType: "lodestar"
+    # -- Number of mock keystores to generate for testing
+    mockKeystoreCount: 2
 
 # -- Configuration for the DKG Mock API Server used in tests.
 # This is relevant if you are using the mock server deployment included in this chart for testing.
