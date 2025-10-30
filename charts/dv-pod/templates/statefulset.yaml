@@ -705,8 +705,12 @@ spec:
             {{- if .Values.validatorClient.config.prysm.acceptTermsOfUse }}
             - --accept-terms-of-use
             {{- end }}
-            {{- if .Values.validatorClient.config.network }}
-            - --chain-config-file=/config/{{ .Values.validatorClient.config.network }}.yaml
+            {{- if eq .Values.validatorClient.config.network "hoodi" }}
+            - --hoodi
+            {{- else if eq .Values.validatorClient.config.network "holesky" }}
+            - --holesky
+            {{- else if eq .Values.validatorClient.config.network "sepolia" }}
+            - --sepolia
             {{- end }}
             - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
             {{- if .Values.charon.builderApi }}

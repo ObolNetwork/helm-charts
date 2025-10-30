@@ -235,7 +235,7 @@ charon:
       image:
         repository: "obolnetwork/charon"
         # Specify a stable tag, e.g., v1.6.0 or check for the latest release [here](https://github.com/ObolNetwork/charon/releases/).
-        tag: "v1.6.1"
+        tag: "v1.7.0"
         pullPolicy: "IfNotPresent"
       # -- Image to use for kubectl operations within the ENR generation job
       # This image must contain a compatible kubectl binary.
