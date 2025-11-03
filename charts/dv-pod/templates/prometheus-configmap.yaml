@@ -13,7 +13,7 @@ data:
         authorization:
           credentials: {{ $.Values.centralMonitoring.token }}
     scrape_configs:
-      - job_name: '{{ $.Release.Namespace }}'
+      - job_name: '{{ $.Release.Name }}'
         static_configs:
-          - targets: ['{{ $.Release.Namespace }}:3620']
+          - targets: ['{{ $.Release.Name }}:3620']
 {{- end }}
