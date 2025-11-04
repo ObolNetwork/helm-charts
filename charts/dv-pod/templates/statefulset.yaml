@@ -172,17 +172,17 @@ spec:
               echo "Validator client type: $VC_TYPE"
               
               # Check if keystores already exist in validator-data
-              if [ "$VC_TYPE" = "lighthouse" ] && [ -d /validator-data/validators ] && [ "$(ls -A /validator-data/validators 2>/dev/null)" ]; then
-                echo "Keystores already exist in validator data, skipping import"
+              if [ "$VC_TYPE" = "lighthouse" ] && [ -f /validator-data/validators/validator_definitions.yml ]; then
+                echo "Lighthouse validator_definitions.yml already exists, skipping import"
                 exit 0
-              elif [ "$VC_TYPE" = "lodestar" ] && [ -d /validator-data/keystores ] && [ "$(ls -A /validator-data/keystores 2>/dev/null)" ]; then
-                echo "Keystores already exist in validator data, skipping import"
+              elif [ "$VC_TYPE" = "lodestar" ] && [ -d /validator-data/keystores ] && [ -d /validator-data/secrets ] && [ "$(ls -A /validator-data/keystores 2>/dev/null)" ]; then
+                echo "Lodestar keystores and secrets already exist, skipping import"
                 exit 0
-              elif [ "$VC_TYPE" = "teku" ] && [ -d /validator-data/keys ] && [ "$(ls -A /validator-data/keys 2>/dev/null)" ]; then
-                echo "Keystores already exist in validator data, skipping import"
+              elif [ "$VC_TYPE" = "teku" ] && [ -d /validator-data/keys ] && [ -d /validator-data/passwords ] && [ "$(ls -A /validator-data/keys 2>/dev/null)" ]; then
+                echo "Teku keys and passwords already exist, skipping import"
                 exit 0
-              elif [ "$VC_TYPE" = "prysm" ] && [ -d /validator-data/wallets ] && [ "$(ls -A /validator-data/wallets 2>/dev/null)" ]; then
-                echo "Keystores already exist in validator data, skipping import"
+              elif [ "$VC_TYPE" = "prysm" ] && [ -d /validator-data/wallet ] && [ -f /validator-data/wallet/direct/accounts/all-accounts.keystore.json ]; then
+                echo "Wallet already exists, skipping import"
                 exit 0
               elif [ "$VC_TYPE" = "nimbus" ] && [ -d /validator-data/validators ] && [ "$(ls -A /validator-data/validators 2>/dev/null)" ]; then
                 echo "Keystores already exist in validator data, skipping import"
@@ -234,26 +234,50 @@ spec:
                   ;;
                   
                 "lodestar")
-                  echo "Importing for Lodestar (requires restructuring)..."
+                  echo "Importing for Lodestar (persisted keys backend)..."
                   mkdir -p /validator-data/keystores /validator-data/secrets
-                  for keystore in $KEYSTORE_DIR/keystore-*.json; do
-                    if [ -f "$keystore" ]; then
-                      # Extract pubkey from keystore
-                      pubkey=$(cat "$keystore" | grep -o '"pubkey": *"[^"]*"' | cut -d'"' -f4)
-                      if [ -n "$pubkey" ]; then
-                        echo "Processing keystore for pubkey: $pubkey"
-                        mkdir -p "/validator-data/keystores/$pubkey"
-                        cp "$keystore" "/validator-data/keystores/$pubkey/voting-keystore.json"
-                        # Copy corresponding password file
-                        password_file="${keystore%.json}.txt"
-                        if [ -f "$password_file" ]; then
-                          cp "$password_file" "/validator-data/secrets/$pubkey"
-                        fi
-                        chmod 400 "/validator-data/keystores/$pubkey/voting-keystore.json"
-                        chmod 600 "/validator-data/secrets/$pubkey"
-                      fi
+                  
+                  # Create nested structure with per-keystore passwords
+                  IMPORTED_COUNT=0
+                  for f in $KEYSTORE_DIR/keystore-*.json; do
+                    if [ ! -f "$f" ]; then
+                      echo "No keystore files found"
+                      continue
+                    fi
+                    
+                    echo "Processing keystore: $f"
+                    
+                    # Extract pubkey from keystore JSON
+                    PUBKEY="0x$(grep '"pubkey"' "$f" | awk -F'"' '{print $4}')"
+                    
+                    if [ -z "$PUBKEY" ] || [ "$PUBKEY" = "0x" ]; then
+                      echo "ERROR: Could not extract pubkey from $f"
+                      continue
+                    fi
+                    
+                    # Create nested directory structure (one directory per validator pubkey)
+                    PUBKEY_DIR="/validator-data/keystores/$PUBKEY"
+                    mkdir -p "$PUBKEY_DIR"
+                    
+                    # Copy keystore with Lodestar's expected filename
+                    cp "$f" "$PUBKEY_DIR/voting-keystore.json"
+                    chmod 400 "$PUBKEY_DIR/voting-keystore.json"
+                    
+                    # Copy corresponding password file, named by pubkey
+                    PASSWORD_FILE="${f%.json}.txt"
+                    if [ -f "$PASSWORD_FILE" ]; then
+                      cp "$PASSWORD_FILE" "/validator-data/secrets/$PUBKEY"
+                      chmod 600 "/validator-data/secrets/$PUBKEY"
+                      IMPORTED_COUNT=$((IMPORTED_COUNT + 1))
+                      echo "Imported keystore for pubkey: $PUBKEY"
+                    else
+                      echo "ERROR: Password file not found: $PASSWORD_FILE"
+                      exit 1
                     fi
                   done
+                  
+                  echo "Lodestar keystore import completed: imported=$IMPORTED_COUNT keystores"
+                  ls -laR /validator-data/
                   ;;
                   
                 "teku")
@@ -267,21 +291,30 @@ spec:
                   
                 "prysm")
                   echo "Importing for Prysm..."
-                  mkdir -p /validator-data/wallets
-                  # Prysm expects a specific wallet structure, for now just copy keystores
-                  cp -v $KEYSTORE_DIR/keystore-*.json /validator-data/wallets/ 2>/dev/null || echo "No keystore JSON files found"
-                  cp -v $KEYSTORE_DIR/keystore-*.txt /validator-data/wallets/ 2>/dev/null || echo "No keystore password files found"
-                  chmod -R 400 /validator-data/wallets/*.json 2>/dev/null || true
-                  chmod -R 600 /validator-data/wallets/*.txt 2>/dev/null || true
+
+                  # Just copy keystores to temporary location for now
+                  # The actual import will be done in a separate Prysm init container
+                  mkdir -p /validator-data/keystore-source
+                  cp -v $KEYSTORE_DIR/keystore-*.json /validator-data/keystore-source/ 2>/dev/null || echo "No keystore JSON files found"
+                  cp -v $KEYSTORE_DIR/keystore-*.txt /validator-data/keystore-source/ 2>/dev/null || echo "No keystore password files found"
+                  chmod -R 400 /validator-data/keystore-source/*.json 2>/dev/null || true
+                  chmod -R 600 /validator-data/keystore-source/*.txt 2>/dev/null || true
+
+                  echo "Keystores copied. Prysm wallet creation and import will be done in next init container"
                   ;;
                   
                 "nimbus")
                   echo "Importing for Nimbus..."
-                  mkdir -p /validator-data/validators /validator-data/secrets
-                  cp -v $KEYSTORE_DIR/keystore-*.json /validator-data/validators/ 2>/dev/null || echo "No keystore JSON files found"
-                  cp -v $KEYSTORE_DIR/keystore-*.txt /validator-data/secrets/ 2>/dev/null || echo "No keystore password files found"
-                  chmod -R 400 /validator-data/validators/*.json 2>/dev/null || true
-                  chmod -R 600 /validator-data/secrets/*.txt 2>/dev/null || true
+
+                  # Just copy keystores to temporary location for now
+                  # The actual import will be done in a separate Nimbus init container
+                  mkdir -p /validator-data/keystore-source
+                  cp -v $KEYSTORE_DIR/keystore-*.json /validator-data/keystore-source/ 2>/dev/null || echo "No keystore JSON files found"
+                  cp -v $KEYSTORE_DIR/keystore-*.txt /validator-data/keystore-source/ 2>/dev/null || echo "No keystore password files found"
+                  chmod -R 400 /validator-data/keystore-source/*.json 2>/dev/null || true
+                  chmod -R 600 /validator-data/keystore-source/*.txt 2>/dev/null || true
+
+                  echo "Keystores copied. Nimbus import will be done in next init container"
                   ;;
                   
                 *)
@@ -304,6 +337,174 @@ spec:
               readOnly: true
             - name: validator-data
               mountPath: /validator-data
+
+        # Prysm Wallet Creation and Keystore Import Init Container
+        # Only runs when validator client type is Prysm
+        # Follows Obol reference: https://github.com/ObolNetwork/charon-distributed-validator-node/blob/main/prysm/run.sh
+        {{- if and .Values.validatorClient.enabled (eq .Values.validatorClient.type "prysm") }}
+        - name: prysm-wallet-import
+          image: {{ .Values.validatorClient.image.repository | default "gcr.io/prysmaticlabs/prysm/validator" }}:{{ .Values.validatorClient.image.tag | default "v6.1.2" }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              echo "=== Prysm Wallet Creation and Keystore Import ==="
+
+              # Check if wallet already exists
+              if [ -d "/validator-data/wallet" ] && [ -f "/validator-data/wallet/direct/accounts/all-accounts.keystore.json" ]; then
+                echo "Wallet already exists, skipping import"
+                exit 0
+              fi
+
+              # Check if keystores are available
+              if [ ! -d "/validator-data/keystore-source" ] || [ ! "$(ls -A /validator-data/keystore-source/keystore-*.json 2>/dev/null)" ]; then
+                echo "No keystores found in /validator-data/keystore-source"
+                echo "Skipping Prysm wallet creation"
+                exit 0
+              fi
+
+              # Generate wallet password
+              WALLET_PASSWORD="prysm-wallet-$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 32)"
+              echo "$WALLET_PASSWORD" > /validator-data/wallet-password.txt
+              chmod 600 /validator-data/wallet-password.txt
+
+              echo "Creating Prysm wallet..."
+              /app/cmd/validator/validator wallet create \
+                --wallet-dir=/validator-data/wallet \
+                --wallet-password-file=/validator-data/wallet-password.txt \
+                --keymanager-kind=direct \
+                {{- if .Values.validatorClient.config.prysm.acceptTermsOfUse }}
+                --accept-terms-of-use \
+                {{- end }}
+                || { echo "ERROR: Wallet creation failed"; exit 1; }
+
+              echo "Wallet created successfully"
+
+              # Create temporary directory for per-keystore import
+              mkdir -p /tmp/tmpkeys
+
+              # Import keystores one at a time with per-keystore passwords
+              IMPORTED_COUNT=0
+              for keystore_file in /validator-data/keystore-source/keystore-*.json; do
+                if [ ! -f "$keystore_file" ]; then
+                  continue
+                fi
+
+                echo "Importing keystore: $(basename $keystore_file)"
+
+                # Copy keystore to temporary directory
+                cp "$keystore_file" /tmp/tmpkeys/
+
+                # Get corresponding password file
+                password_file="${keystore_file%.json}.txt"
+                if [ ! -f "$password_file" ]; then
+                  echo "ERROR: Password file not found: $password_file"
+                  exit 1
+                fi
+
+                # Import this specific keystore with its password
+                /app/cmd/validator/validator accounts import \
+                  --wallet-dir=/validator-data/wallet \
+                  --keys-dir=/tmp/tmpkeys \
+                  --account-password-file="$password_file" \
+                  --wallet-password-file=/validator-data/wallet-password.txt \
+                  {{- if .Values.validatorClient.config.prysm.acceptTermsOfUse }}
+                  --accept-terms-of-use \
+                  {{- end }}
+                  || { echo "ERROR: Failed to import $(basename $keystore_file)"; exit 1; }
+
+                # Remove the keystore from tmpkeys for next iteration
+                rm /tmp/tmpkeys/$(basename "$keystore_file")
+
+                IMPORTED_COUNT=$((IMPORTED_COUNT + 1))
+                echo "Successfully imported $(basename $keystore_file)"
+              done
+
+              # Cleanup
+              rm -rf /tmp/tmpkeys
+              rm -rf /validator-data/keystore-source
+
+              echo "=== Prysm import completed: $IMPORTED_COUNT keystores imported ==="
+              echo "Wallet structure:"
+              ls -laR /validator-data/wallet/
+          volumeMounts:
+            - name: validator-data
+              mountPath: /validator-data
+        {{- end }}
+
+        # Nimbus Keystore Import Init Container
+        # Only runs when validator client type is Nimbus
+        # Follows Obol reference: https://github.com/ObolNetwork/charon-distributed-validator-node/blob/main/nimbus/run.sh
+        {{- if and .Values.validatorClient.enabled (eq .Values.validatorClient.type "nimbus") }}
+        - name: nimbus-import
+          image: {{ .Values.validatorClient.image.repository | default "statusim/nimbus-eth2" }}:{{ .Values.validatorClient.image.tag | default "multiarch-v25.9.2" }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              echo "=== Nimbus Keystore Import ==="
+
+              # Check if keystores already imported
+              if [ -d "/validator-data/validators" ] && [ "$(ls -A /validator-data/validators 2>/dev/null)" ]; then
+                echo "Validators already exist in data directory, skipping import"
+                exit 0
+              fi
+
+              # Check if keystores are available
+              if [ ! -d "/validator-data/keystore-source" ] || [ ! "$(ls -A /validator-data/keystore-source/keystore-*.json 2>/dev/null)" ]; then
+                echo "No keystores found in /validator-data/keystore-source"
+                echo "Skipping Nimbus import"
+                exit 0
+              fi
+
+              # Create temporary directory for import
+              tmpkeys="/tmp/tmpkeys"
+              mkdir -p "$tmpkeys"
+
+              # Import keystores one at a time with per-keystore passwords
+              IMPORTED_COUNT=0
+              for keystore_file in /validator-data/keystore-source/keystore-*.json; do
+                [ -f "$keystore_file" ] || continue
+
+                filename=$(basename "$keystore_file")
+                echo "Importing keystore: $filename"
+
+                # Get corresponding password file
+                password_file="${keystore_file%.json}.txt"
+                if [ ! -f "$password_file" ]; then
+                  echo "ERROR: Password file not found: $password_file"
+                  exit 1
+                fi
+
+                # Read password
+                password=$(cat "$password_file")
+
+                # Copy keystore to temporary directory
+                cp "$keystore_file" "$tmpkeys/"
+
+                # Import with password piped to stdin
+                echo "$password" | /home/user/nimbus-eth2/build/nimbus_beacon_node deposits import \
+                  --data-dir=/validator-data \
+                  "$tmpkeys"
+
+                # Remove the keystore from tmpkeys for next iteration
+                rm "$tmpkeys/$filename"
+
+                IMPORTED_COUNT=$((IMPORTED_COUNT + 1))
+                echo "Successfully imported $filename"
+              done
+
+              # Cleanup
+              rm -rf "$tmpkeys"
+              rm -rf /validator-data/keystore-source
+
+              echo "=== Nimbus import completed: $IMPORTED_COUNT keystores imported ==="
+              echo "Validator directory contents:"
+              ls -laR /validator-data/validators/ || echo "No validators directory yet"
+          volumeMounts:
+            - name: validator-data
+              mountPath: /validator-data
+        {{- end }}
         {{- end }}
       containers:
         - command:
@@ -471,7 +672,7 @@ spec:
             - {{ . }}
             {{- end }}
           {{- else if eq .Values.validatorClient.type "teku" }}
-          image: {{ .Values.validatorClient.image.repository | default "consensys/teku" }}:{{ .Values.validatorClient.image.tag | default "25.9.1" }}
+          image: {{ .Values.validatorClient.image.repository | default "consensys/teku" }}:{{ .Values.validatorClient.image.tag | default "25.9.3" }}
           command:
             - /opt/teku/bin/teku
             - validator-client
@@ -495,29 +696,42 @@ spec:
             - {{ . }}
             {{- end }}
           {{- else if eq .Values.validatorClient.type "prysm" }}
-          image: {{ .Values.validatorClient.image.repository | default "gcr.io/prysmaticlabs/prysm/validator" }}:{{ .Values.validatorClient.image.tag | default "v6.0.4" }}
+          image: {{ .Values.validatorClient.image.repository | default "gcr.io/prysmaticlabs/prysm/validator" }}:{{ .Values.validatorClient.image.tag | default "v6.1.2" }}
           command:
             - /app/cmd/validator/validator
             - --beacon-rest-api-provider=http://localhost:3600
             - --enable-beacon-rest-api
-            {{- if .Values.validatorClient.config.network }}
-            - --chain-config-file=/config/{{ .Values.validatorClient.config.network }}.yaml
+            - --suggested-fee-recipient=0x0000000000000000000000000000000000000000
+            {{- if .Values.validatorClient.config.prysm.acceptTermsOfUse }}
+            - --accept-terms-of-use
+            {{- end }}
+            {{- if eq .Values.validatorClient.config.network "hoodi" }}
+            - --hoodi
+            {{- else if eq .Values.validatorClient.config.network "holesky" }}
+            - --holesky
+            {{- else if eq .Values.validatorClient.config.network "sepolia" }}
+            - --sepolia
             {{- end }}
             - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
             {{- if .Values.charon.builderApi }}
             - --enable-builder
             {{- end }}
             - --datadir=/validator-data
+            - --wallet-dir=/validator-data/wallet
+            - --wallet-password-file=/validator-data/wallet-password.txt
             - --monitoring-host=0.0.0.0
             - --monitoring-port=5064
             - --distributed
             {{- range .Values.validatorClient.config.extraArgs }}
             - {{ . }}
             {{- end }}
+            {{- range .Values.validatorClient.config.prysm.extraArgs }}
+            - {{ . }}
+            {{- end }}
           {{- else if eq .Values.validatorClient.type "nimbus" }}
-          image: {{ .Values.validatorClient.image.repository | default "statusim/nimbus-eth2" }}:{{ .Values.validatorClient.image.tag | default "multiarch-v25.9.0" }}
+          image: {{ .Values.validatorClient.image.repository | default "statusim/nimbus-validator-client" }}:{{ .Values.validatorClient.image.tag | default "multiarch-v25.9.2" }}
           command:
-            - /home/user/nimbus-eth2/build/nimbus_validator_client
+            - /home/user/nimbus_validator_client
             - --beacon-node=http://localhost:3600
             {{- if .Values.charon.builderApi }}
             - --payload-builder=true
@@ -532,7 +746,7 @@ spec:
             - {{ . }}
             {{- end }}
           {{- else if eq .Values.validatorClient.type "lodestar" }}
-          image: {{ .Values.validatorClient.image.repository | default "chainsafe/lodestar" }}:{{ .Values.validatorClient.image.tag | default "v1.33.0" }}
+          image: {{ .Values.validatorClient.image.repository | default "chainsafe/lodestar" }}:{{ .Values.validatorClient.image.tag | default "v1.35.0" }}
           command:
             - node 
             - /usr/app/packages/cli/bin/lodestar
@@ -547,8 +761,8 @@ spec:
             {{- end }}
             - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
             - --dataDir=/validator-data
-            - --importKeystores=/validator-data/keystores
-            - --importKeystoresPassword=/validator-data/secrets
+            - --keystoresDir=/validator-data/keystores
+            - --secretsDir=/validator-data/secrets
             - --metrics=true
             - --metrics.address=0.0.0.0
             - --metrics.port=5064
