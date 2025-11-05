@@ -15,14 +15,14 @@ A Helm chart for deploying an Aztec node
 | customNetwork | object | `{"feeAssetHandlerContractAddress":null,"l1ChainId":null,"registryContractAddress":null,"slashFactoryAddress":null}` | Custom network - (not recommended) - Only for custom testnet usecases Must have deployed your own protocol contracts first |
 | fullnameOverride | string | `""` | Overrides the chart computed fullname |
 | hostNetwork | bool | `true` | Use host network - provides best P2P performance by binding directly to node's network This is the recommended configuration for Aztec nodes |
-| image | object | `{"pullPolicy":"IfNotPresent","repository":"aztecprotocol/aztec","tag":"latest"}` | Image to use for the container |
+| image | object | `{"pullPolicy":"IfNotPresent","repository":"aztecprotocol/aztec","tag":"2.1.0-rc.24"}` | Image to use for the container |
 | image.pullPolicy | string | `"IfNotPresent"` | Container pull policy |
 | image.repository | string | `"aztecprotocol/aztec"` | Image repository |
-| image.tag | string | `"latest"` | Image tag |
+| image.tag | string | `"2.1.0-rc.24"` | Image tag |
 | initContainers | list | `[]` | Additional init containers |
 | nameOverride | string | `""` | Overrides the chart name |
 | network | string | `nil` | Network name - this is a predefined network - testnet, devnet |
-| networkName | string | `"sepolia"` | Network identifier used in resource naming (l2-{role}-node-{networkName}-{component}) This appears in service/statefulset names for easy identification |
+| networkName | string | `"staging-public"` | Network identifier used in resource naming (l2-{role}-node-{networkName}-{component}) This appears in service/statefulset names for easy identification |
 | node | object | `{"coinbase":null,"l1ConsensusHostApiKeyHeaders":[],"l1ConsensusHostApiKeys":[],"l1ConsensusUrls":["http://l1-full-node-sepolia-beacon.l1.svc.cluster.local:5052"],"l1ExecutionUrls":["http://l1-full-node-sepolia-execution.l1.svc.cluster.local:8545"],"logLevel":"info","metrics":{"otelCollectorEndpoint":"","otelExcludeMetrics":"","useGcloudLogging":false},"nodeJsOptions":["--no-warnings","--max-old-space-size=4096"],"preStartScript":"","remoteUrl":{"archiver":null,"blobSink":null,"proverBroker":null,"proverCoordinationNodes":[]},"replicas":1,"resources":{},"sentinel":{"enabled":false},"startCmd":[],"startupProbe":{"failureThreshold":20,"periodSeconds":30},"storage":{"archiveStorageMapSize":null,"dataDirectory":"/data","dataStoreMapSize":"134217728","p2pStorageMapSize":null,"worldStateMapSize":"134217728"}}` | Aztec node configuration |
 | node.coinbase | string | `nil` | Address that will receive block or proof rewards For prover roles, this is the PROVER_ID |
 | node.l1ExecutionUrls | list | `["http://l1-full-node-sepolia-execution.l1.svc.cluster.local:8545"]` | L1 Ethereum configuration Ethereum execution layer RPC endpoint(s) - comma separated list |
@@ -63,7 +63,6 @@ A Helm chart for deploying an Aztec node
 | role | string | `"sequencer"` | Role determines the type of Aztec node deployment Valid roles: fullnode, sequencer, prover |
 | rollupVersion | string | `"canonical"` | Which rollup contract we want to follow from the registry |
 | sequencer.attesterPrivateKey | string | `""` | Ethereum private key for attester (signs blocks and attestations) REQUIRED when role is 'sequencer' |
-| sequencer.feeRecipient | string | `"0x0000000000000000000000000000000000000000000000000000000000000000"` | Aztec address (32 bytes) to receive unburnt transaction fees |
 | service.admin.enabled | bool | `true` |  |
 | service.admin.port | int | `8081` |  |
 | service.headless.enabled | bool | `true` |  |
