@@ -20,7 +20,7 @@ sequencer:
   # REQUIRED when role is 'sequencer'
   attesterPrivateKey: ""
   # -- Aztec address (32 bytes) to receive unburnt transaction fees
-  feeRecipient: "0x0000000000000000000000000000000000000000000000000000000000000000"
+  # feeRecipient: "0x0000000000000000000000000000000000000000000000000000000000000000"
 
 # =====================================================================
 # PROVER CONFIGURATION (only used when role: prover)
@@ -81,7 +81,7 @@ image:
   # -- Image repository
   repository: aztecprotocol/aztec
   # -- Image tag
-  tag: latest
+  tag: 2.1.0-rc.24
   # -- Container pull policy
   pullPolicy: IfNotPresent
 
@@ -97,7 +97,7 @@ network:
 
 # -- Network identifier used in resource naming (l2-{role}-node-{networkName}-{component})
 # This appears in service/statefulset names for easy identification
-networkName: sepolia
+networkName: staging-public
 
 # -- Custom network - (not recommended) - Only for custom testnet usecases
 # Must have deployed your own protocol contracts first
