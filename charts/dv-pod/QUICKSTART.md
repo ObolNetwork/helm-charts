@@ -20,7 +20,7 @@ Each operator deploys their node:
 ```bash
 helm upgrade --install my-dv-pod charts/dv-pod/ \
   --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS \
-  --set chainId=1 \
+  --set network=mainnet \
   --namespace=dv-pod \
   --timeout=10m --create-namespace
 ```
@@ -122,7 +122,7 @@ Expected output: `["charon-enr-private-key", "enr"]`
 helm upgrade --install my-dv-pod charts/dv-pod/ \
   --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS \
   --set charon.dkgSidecar.targetConfigHash=0xYOUR_CONFIG_HASH \
-  --set chainId=1 \
+  --set network=mainnet \
   --set 'charon.beaconNodeEndpoints[0]=http://YOUR_BEACON_NODE:5052' \
   --set charon.enr.existingSecret.name=charon-enr-private-key \
   --namespace=dv-pod \
@@ -156,16 +156,16 @@ kubectl exec -n dv-pod my-dv-pod-dv-pod-0 -- ls -la /charon-data/cluster-lock.js
 
 ```bash
 # Mainnet (default)
---set chainId=1
+--set network=mainnet
 
 # Sepolia testnet
---set chainId=11155111
+--set network=sepolia
 
 # Hoodi testnet
---set chainId=560048
+--set network=hoodi
 
 # Gnosis Chain
---set chainId=100
+--set network=gnosis
 ```
 
 ### Custom DKG Sidecar Image

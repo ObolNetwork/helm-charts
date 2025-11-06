@@ -317,9 +317,10 @@ image:
   pullPolicy: IfNotPresent
   tag: v1.7.0
 
-# -- Chain ID for the network (1: Mainnet, 11155111: Sepolia, 560048: Hoodi)
-# Used for DKG Ceremony
-chainId: 1  # Default to Mainnet
+# -- Network name for the blockchain network
+# Used for DKG Ceremony and validator client configuration
+# Supported values: mainnet, sepolia, hoodi, gnosis
+network: "mainnet"
 
 # -- Credentials to fetch images from private registry
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
