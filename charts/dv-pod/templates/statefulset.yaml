@@ -105,7 +105,7 @@ spec:
             - name: CHARON_PRIVATE_KEY_FILE
               value: "/charon-data/charon-enr-private-key"
             - name: CHAIN_ID
-              value: "{{ .Values.chainId }}"
+              value: "{{ include "dv-pod.chainId" . }}"
             {{- if .Values.charon.dkgSidecar.targetConfigHash }}
             - name: TARGET_CONFIG_HASH
               value: "{{ .Values.charon.dkgSidecar.targetConfigHash }}"
@@ -655,8 +655,8 @@ spec:
             - validator_client
             - --beacon-nodes=http://localhost:3600
             - --suggested-fee-recipient=0x0000000000000000000000000000000000000000
-            {{- if .Values.validatorClient.config.network }}
-            - --network={{ .Values.validatorClient.config.network }}
+            {{- if include "dv-pod.validatorNetwork" . }}
+            - --network={{ include "dv-pod.validatorNetwork" . }}
             {{- end }}
             - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
             - --datadir=/validator-data
@@ -676,7 +676,7 @@ spec:
           command:
             - /opt/teku/bin/teku
             - validator-client
-            - --network={{ .Values.validatorClient.config.network | default "auto" }}
+            - --network={{ include "dv-pod.validatorNetwork" . | default "auto" }}
             - --beacon-node-api-endpoint=http://localhost:3600
             {{- if .Values.charon.builderApi }}
             - --validators-builder-registration-default-enabled=true
@@ -705,11 +705,12 @@ spec:
             {{- if .Values.validatorClient.config.prysm.acceptTermsOfUse }}
             - --accept-terms-of-use
             {{- end }}
-            {{- if eq .Values.validatorClient.config.network "hoodi" }}
+            {{- $network := include "dv-pod.validatorNetwork" . }}
+            {{- if eq $network "hoodi" }}
             - --hoodi
-            {{- else if eq .Values.validatorClient.config.network "holesky" }}
+            {{- else if eq $network "holesky" }}
             - --holesky
-            {{- else if eq .Values.validatorClient.config.network "sepolia" }}
+            {{- else if eq $network "sepolia" }}
             - --sepolia
             {{- end }}
             - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
@@ -748,12 +749,12 @@ spec:
           {{- else if eq .Values.validatorClient.type "lodestar" }}
           image: {{ .Values.validatorClient.image.repository | default "chainsafe/lodestar" }}:{{ .Values.validatorClient.image.tag | default "v1.35.0" }}
           command:
-            - node 
+            - node
             - /usr/app/packages/cli/bin/lodestar
             - validator
             - --beacon-nodes=http://localhost:3600
-            {{- if .Values.validatorClient.config.network }}
-            - --network={{ .Values.validatorClient.config.network }}
+            {{- if include "dv-pod.validatorNetwork" . }}
+            - --network={{ include "dv-pod.validatorNetwork" . }}
             {{- end }}
             {{- if .Values.charon.builderApi }}
             - --builder="true" 

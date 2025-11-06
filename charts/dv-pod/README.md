@@ -317,7 +317,6 @@ The command removes all the Kubernetes components associated with the chart and 
 | centralMonitoring.enabled | bool | `false` | Specifies whether central monitoring should be enabled |
 | centralMonitoring.promEndpoint | string | `"https://vm.monitoring.gcp.obol.tech/write"` | https endpoint to obol central prometheus  |
 | centralMonitoring.token | string | `""` | The authentication token to the central prometheus |
-| chainId | int | `1` | Chain ID for the network (1: Mainnet, 11155111: Sepolia, 560048: Hoodi) Used for DKG Ceremony |
 | charon.beaconNodeEndpoints | list | `["http://l1-full-node-beacon.l1.cluster.svc.local:5052"]` | Beacon node endpoints The default is the Obol Stack full node address. Change this to your own consensus client beacon API(s). All beacon nodes specified here will be called for every charon request, if you want to leverage fallback behaviour place secondary beacon nodes in charon.fallbackBeaconNodeEndpoints[] |
 | charon.beaconNodeHeaders | string | `""` | Beacon node authentication headers WARNING: These headers will be sent to ALL beacon nodes, which could leak credentials Format: "Authorization=Basic <base64_encoded_credentials>" To generate: echo -n "username:password" | base64 Example: "Authorization=Basic am9objpkb2U=" |
 | charon.beaconNodeHeadersSecretKey | string | `"headers"` | Optional: Key within the charon.beaconNodeHeaders secret to read from |
@@ -380,6 +379,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | livenessProbe | object | `{"enabled":false,"httpGet":{"path":"/livez","port":3620},"initialDelaySeconds":10,"periodSeconds":5}` | Configure liveness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ |
 | livenessProbe.httpGet.port | int | `3620` | Port for liveness probe HTTP checks |
 | nameOverride | string | `""` | Provide a name in place of charon for `app:` labels |
+| network | string | `"mainnet"` | Network name for the blockchain network Used for DKG Ceremony and validator client configuration Supported values: mainnet, sepolia, hoodi, gnosis |
 | networkPolicy | object | `{"beaconNodes":{"enabled":true,"ipBlock":{},"namespaceSelector":{},"podSelector":{},"port":null},"customEgress":[],"customIngress":[],"enabled":false,"monitoring":{"enabled":true,"namespaceSelector":{},"podSelector":{}},"obolApi":{"cidr":"0.0.0.0/0","enabled":true,"except":[]},"validatorClientNamespaceSelector":{},"validatorClientSelector":{}}` | NetworkPolicy configuration for pod network isolation |
 | networkPolicy.beaconNodes | object | `{"enabled":true,"ipBlock":{},"namespaceSelector":{},"podSelector":{},"port":null}` | Beacon node configuration |
 | networkPolicy.beaconNodes.enabled | bool | `true` | Enable egress to beacon nodes |

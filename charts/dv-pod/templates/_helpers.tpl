@@ -147,3 +147,39 @@ Create comma-separated list of fallback beacon node endpoints
 {{- join "," .Values.charon.fallbackBeaconNodeEndpoints -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Convert network name to chainId
+Supported networks:
+- mainnet: 1
+- sepolia: 11155111
+- hoodi: 560048
+- gnosis: 100
+*/}}
+{{- define "dv-pod.chainId" -}}
+{{- $network := .Values.network -}}
+{{- if eq $network "mainnet" -}}
+1
+{{- else if eq $network "sepolia" -}}
+11155111
+{{- else if eq $network "hoodi" -}}
+560048
+{{- else if eq $network "gnosis" -}}
+100
+{{- else -}}
+{{- fail (printf "Unknown network: '%s'. Supported networks are: mainnet, sepolia, hoodi, gnosis" $network) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Get the network name for validator client configuration
+If validatorClient.config.network is explicitly set, use that value.
+Otherwise, auto-derive from the top-level network setting.
+*/}}
+{{- define "dv-pod.validatorNetwork" -}}
+{{- if .Values.validatorClient.config.network -}}
+{{- .Values.validatorClient.config.network -}}
+{{- else if .Values.network -}}
+{{- .Values.network -}}
+{{- end -}}
+{{- end -}}

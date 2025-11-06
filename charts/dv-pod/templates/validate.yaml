@@ -1,3 +1,12 @@
+{{- if not .Values.network }}
+{{- fail ".Values.network is required. Supported networks: mainnet, sepolia, hoodi, gnosis" }}
+{{- end }}
+
+{{- $validNetworks := list "mainnet" "sepolia" "hoodi" "gnosis" }}
+{{- if not (has .Values.network $validNetworks) }}
+{{- fail (printf "Invalid network '%s'. Supported networks are: mainnet, sepolia, hoodi, gnosis" .Values.network) }}
+{{- end }}
+
 {{- if not .Values.charon.beaconNodeEndpoints }}
 {{- fail ".Values.charon.beaconNodeEndpoints is required" }}
 {{- end }}
