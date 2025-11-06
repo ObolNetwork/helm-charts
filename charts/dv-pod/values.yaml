@@ -244,6 +244,7 @@ charon:
         pullPolicy: "IfNotPresent"
       # -- Image to use for kubectl operations within the ENR generation job
       # This image must contain a compatible kubectl binary.
+      # Note: Using bitnami/kubectl (non-secure) to avoid FIPS 140 restrictions
       kubectlImage:
         repository: "bitnamisecure/kubectl"
         tag: "latest"

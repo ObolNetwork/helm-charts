@@ -35,6 +35,11 @@ spec:
         - name: check-existing-secret
           image: "{{ .Values.charon.enr.generate.kubectlImage.repository }}:{{ .Values.charon.enr.generate.kubectlImage.tag }}"
           imagePullPolicy: {{ .Values.charon.enr.generate.kubectlImage.pullPolicy }}
+          env:
+            # Disable FIPS 140-only mode to allow X25519 crypto algorithm
+            # This is required when using bitnamisecure/kubectl with K8s API servers that use X25519 for TLS
+            - name: GODEBUG
+              value: "fips140=off"
           command:
             - /bin/sh
             - -c
@@ -169,6 +174,11 @@ spec:
         - name: kubectl-secret-creator
           image: "{{ .Values.charon.enr.generate.kubectlImage.repository }}:{{ .Values.charon.enr.generate.kubectlImage.tag }}"
           imagePullPolicy: {{ .Values.charon.enr.generate.kubectlImage.pullPolicy }}
+          env:
+            # Disable FIPS 140-only mode to allow X25519 crypto algorithm
+            # This is required when using bitnamisecure/kubectl with K8s API servers that use X25519 for TLS
+            - name: GODEBUG
+              value: "fips140=off"
           command:
             - /bin/sh
             - -c
@@ -207,7 +217,7 @@ spec:
               if [ -f /enr-shared/generate-enr-only ]; then
                 echo "INFO: Adding missing public ENR field to existing secret '$SECRET_NAME'..."
                 # Use kubectl patch to add only the missing field
-                kubectl patch secret "${SECRET_NAME}" -n "${NAMESPACE}" --type='merge' -p="{\"data\":{\"${ENR_PUBLIC_ADDRESS_DATA_NAME}\":\"$(echo -n "$PUBLIC_ENR" | base64 -w 0)\"}}"
+                kubectl patch secret "${SECRET_NAME}" -n "${NAMESPACE}" --type='merge' --validate=false -p="{\"data\":{\"${ENR_PUBLIC_ADDRESS_DATA_NAME}\":\"$(echo -n "$PUBLIC_ENR" | base64 -w 0)\"}}"
                 echo "Secret '$SECRET_NAME' updated with missing ENR field successfully."
               else
                 # Check again if the secret already exists (race condition protection)
@@ -223,7 +233,7 @@ spec:
                   --namespace="${NAMESPACE}" \
                   --from-literal=charon-enr-private-key="${PRIVATE_KEY}" \
                   --from-literal=enr="${PUBLIC_ENR}" \
-                  --dry-run=client -o yaml | kubectl apply -f -
+                  --dry-run=client -o yaml | kubectl apply --validate=false -f -
 
                 echo "Secret '$SECRET_NAME' created successfully."
               fi
