@@ -17,9 +17,26 @@ Your Obol distributed validator pod "{{ template "dv-pod.fullname" . }}" has bee
    The ENR generation job detected an existing secret and will use it.
    {{- end }}
 
-   To retrieve the public ENR string:
-   kubectl get secret -n {{ .Release.Namespace }} {{ include "dv-pod.enrSecretName" . }} -o jsonpath='{.data.enr}' | base64 --decode
-   echo ""
+   {{- $enrSecret := (lookup "v1" "Secret" .Release.Namespace (include "dv-pod.enrSecretName" .)) }}
+   {{- if $enrSecret }}
+   {{- $enrValue := index $enrSecret.data "enr" }}
+   {{- if $enrValue }}
+
+   ********************************************************************************
+   ⭐⭐⭐ PUBLIC ENR (copy this value for cluster setup) ⭐⭐⭐
+   ********************************************************************************
+
+   {{ $enrValue | b64dec }}
+
+   ********************************************************************************
+   {{- else }}
+   [ENR secret exists but public ENR field is missing]
+   To retrieve manually: kubectl get secret -n {{ .Release.Namespace }} {{ include "dv-pod.enrSecretName" . }} -o jsonpath='{.data.enr}' | base64 --decode
+   {{- end }}
+   {{- else }}
+   [ENR generation in progress - secret not yet available]
+   To retrieve when ready: kubectl get secret -n {{ .Release.Namespace }} {{ include "dv-pod.enrSecretName" . }} -o jsonpath='{.data.enr}' | base64 --decode
+   {{- end }}
 
    {{- if not .Values.configMaps.clusterlock }}
    {{- if not .Values.charon.lockHash }}
