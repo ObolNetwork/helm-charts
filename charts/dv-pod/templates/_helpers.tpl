@@ -147,3 +147,61 @@ Create comma-separated list of fallback beacon node endpoints
 {{- join "," .Values.charon.fallbackBeaconNodeEndpoints -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Validate Ethereum address format
+This function validates that an address:
+1. Starts with "0x"
+2. Is exactly 42 characters long (0x + 40 hex digits)
+3. Contains only valid hexadecimal characters
+Note: This does NOT validate EIP-55 checksum as Helm lacks Keccak-256 hashing.
+Users should ensure they use properly checksummed addresses.
+*/}}
+{{- define "dv-pod.validateEthereumAddress" -}}
+{{- $address := . -}}
+{{- if not (hasPrefix "0x" $address) -}}
+{{- fail (printf "Invalid Ethereum address '%s': must start with '0x'" $address) -}}
+{{- end -}}
+{{- if ne (len $address) 42 -}}
+{{- fail (printf "Invalid Ethereum address '%s': must be exactly 42 characters (0x + 40 hex digits), got %d characters" $address (len $address)) -}}
+{{- end -}}
+{{- if not (regexMatch "^0x[0-9a-fA-F]{40}$" $address) -}}
+{{- fail (printf "Invalid Ethereum address '%s': must contain only hexadecimal characters (0-9, a-f, A-F) after '0x' prefix" $address) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Convert network name to chainId
+Supported networks:
+- mainnet: 1
+- sepolia: 11155111
+- hoodi: 560048
+- gnosis: 100
+*/}}
+{{- define "dv-pod.chainId" -}}
+{{- $network := .Values.network -}}
+{{- if eq $network "mainnet" -}}
+1
+{{- else if eq $network "sepolia" -}}
+11155111
+{{- else if eq $network "hoodi" -}}
+560048
+{{- else if eq $network "gnosis" -}}
+100
+{{- else -}}
+{{- fail (printf "Unknown network: '%s'. Supported networks are: mainnet, sepolia, hoodi, gnosis" $network) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Get the network name for validator client configuration
+If validatorClient.config.network is explicitly set, use that value.
+Otherwise, auto-derive from the top-level network setting.
+*/}}
+{{- define "dv-pod.validatorNetwork" -}}
+{{- if .Values.validatorClient.config.network -}}
+{{- .Values.validatorClient.config.network -}}
+{{- else if .Values.network -}}
+{{- .Values.network -}}
+{{- end -}}
+{{- end -}}

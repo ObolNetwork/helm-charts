@@ -1,3 +1,12 @@
+{{- if not .Values.network }}
+{{- fail ".Values.network is required. Supported networks: mainnet, sepolia, hoodi, gnosis" }}
+{{- end }}
+
+{{- $validNetworks := list "mainnet" "sepolia" "hoodi" "gnosis" }}
+{{- if not (has .Values.network $validNetworks) }}
+{{- fail (printf "Invalid network '%s'. Supported networks are: mainnet, sepolia, hoodi, gnosis" .Values.network) }}
+{{- end }}
+
 {{- if not .Values.charon.beaconNodeEndpoints }}
 {{- fail ".Values.charon.beaconNodeEndpoints is required" }}
 {{- end }}
@@ -6,6 +15,10 @@
 
 {{- if and (not .Values.charon.operatorAddress) (not .Values.tests) }}
 {{- fail ".Values.charon.operatorAddress is required" }}
+{{- end }}
+
+{{- if .Values.charon.operatorAddress }}
+{{- include "dv-pod.validateEthereumAddress" .Values.charon.operatorAddress }}
 {{- end }}
 
 {{- if .Values.centralMonitoring.enabled }}
@@ -24,4 +37,8 @@
   {{- if not (regexMatch "^0x[0-9a-fA-F]{64}$" .Values.charon.dkgSidecar.targetConfigHash) }}
     {{- fail "charon.dkgSidecar.targetConfigHash must be a valid hex hash (0x followed by 64 hexadecimal characters)" }}
   {{- end }}
+{{- end }}
+
+{{- if .Values.tests.dkgSidecar.operatorAddress }}
+{{- include "dv-pod.validateEthereumAddress" .Values.tests.dkgSidecar.operatorAddress }}
 {{- end }}
