@@ -2,7 +2,7 @@
 Charon Cluster
 ===========
 
-![Version: 0.4.0](https://img.shields.io/badge/Version-0.4.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.7.0](https://img.shields.io/badge/AppVersion-1.7.0-informational?style=flat-square)
+![Version: 0.4.1](https://img.shields.io/badge/Version-0.4.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.7.1](https://img.shields.io/badge/AppVersion-1.7.0-informational?style=flat-square)
 
 A Helm chart for deploying a single distributed validator pod consisting of a Charon middleware client and validator client.
 
@@ -338,7 +338,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | charon.enr.existingSecret | object | `{"name":"","privateKeyDataKey":"charon-enr-private-key","publicKeyDataKey":"enr"}` | Point to an existing Kubernetes secret that holds the ENR private key. If 'privateKey' above is not set and this 'existingSecret.name' is provided, 'generate' is ignored. NOTE: If not set, the chart will automatically check for a secret named 'charon-enr-private-key' (configurable via secrets.defaultEnrPrivateKey) and use it if it exists. |
 | charon.enr.existingSecret.privateKeyDataKey | string | `"charon-enr-private-key"` | Key in the secret's 'data' field holding the private key hex string |
 | charon.enr.existingSecret.publicKeyDataKey | string | `"enr"` | Key in the secret's 'data' field holding the public ENR string |
-| charon.enr.generate | object | `{"annotations":{},"enabled":true,"image":{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.7.0"},"kubectlImage":{"pullPolicy":"IfNotPresent","repository":"bitnamisecure/kubectl","tag":"latest"},"nodeSelector":{}}` | Enable automatic generation of an ENR private key. Only used if 'privateKey' and 'existingSecret.name' are not provided. The generated key will be stored in a secret with data keys 'charon-enr-private-key' and 'enr'. |
+| charon.enr.generate | object | `{"annotations":{},"enabled":true,"image":{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.7.1"},"kubectlImage":{"pullPolicy":"IfNotPresent","repository":"bitnamisecure/kubectl","tag":"latest"},"nodeSelector":{}}` | Enable automatic generation of an ENR private key. Only used if 'privateKey' and 'existingSecret.name' are not provided. The generated key will be stored in a secret with data keys 'charon-enr-private-key' and 'enr'. |
 | charon.enr.generate.annotations | object | `{}` | Annotations to add to the ENR generation job |
 | charon.enr.generate.kubectlImage | object | `{"pullPolicy":"IfNotPresent","repository":"bitnamisecure/kubectl","tag":"latest"}` | Image to use for kubectl operations within the ENR generation job This image must contain a compatible kubectl binary. |
 | charon.enr.generate.nodeSelector | object | `{}` | Node selector for the ENR generation job |
@@ -375,7 +375,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | fullnameOverride | string | `""` | Provide a name to substitute for the full names of resources |
 | global | object | `{"annotations":{}}` | Global configuration that can be referenced across the chart Used for test configurations and shared settings |
 | global.annotations | object | `{}` | Global annotations applied to resources |
-| image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.7.0"}` | Charon image repository, pull policy, and tag version |
+| image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.7.1"}` | Charon image repository, pull policy, and tag version |
 | imagePullSecrets | list | `[]` | Credentials to fetch images from private registry # ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ |
 | livenessProbe | object | `{"enabled":false,"httpGet":{"path":"/livez","port":3620},"initialDelaySeconds":10,"periodSeconds":5}` | Configure liveness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ |
 | livenessProbe.httpGet.port | int | `3620` | Port for liveness probe HTTP checks |
