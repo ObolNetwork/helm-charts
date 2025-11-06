@@ -147,3 +147,16 @@ Create comma-separated list of fallback beacon node endpoints
 {{- join "," .Values.charon.fallbackBeaconNodeEndpoints -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Validate validator client type
+*/}}
+{{- define "dv-pod.validateValidatorClientType" -}}
+{{- if .Values.validatorClient.enabled -}}
+{{- $validTypes := list "lighthouse" "lodestar" "teku" "prysm" "nimbus" -}}
+{{- $currentType := .Values.validatorClient.type -}}
+{{- if not (has $currentType $validTypes) -}}
+{{- fail (printf "ERROR: Invalid validator client type '%s'. Valid options are: %s" $currentType (join ", " $validTypes)) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}

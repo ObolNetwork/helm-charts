@@ -1,4 +1,5 @@
 {{- $root := . -}}
+{{- include "dv-pod.validateValidatorClientType" . -}}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
