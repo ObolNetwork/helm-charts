@@ -160,3 +160,34 @@ Validate validator client type
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Derive network name from chainId
+Maps chainId to the corresponding network name for validator client configuration
+*/}}
+{{- define "dv-pod.networkFromChainId" -}}
+{{- $chainId := toString .Values.chainId -}}
+{{- if eq $chainId "1" -}}
+mainnet
+{{- else if eq $chainId "11155111" -}}
+sepolia
+{{- else if eq $chainId "17000" -}}
+holesky
+{{- else if eq $chainId "560048" -}}
+hoodi
+{{- else -}}
+{{- fail (printf "ERROR: Unknown chainId '%s'. Please set validatorClient.config.network explicitly or use a known chainId (1=mainnet, 11155111=sepolia, 17000=holesky, 560048=hoodi)" $chainId) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Get validator client network configuration
+Returns the network value, using validatorClient.config.network if set, otherwise derives from chainId
+*/}}
+{{- define "dv-pod.validatorClientNetwork" -}}
+{{- if .Values.validatorClient.config.network -}}
+{{- .Values.validatorClient.config.network -}}
+{{- else -}}
+{{- include "dv-pod.networkFromChainId" . -}}
+{{- end -}}
+{{- end -}}

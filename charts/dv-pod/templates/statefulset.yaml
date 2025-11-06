@@ -656,9 +656,7 @@ spec:
             - validator_client
             - --beacon-nodes=http://localhost:3600
             - --suggested-fee-recipient=0x0000000000000000000000000000000000000000
-            {{- if .Values.validatorClient.config.network }}
-            - --network={{ .Values.validatorClient.config.network }}
-            {{- end }}
+            - --network={{ include "dv-pod.validatorClientNetwork" . }}
             - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
             - --datadir=/validator-data
             {{- if .Values.charon.builderApi }}
@@ -677,7 +675,7 @@ spec:
           command:
             - /opt/teku/bin/teku
             - validator-client
-            - --network={{ .Values.validatorClient.config.network | default "auto" }}
+            - --network={{ include "dv-pod.validatorClientNetwork" . }}
             - --beacon-node-api-endpoint=http://localhost:3600
             {{- if .Values.charon.builderApi }}
             - --validators-builder-registration-default-enabled=true
@@ -685,6 +683,8 @@ spec:
             - --validators-graffiti={{ .Values.validatorClient.config.graffiti | quote }}
             - --data-path=/validator-data
             - --validator-keys=/validator-data/keys:/validator-data/passwords
+            - --validators-keystore-locking-enabled=false
+            - --validators-external-signer-slashing-protection-enabled=true
             - --validators-proposer-default-fee-recipient=0x0000000000000000000000000000000000000000
             {{- if .Values.charon.executionClientRpcEndpoint }}
             - --ee-endpoint={{ .Values.charon.executionClientRpcEndpoint }}
@@ -703,14 +703,14 @@ spec:
             - --beacon-rest-api-provider=http://localhost:3600
             - --enable-beacon-rest-api
             - --suggested-fee-recipient=0x0000000000000000000000000000000000000000
-            {{- if .Values.validatorClient.config.prysm.acceptTermsOfUse }}
+            # By using Prysm, you accept the Terms of Service: https://github.com/prysmaticlabs/prysm/blob/develop/TERMS_OF_SERVICE.md
             - --accept-terms-of-use
-            {{- end }}
-            {{- if eq .Values.validatorClient.config.network "hoodi" }}
+            {{- $network := include "dv-pod.validatorClientNetwork" . }}
+            {{- if eq $network "hoodi" }}
             - --hoodi
-            {{- else if eq .Values.validatorClient.config.network "holesky" }}
+            {{- else if eq $network "holesky" }}
             - --holesky
-            {{- else if eq .Values.validatorClient.config.network "sepolia" }}
+            {{- else if eq $network "sepolia" }}
             - --sepolia
             {{- end }}
             - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
@@ -749,13 +749,11 @@ spec:
           {{- else if eq .Values.validatorClient.type "lodestar" }}
           image: {{ .Values.validatorClient.image.repository | default "chainsafe/lodestar" }}:{{ .Values.validatorClient.image.tag | default "v1.35.0" }}
           command:
-            - node 
+            - node
             - /usr/app/packages/cli/bin/lodestar
             - validator
             - --beacon-nodes=http://localhost:3600
-            {{- if .Values.validatorClient.config.network }}
-            - --network={{ .Values.validatorClient.config.network }}
-            {{- end }}
+            - --network={{ include "dv-pod.validatorClientNetwork" . }}
             {{- if .Values.charon.builderApi }}
             - --builder="true" 
             - --builder.selection="builderonly"

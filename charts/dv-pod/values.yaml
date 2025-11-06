@@ -277,10 +277,8 @@ validatorClient:
 
     # -- Configuration for the prysm validator client specifically
     # Used to pass Prysm VC specific configuration
+    # NOTE: By using Prysm, you automatically accept the Terms of Service: https://github.com/prysmaticlabs/prysm/blob/develop/TERMS_OF_SERVICE.md
     prysm:
-      # -- Accepting Terms of Use
-      # To use Prysm as a VC you must agree to these [Terms of Service](https://github.com/OffchainLabs/prysm/blob/develop/TERMS_OF_SERVICE.md).
-      acceptTermsOfUse: false
       # -- Additional CLI arguments passed to the Prysm validator client only
       extraArgs: []
   
