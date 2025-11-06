@@ -235,7 +235,7 @@ charon:
       image:
         repository: "obolnetwork/charon"
         # Specify a stable tag, e.g., v1.6.0 or check for the latest release [here](https://github.com/ObolNetwork/charon/releases/).
-        tag: "v1.7.0"
+        tag: "v1.7.1"
         pullPolicy: "IfNotPresent"
       # -- Image to use for kubectl operations within the ENR generation job
       # This image must contain a compatible kubectl binary.
@@ -315,7 +315,7 @@ centralMonitoring:
 image:
   repository: obolnetwork/charon
   pullPolicy: IfNotPresent
-  tag: v1.7.0
+  tag: v1.7.1
 
 # -- Chain ID for the network (1: Mainnet, 11155111: Sepolia, 560048: Hoodi)
 # Used for DKG Ceremony
