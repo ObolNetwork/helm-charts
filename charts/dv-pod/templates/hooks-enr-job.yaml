@@ -227,6 +227,9 @@ spec:
 
                 echo "Secret '$SECRET_NAME' created successfully."
               fi
+          env:
+            - name: GODEBUG
+              value: "x509sha1=1,tls13=0"
           volumeMounts:
             - name: enr-data
               mountPath: /enr-input
