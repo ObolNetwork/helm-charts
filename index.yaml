@@ -1598,6 +1598,33 @@ entries:
     version: 0.1.0
   dv-pod:
   - apiVersion: v2
+    appVersion: 1.7.1
+    created: "2025-11-07T13:10:22.223417226Z"
+    description: A Helm chart for deploying a single distributed validator pod consisting
+      of a Charon middleware client and validator client.
+    digest: bb69b6e135b1646562ea1fe89eb21f44dbdfc8581217621662b8075b8c68c2b8
+    home: https://docs.obol.org/
+    icon: https://raw.githubusercontent.com/ObolNetwork/charon/main/docs/images/charonlogo.svg
+    keywords:
+    - ethereum
+    - blockchain
+    - obol
+    - charon
+    - dvt
+    - distributed-validator
+    - validator-client
+    - dv-pod
+    maintainers:
+    - email: devops@obol.tech
+      name: DV Labs
+    name: dv-pod
+    sources:
+    - https://github.com/ObolNetwork/charon
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/dv-pod-0.4.2/dv-pod-0.4.2.tgz
+    version: 0.4.2
+  - apiVersion: v2
     appVersion: 1.7.0
     created: "2025-11-04T05:19:58.344177312Z"
     description: A Helm chart for deploying a single distributed validator pod consisting
@@ -1793,4 +1820,4 @@ entries:
     urls:
     - https://github.com/ObolNetwork/helm-charts/releases/download/obol-app-0.1.0/obol-app-0.1.0.tgz
     version: 0.1.0
-generated: "2025-11-04T05:19:58.344333244Z"
+generated: "2025-11-07T13:10:22.223581534Z"
