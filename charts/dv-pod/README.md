@@ -317,7 +317,6 @@ The command removes all the Kubernetes components associated with the chart and 
 | centralMonitoring.enabled | bool | `false` | Specifies whether central monitoring should be enabled |
 | centralMonitoring.promEndpoint | string | `"https://vm.monitoring.gcp.obol.tech/write"` | https endpoint to obol central prometheus  |
 | centralMonitoring.token | string | `""` | The authentication token to the central prometheus |
-| chainId | int | `1` | Chain ID for the network (1: Mainnet, 11155111: Sepolia, 560048: Hoodi) Used for DKG Ceremony |
 | charon.beaconNodeEndpoints | list | `["http://l1-full-node-beacon.l1.cluster.svc.local:5052"]` | Beacon node endpoints The default is the Obol Stack full node address. Change this to your own consensus client beacon API(s). All beacon nodes specified here will be called for every charon request, if you want to leverage fallback behaviour place secondary beacon nodes in charon.fallbackBeaconNodeEndpoints[] |
 | charon.beaconNodeHeaders | string | `""` | Beacon node authentication headers WARNING: These headers will be sent to ALL beacon nodes, which could leak credentials Format: "Authorization=Basic <base64_encoded_credentials>" To generate: echo -n "username:password" | base64 Example: "Authorization=Basic am9objpkb2U=" |
 | charon.beaconNodeHeadersSecretKey | string | `"headers"` | Optional: Key within the charon.beaconNodeHeaders secret to read from |
@@ -380,6 +379,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | livenessProbe | object | `{"enabled":false,"httpGet":{"path":"/livez","port":3620},"initialDelaySeconds":10,"periodSeconds":5}` | Configure liveness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ |
 | livenessProbe.httpGet.port | int | `3620` | Port for liveness probe HTTP checks |
 | nameOverride | string | `""` | Provide a name in place of charon for `app:` labels |
+| network | string | `"mainnet"` | Network name for the Ethereum network Supported values: mainnet, sepolia, hoodi The chainId is automatically derived from the network name |
 | networkPolicy | object | `{"beaconNodes":{"enabled":true,"ipBlock":{},"namespaceSelector":{},"podSelector":{},"port":null},"customEgress":[],"customIngress":[],"enabled":false,"monitoring":{"enabled":true,"namespaceSelector":{},"podSelector":{}},"obolApi":{"cidr":"0.0.0.0/0","enabled":true,"except":[]},"validatorClientNamespaceSelector":{},"validatorClientSelector":{}}` | NetworkPolicy configuration for pod network isolation |
 | networkPolicy.beaconNodes | object | `{"enabled":true,"ipBlock":{},"namespaceSelector":{},"podSelector":{},"port":null}` | Beacon node configuration |
 | networkPolicy.beaconNodes.enabled | bool | `true` | Enable egress to beacon nodes |
@@ -452,13 +452,12 @@ The command removes all the Kubernetes components associated with the chart and 
 | tests.validatorKeystore.validatorClientType | string | `"lodestar"` | Validator client type to test (lodestar, lighthouse, teku, prysm, nimbus) Currently lodestar, prysm, and nimbus are implemented |
 | tolerations | object | `{}` | Tolerations for pod assignment # ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/ |
 | updateStrategy | string | `"RollingUpdate"` | allows you to configure and disable automated rolling updates for containers, labels, resource request/limits, and annotations for the Pods in a StatefulSet. |
-| validatorClient | object | `{"config":{"extraArgs":[],"graffiti":"","network":"","prysm":{"acceptTermsOfUse":false,"extraArgs":[]}},"enabled":true,"image":{"pullPolicy":"IfNotPresent","repository":"","tag":""},"keystores":{"secretName":""},"resources":{"limits":{"cpu":"1000m","memory":"2Gi"},"requests":{"cpu":"500m","memory":"1Gi"}},"type":"lighthouse"}` | Validator client configuration |
-| validatorClient.config | object | `{"extraArgs":[],"graffiti":"","network":"","prysm":{"acceptTermsOfUse":false,"extraArgs":[]}}` | Validator client specific configuration |
+| validatorClient | object | `{"config":{"extraArgs":[],"graffiti":"","network":"","prysm":{"extraArgs":[]}},"enabled":true,"image":{"pullPolicy":"IfNotPresent","repository":"","tag":""},"keystores":{"secretName":""},"resources":{"limits":{"cpu":"1000m","memory":"2Gi"},"requests":{"cpu":"500m","memory":"1Gi"}},"type":"lighthouse"}` | Validator client configuration |
+| validatorClient.config | object | `{"extraArgs":[],"graffiti":"","network":"","prysm":{"extraArgs":[]}}` | Validator client specific configuration |
 | validatorClient.config.extraArgs | list | `[]` | Additional CLI arguments passed to the validator client (regardless of type) (the minimum required mev flags are automatically included when you set .Values.charon.builderApi to true) |
 | validatorClient.config.graffiti | string | `""` | Graffiti to include in proposed blocks Leaving it unset will result in charon defaults. |
 | validatorClient.config.network | string | `""` | Network configuration for validator client (e.g., mainnet, sepolia) Used by some validator clients like Teku for network-specific configuration |
-| validatorClient.config.prysm | object | `{"acceptTermsOfUse":false,"extraArgs":[]}` | Configuration for the prysm validator client specifically Used to pass Prysm VC specific configuration |
-| validatorClient.config.prysm.acceptTermsOfUse | bool | `false` | Accepting Terms of Use To use Prysm as a VC you must agree to these [Terms of Service](https://github.com/OffchainLabs/prysm/blob/develop/TERMS_OF_SERVICE.md). |
+| validatorClient.config.prysm | object | `{"extraArgs":[]}` | Configuration for the prysm validator client specifically Used to pass Prysm VC specific configuration NOTE: By using Prysm, you automatically accept the Terms of Service: https://github.com/prysmaticlabs/prysm/blob/develop/TERMS_OF_SERVICE.md |
 | validatorClient.config.prysm.extraArgs | list | `[]` | Additional CLI arguments passed to the Prysm validator client only |
 | validatorClient.enabled | bool | `true` | Enable the validator client container If you want to use an externally managed validator client.  Set this to false, and set your external validator to communicate with the 'validator-api' service created by this chart as if it were a beacon node API.  |
 | validatorClient.image | object | `{"pullPolicy":"IfNotPresent","repository":"","tag":""}` | Image configuration for validator client Repository and tag will be auto-selected based on validator client type if not specified |
