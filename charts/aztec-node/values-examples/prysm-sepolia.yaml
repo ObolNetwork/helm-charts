@@ -54,9 +54,6 @@ extraArgs:
   # Required for Aztec blob API queries
   - --blob-storage-layout=by-epoch
 
-  # Accept Prysm terms of use
-  - --accept-terms-of-use=true
-
 # Persistence configuration
 persistence:
   enabled: true
