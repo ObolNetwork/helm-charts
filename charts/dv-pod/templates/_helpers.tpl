@@ -147,3 +147,52 @@ Create comma-separated list of fallback beacon node endpoints
 {{- join "," .Values.charon.fallbackBeaconNodeEndpoints -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Validate validator client type
+*/}}
+{{- define "dv-pod.validateValidatorClientType" -}}
+{{- if .Values.validatorClient.enabled -}}
+{{- $validTypes := list "lighthouse" "lodestar" "teku" "prysm" "nimbus" -}}
+{{- $currentType := .Values.validatorClient.type -}}
+{{- if not (has $currentType $validTypes) -}}
+{{- fail (printf "ERROR: Invalid validator client type '%s'. Valid options are: %s" $currentType (join ", " $validTypes)) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Derive chainId from network name
+Maps network name to the corresponding chainId for DKG and chain configuration
+*/}}
+{{- define "dv-pod.chainIdFromNetwork" -}}
+{{- $network := .Values.network -}}
+{{- if eq $network "mainnet" -}}
+1
+{{- else if eq $network "sepolia" -}}
+11155111
+{{- else if eq $network "hoodi" -}}
+560048
+{{- else -}}
+{{- fail (printf "ERROR: Unknown network '%s'. Supported networks: mainnet, sepolia, hoodi" $network) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Get the network name
+Returns the network value from .Values.network
+*/}}
+{{- define "dv-pod.network" -}}
+{{- if not .Values.network -}}
+{{- fail "ERROR: network parameter is required. Please set --set network=<mainnet|sepolia|hoodi>" -}}
+{{- end -}}
+{{- .Values.network -}}
+{{- end -}}
+
+{{/*
+Get the chainId
+Derives chainId from the network name
+*/}}
+{{- define "dv-pod.chainId" -}}
+{{- include "dv-pod.chainIdFromNetwork" . -}}
+{{- end -}}

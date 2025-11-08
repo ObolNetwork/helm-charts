@@ -2,7 +2,7 @@
 Charon Cluster
 ===========
 
-![Version: 0.3.0](https://img.shields.io/badge/Version-0.3.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.5.1](https://img.shields.io/badge/AppVersion-1.5.1-informational?style=flat-square)
+![Version: 0.4.2](https://img.shields.io/badge/Version-0.4.2-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.7.1](https://img.shields.io/badge/AppVersion-1.7.1-informational?style=flat-square)
 
 A Helm chart for deploying a single distributed validator pod consisting of a Charon middleware client and validator client.
 
@@ -156,6 +156,8 @@ You can choose from the following validator clients using the `validatorClient.t
 
 ### Configuration Example
 
+Changing VC with a values.yaml file:
+
 ```yaml
 validatorClient:
   enabled: true
@@ -165,6 +167,18 @@ validatorClient:
     extraArgs:
       - --suggested-fee-recipient=0xYOUR_FEE_RECIPIENT_ADDRESS
 ```
+
+With a `helm install` command for pre-existing artifacts.
+
+```sh
+helm install my-dv-pod obol/dv-pod \
+  --set configMaps.clusterLock=cluster-lock \
+  --set validatorClient.keystores.secretName=validator-keys \
+  --set validatorClient.type=prysm --set validatorClient.config.prysm.acceptTermsOfUse=true
+```
+
+> [!NOTE]
+> To run Prysm VC you must accept their [Terms of Use](https://github.com/OffchainLabs/prysm/blob/develop/TERMS_OF_SERVICE.md).
 
 ### Validator Keystores
 
@@ -303,7 +317,6 @@ The command removes all the Kubernetes components associated with the chart and 
 | centralMonitoring.enabled | bool | `false` | Specifies whether central monitoring should be enabled |
 | centralMonitoring.promEndpoint | string | `"https://vm.monitoring.gcp.obol.tech/write"` | https endpoint to obol central prometheus  |
 | centralMonitoring.token | string | `""` | The authentication token to the central prometheus |
-| chainId | int | `1` | Chain ID for the network (1: Mainnet, 11155111: Sepolia, 560048: Hoodi) Used for DKG Ceremony |
 | charon.beaconNodeEndpoints | list | `["http://l1-full-node-beacon.l1.cluster.svc.local:5052"]` | Beacon node endpoints The default is the Obol Stack full node address. Change this to your own consensus client beacon API(s). All beacon nodes specified here will be called for every charon request, if you want to leverage fallback behaviour place secondary beacon nodes in charon.fallbackBeaconNodeEndpoints[] |
 | charon.beaconNodeHeaders | string | `""` | Beacon node authentication headers WARNING: These headers will be sent to ALL beacon nodes, which could leak credentials Format: "Authorization=Basic <base64_encoded_credentials>" To generate: echo -n "username:password" | base64 Example: "Authorization=Basic am9objpkb2U=" |
 | charon.beaconNodeHeadersSecretKey | string | `"headers"` | Optional: Key within the charon.beaconNodeHeaders secret to read from |
@@ -324,7 +337,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | charon.enr.existingSecret | object | `{"name":"","privateKeyDataKey":"charon-enr-private-key","publicKeyDataKey":"enr"}` | Point to an existing Kubernetes secret that holds the ENR private key. If 'privateKey' above is not set and this 'existingSecret.name' is provided, 'generate' is ignored. NOTE: If not set, the chart will automatically check for a secret named 'charon-enr-private-key' (configurable via secrets.defaultEnrPrivateKey) and use it if it exists. |
 | charon.enr.existingSecret.privateKeyDataKey | string | `"charon-enr-private-key"` | Key in the secret's 'data' field holding the private key hex string |
 | charon.enr.existingSecret.publicKeyDataKey | string | `"enr"` | Key in the secret's 'data' field holding the public ENR string |
-| charon.enr.generate | object | `{"annotations":{},"enabled":true,"image":{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.6.1"},"kubectlImage":{"pullPolicy":"IfNotPresent","repository":"bitnamisecure/kubectl","tag":"latest"},"nodeSelector":{}}` | Enable automatic generation of an ENR private key. Only used if 'privateKey' and 'existingSecret.name' are not provided. The generated key will be stored in a secret with data keys 'charon-enr-private-key' and 'enr'. |
+| charon.enr.generate | object | `{"annotations":{},"enabled":true,"image":{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.7.1"},"kubectlImage":{"pullPolicy":"IfNotPresent","repository":"bitnamisecure/kubectl","tag":"latest"},"nodeSelector":{}}` | Enable automatic generation of an ENR private key. Only used if 'privateKey' and 'existingSecret.name' are not provided. The generated key will be stored in a secret with data keys 'charon-enr-private-key' and 'enr'. |
 | charon.enr.generate.annotations | object | `{}` | Annotations to add to the ENR generation job |
 | charon.enr.generate.kubectlImage | object | `{"pullPolicy":"IfNotPresent","repository":"bitnamisecure/kubectl","tag":"latest"}` | Image to use for kubectl operations within the ENR generation job This image must contain a compatible kubectl binary. |
 | charon.enr.generate.nodeSelector | object | `{}` | Node selector for the ENR generation job |
@@ -361,11 +374,12 @@ The command removes all the Kubernetes components associated with the chart and 
 | fullnameOverride | string | `""` | Provide a name to substitute for the full names of resources |
 | global | object | `{"annotations":{}}` | Global configuration that can be referenced across the chart Used for test configurations and shared settings |
 | global.annotations | object | `{}` | Global annotations applied to resources |
-| image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.6.1"}` | Charon image repository, pull policy, and tag version |
+| image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.7.1"}` | Charon image repository, pull policy, and tag version |
 | imagePullSecrets | list | `[]` | Credentials to fetch images from private registry # ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ |
 | livenessProbe | object | `{"enabled":false,"httpGet":{"path":"/livez","port":3620},"initialDelaySeconds":10,"periodSeconds":5}` | Configure liveness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ |
 | livenessProbe.httpGet.port | int | `3620` | Port for liveness probe HTTP checks |
 | nameOverride | string | `""` | Provide a name in place of charon for `app:` labels |
+| network | string | `"mainnet"` | Network name for the Ethereum network Supported values: mainnet, sepolia, hoodi The chainId is automatically derived from the network name |
 | networkPolicy | object | `{"beaconNodes":{"enabled":true,"ipBlock":{},"namespaceSelector":{},"podSelector":{},"port":null},"customEgress":[],"customIngress":[],"enabled":false,"monitoring":{"enabled":true,"namespaceSelector":{},"podSelector":{}},"obolApi":{"cidr":"0.0.0.0/0","enabled":true,"except":[]},"validatorClientNamespaceSelector":{},"validatorClientSelector":{}}` | NetworkPolicy configuration for pod network isolation |
 | networkPolicy.beaconNodes | object | `{"enabled":true,"ipBlock":{},"namespaceSelector":{},"podSelector":{},"port":null}` | Beacon node configuration |
 | networkPolicy.beaconNodes.enabled | bool | `true` | Enable egress to beacon nodes |
@@ -427,18 +441,24 @@ The command removes all the Kubernetes components associated with the chart and 
 | serviceMonitor.scheme | string | `"http"` | ServiceMonitor scheme |
 | serviceMonitor.scrapeTimeout | string | `"30s"` | ServiceMonitor scrape timeout |
 | serviceMonitor.tlsConfig | object | `{}` | ServiceMonitor TLS configuration |
-| tests | object | `{"dkgSidecar":{"enabled":true,"hostNetwork":false,"mockApi":{"image":{"pullPolicy":"Always"},"port":3001},"operatorAddress":"0x3D1f0598943239806A251899016EAf4920d4726d","serviceAccount":{"create":true},"targetConfigHash":"0x7f0fd29abb11674b4e61000de26bff3600237aab0402427bd1409756665c2115"}}` | Configuration for running Helm tests. These values are typically only used when `helm test` is run. |
+| tests | object | `{"dkgSidecar":{"enabled":true,"hostNetwork":false,"mockApi":{"image":{"pullPolicy":"Always"},"port":3001},"operatorAddress":"0x3D1f0598943239806A251899016EAf4920d4726d","serviceAccount":{"create":true},"targetConfigHash":"0x7f0fd29abb11674b4e61000de26bff3600237aab0402427bd1409756665c2115"},"validatorKeystore":{"enabled":false,"mockKeystoreCount":2,"validatorClientType":"lodestar"}}` | Configuration for running Helm tests. These values are typically only used when `helm test` is run. |
 | tests.dkgSidecar | object | `{"enabled":true,"hostNetwork":false,"mockApi":{"image":{"pullPolicy":"Always"},"port":3001},"operatorAddress":"0x3D1f0598943239806A251899016EAf4920d4726d","serviceAccount":{"create":true},"targetConfigHash":"0x7f0fd29abb11674b4e61000de26bff3600237aab0402427bd1409756665c2115"}` | The operator address to use for DKG sidecar tests. This should be a valid Ethereum address (0x...). |
 | tests.dkgSidecar.hostNetwork | bool | `false` | Host network setting for dkgSidecar test pods |
 | tests.dkgSidecar.serviceAccount | object | `{"create":true}` | Service account settings for test pods |
 | tests.dkgSidecar.targetConfigHash | string | `"0x7f0fd29abb11674b4e61000de26bff3600237aab0402427bd1409756665c2115"` | Target config hash for testing (optional) When set, enables test-target-config-hash-set.yaml test and passes hash to DKG sidecar tests |
+| tests.validatorKeystore | object | `{"enabled":false,"mockKeystoreCount":2,"validatorClientType":"lodestar"}` | Validator keystore configuration test |
+| tests.validatorKeystore.enabled | bool | `false` | Enable validator keystore configuration tests |
+| tests.validatorKeystore.mockKeystoreCount | int | `2` | Number of mock keystores to generate for testing |
+| tests.validatorKeystore.validatorClientType | string | `"lodestar"` | Validator client type to test (lodestar, lighthouse, teku, prysm, nimbus) Currently lodestar, prysm, and nimbus are implemented |
 | tolerations | object | `{}` | Tolerations for pod assignment # ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/ |
 | updateStrategy | string | `"RollingUpdate"` | allows you to configure and disable automated rolling updates for containers, labels, resource request/limits, and annotations for the Pods in a StatefulSet. |
-| validatorClient | object | `{"config":{"extraArgs":[],"graffiti":"","network":""},"enabled":true,"image":{"pullPolicy":"IfNotPresent","repository":"","tag":""},"keystores":{"secretName":""},"resources":{"limits":{"cpu":"1000m","memory":"2Gi"},"requests":{"cpu":"500m","memory":"1Gi"}},"type":"lighthouse"}` | Validator client configuration |
-| validatorClient.config | object | `{"extraArgs":[],"graffiti":"","network":""}` | Validator client specific configuration |
-| validatorClient.config.extraArgs | list | `[]` | Additional CLI arguments for the validator client  (the minimum required mev flags are automatically included when you set .Values.charon.builderApi to true) |
+| validatorClient | object | `{"config":{"extraArgs":[],"graffiti":"","network":"","prysm":{"extraArgs":[]}},"enabled":true,"image":{"pullPolicy":"IfNotPresent","repository":"","tag":""},"keystores":{"secretName":""},"resources":{"limits":{"cpu":"1000m","memory":"2Gi"},"requests":{"cpu":"500m","memory":"1Gi"}},"type":"lighthouse"}` | Validator client configuration |
+| validatorClient.config | object | `{"extraArgs":[],"graffiti":"","network":"","prysm":{"extraArgs":[]}}` | Validator client specific configuration |
+| validatorClient.config.extraArgs | list | `[]` | Additional CLI arguments passed to the validator client (regardless of type) (the minimum required mev flags are automatically included when you set .Values.charon.builderApi to true) |
 | validatorClient.config.graffiti | string | `""` | Graffiti to include in proposed blocks Leaving it unset will result in charon defaults. |
 | validatorClient.config.network | string | `""` | Network configuration for validator client (e.g., mainnet, sepolia) Used by some validator clients like Teku for network-specific configuration |
+| validatorClient.config.prysm | object | `{"extraArgs":[]}` | Configuration for the prysm validator client specifically Used to pass Prysm VC specific configuration NOTE: By using Prysm, you automatically accept the Terms of Service: https://github.com/prysmaticlabs/prysm/blob/develop/TERMS_OF_SERVICE.md |
+| validatorClient.config.prysm.extraArgs | list | `[]` | Additional CLI arguments passed to the Prysm validator client only |
 | validatorClient.enabled | bool | `true` | Enable the validator client container If you want to use an externally managed validator client.  Set this to false, and set your external validator to communicate with the 'validator-api' service created by this chart as if it were a beacon node API.  |
 | validatorClient.image | object | `{"pullPolicy":"IfNotPresent","repository":"","tag":""}` | Image configuration for validator client Repository and tag will be auto-selected based on validator client type if not specified |
 | validatorClient.keystores | object | `{"secretName":""}` | Validator keystores configuration |
