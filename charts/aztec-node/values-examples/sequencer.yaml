@@ -1,5 +1,11 @@
 # Example values for deploying an Aztec sequencer
 # A sequencer produces blocks and attestations for the network
+#
+# IMPORTANT: This example assumes you have deployed:
+# 1. Geth execution client (see geth-sepolia.yaml)
+# 2. Prysm consensus client (see prysm-sepolia.yaml)
+#
+# Deploy those L1 clients first, then deploy this sequencer
 
 # Deployment role
 role: sequencer
@@ -12,38 +18,55 @@ sequencer:
   # Use --set sequencer.attesterPrivateKey="0xYOUR_KEY" when deploying
   attesterPrivateKey: "0xYOUR_PRIVATE_KEY_HERE"
 
-  # Aztec address (32 bytes) to receive unburnt transaction fees
+  # REQUIRED: Aztec address (32 bytes) to receive unburnt transaction fees
+  # WARNING: If not set, the node will crash with "Invalid AztecAddress length 0"
   feeRecipient: "0x0000000000000000000000000000000000000000000000000000000000000000"
 
 # Network to connect to
-network: testnet
+network: staging-public
+networkName: staging-public
 
 # Container image configuration
 image:
   repository: aztecprotocol/aztec
   tag: latest
-  pullPolicy: Always  # Use Always for auto-updates
+  pullPolicy: Always  # Use Always for auto-updates with keel.sh
 
 # Node configuration
 node:
   replicas: 1
-  logLevel: "info"
+
+  # Log level configuration
+  # Format: "default_level; override: component, other_component"
+  logLevel: "debug; info: aztec:simulator, json-rpc"
+
+  # Startup command - REQUIRED for sequencer
+  # These flags tell Aztec to run as a full sequencer with archiver
+  startCmd:
+    - --node
+    - --archiver
+    - --sequencer
+    - --network
+    - staging-public  # WARNING: Must match network field above
 
   # L1 Ethereum configuration
-  # Sequencers need reliable, low-latency L1 connections
+  # Point to your locally deployed Geth + Prysm stack
+  # These should match the service names from geth-sepolia.yaml and prysm-sepolia.yaml
   l1ExecutionUrls:
-    - "http://l1-full-node-sepolia-execution.l1.svc.cluster.local:8545"
+    - "http://geth-sepolia.l1.svc.cluster.local:8545"
   l1ConsensusUrls:
-    - "http://l1-full-node-sepolia-beacon.l1.svc.cluster.local:5052"
+    - "http://prysm-sepolia.l1.svc.cluster.local:3500"
 
-  # Resource allocation (sequencers need more resources)
+  # Resource allocation
+  # Aztec minimum requirements: 2-4 cores, 16GB RAM, 1TB NVMe SSD, 25 Mbps network
+  # These values provide headroom for production workloads
   resources:
     requests:
-      cpu: "4"
-      memory: "16Gi"
+      cpu: "4"       # 4 cores (minimum: 2-4 cores)
+      memory: "16Gi" # 16GB (minimum: 16GB)
     limits:
-      cpu: "8"
-      memory: "32Gi"
+      cpu: "8"       # 8 cores for burst capacity
+      memory: "32Gi" # 32GB for optimal performance
 
   # Storage configuration
   storage:
@@ -51,36 +74,52 @@ node:
     dataStoreMapSize: "134217728"  # 128 GB
     worldStateMapSize: "134217728"  # 128 GB
 
-  # Startup probe (sequencers may need longer startup time)
+  # Startup probe - sequencers need extended startup time
+  # 60s * 60 = 1 hour max startup time
   startupProbe:
     periodSeconds: 60
-    failureThreshold: 30  # 30 minutes max startup time
+    failureThreshold: 60
 
 # Persistence
-# Sequencer requires 1TB NVMe SSD for archiver data
+# Aztec minimum requirement: 1TB NVMe SSD
+# 512Gi is currently sufficient for staging-public network
+# Increase size as network grows
 persistence:
   enabled: true
-  size: 1000Gi
-  # storageClassName: fast-ssd  # Uncomment to specify high-performance NVMe storage class
+  size: 512Gi  # Minimum 1TB recommended for production
+  storageClassName: local-path  # Use NVMe-backed storage class
   accessModes:
     - ReadWriteOnce
+  selector: {}
 
 # Use host networking for best P2P performance
+# This allows direct binding to node's network interface
 hostNetwork: true
 
 # Service configuration
 service:
   httpPort: 8080
 
+  # P2P networking
   p2p:
     enabled: true
     nodePortEnabled: false  # Not needed with hostNetwork
     port: 40400
+    announcePort: 40400
 
+  # Admin API for debugging and metrics
   admin:
     enabled: true
-    port: 8081
+    port: 8082
 
-# Optional: Pin to specific node for persistent storage
-# nodeSelector:
-#   kubernetes.io/hostname: your-node-name
+# Auto-update configuration with keel.sh
+# Polls for new images and force updates every 10 minutes
+podAnnotations:
+  keel.sh/policy: force
+  keel.sh/pollSchedule: "@every 10m"
+  keel.sh/trigger: poll
+
+# RECOMMENDED: Pin to specific node for persistent storage
+# This ensures the pod always runs on the same node with local storage
+nodeSelector:
+  kubernetes.io/hostname: your-node-name

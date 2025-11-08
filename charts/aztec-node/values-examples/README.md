@@ -2,6 +2,68 @@
 
 This directory contains example values files for deploying Aztec nodes in different roles.
 
+## L1 Infrastructure for Sequencers
+
+Before deploying a sequencer, you need L1 infrastructure (Ethereum execution + consensus clients). The examples directory includes production-tested configurations for Sepolia testnet.
+
+**Note**: L1 node requirements (Geth + Prysm) are separate from Aztec sequencer requirements. You can run them on the same machine or separate machines depending on your setup.
+
+### Quick Start - Deploy L1 Stack
+
+```bash
+# 1. Add ethpandaops Helm repository
+helm repo add ethpandaops https://ethpandaops.github.io/ethereum-helm-charts
+helm repo update
+
+# 2. Deploy Geth (execution client)
+helm install geth-sepolia ethpandaops/geth \
+  -f charts/aztec-node/values-examples/geth-sepolia.yaml \
+  -n l1 --create-namespace
+
+# 3. Deploy Prysm (consensus client)
+helm install prysm-sepolia ethpandaops/prysm \
+  -f charts/aztec-node/values-examples/prysm-sepolia.yaml \
+  -n l1
+
+# 4. Wait for sync (check logs)
+kubectl logs -f geth-sepolia-0 -n l1
+kubectl logs -f prysm-sepolia-0 -n l1
+
+# 5. Deploy Aztec sequencer (once L1 is synced)
+helm install aztec-sequencer ./charts/aztec-node \
+  -f charts/aztec-node/values-examples/sequencer.yaml \
+  --set sequencer.attesterPrivateKey="0xYOUR_PRIVATE_KEY" \
+  -n aztec-testnet --create-namespace
+```
+
+### L1 Configuration Files
+
+- **`geth-sepolia.yaml`** - Geth v1.16.7 execution client
+  - Snap sync mode for fast initial sync
+  - **Resources**: 2-4 cores, 8-16GB RAM
+  - **Storage**: 500Gi NVMe SSD (Sepolia currently ~300-400GB)
+  - Engine API on port 8551 (for Prysm)
+  - JSON-RPC on port 8545 (for Aztec)
+
+- **`prysm-sepolia.yaml`** - Prysm v6.1.4 consensus client
+  - **Critical flags**: `--subscribe-all-data-subnets`, `--blob-storage-layout=by-epoch`
+  - Checkpoint sync enabled (5-10 minute sync vs hours)
+  - **Resources**: 2-4 cores, 16GB RAM
+  - **Storage**: 800Gi NVMe SSD (part of ~637GB total Geth+Prysm stack)
+  - gRPC gateway on port 3500 (for Aztec)
+  - **Important**: 10-minute liveness probe delay for data column warm-up
+
+### JWT Configuration
+
+Both Geth and Prysm use the same JWT secret for Engine API authentication. The example files include a production JWT, but you should generate your own:
+
+```bash
+# Generate new JWT secret
+openssl rand -hex 32
+```
+
+Then update both `geth-sepolia.yaml` and `prysm-sepolia.yaml` with the new JWT value.
+
 ## Available Roles
 
 ### 1. Full Node (`fullnode.yaml`)
@@ -26,19 +88,31 @@ helm install aztec-fullnode ./charts/aztec-node \
 ### 2. Sequencer (`sequencer.yaml`)
 A sequencer produces blocks and attestations for the network.
 
-**Command:** `--node --archiver --sequencer --network testnet`
+**Command:** `--node --archiver --sequencer --network staging-public`
 
 **Use case:** Block production, network consensus participation
 
 **Requirements:**
-- L1 Ethereum RPC access (low-latency preferred)
+- **L1 Infrastructure**: Deploy Geth + Prysm first (see [L1 Infrastructure](#l1-infrastructure-for-sequencers))
 - Ethereum private key with minimum 0.1 ETH on L1
-- 1TB NVMe SSD
-- 4-8 CPU cores, 16-32GB RAM
+- **Aztec Sequencer Hardware** (separate from L1 nodes):
+  - **CPU**: 2-4 cores minimum (released in 2015 or later)
+  - **RAM**: 16GB minimum
+  - **Storage**: 1TB NVMe SSD for archiver data
+  - **Network**: 25 Mbps or higher
+- Host networking enabled for P2P performance
+
+**Critical Configuration:**
+- `sequencer.feeRecipient` - **REQUIRED** (node will crash if not set)
+- `sequencer.attesterPrivateKey` - **REQUIRED** (must have ETH on L1)
+- `node.startCmd` - Must include `--node --archiver --sequencer --network`
+- `node.startupProbe` - Set to 60s period, 60 failureThreshold (1hr max startup)
 
 **Deploy:**
 ```bash
-# IMPORTANT: Set your attester private key first!
+# IMPORTANT: Deploy L1 infrastructure first! See "L1 Infrastructure for Sequencers" section above
+
+# Then deploy sequencer with your private key
 helm install aztec-sequencer ./charts/aztec-node \
   -f charts/aztec-node/values-examples/sequencer.yaml \
   --set sequencer.attesterPrivateKey="0xYOUR_PRIVATE_KEY" \
