@@ -4,26 +4,186 @@
     "config:recommended"
   ],
   "enabledManagers": [
-    "github-actions"
+    "github-actions",
+    "regex"
   ],
   "packageRules": [
     {
-      "matchManagers": [
-        "github-actions"
-      ],
-      "matchDepTypes": [
-        "github-actions"
-      ],
-      "matchFileNames": [
-        ".github/workflows/**"
-      ],
-      "schedule": [
-        "every weekend"
-      ],
-      "labels": [
-        "renovate/github-actions"
-      ],
+      "description": "GitHub Actions updates",
+      "matchManagers": ["github-actions"],
+      "matchDepTypes": ["github-actions"],
+      "matchFileNames": [".github/workflows/**"],
+      "schedule": ["every weekend"],
+      "labels": ["renovate/github-actions"],
       "groupName": "GitHub Actions updates"
+    },
+    {
+      "description": "Obol core images - minor and patch updates only",
+      "matchDatasources": ["docker"],
+      "matchPackagePatterns": ["^obolnetwork/charon", "^obolnetwork/charon-dkg-sidecar"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "labels": ["renovate/obol-core"],
+      "groupName": "Obol core images"
+    },
+    {
+      "description": "Validator client images - group by client type",
+      "matchDatasources": ["docker"],
+      "matchPackagePatterns": [
+        "^sigp/lighthouse",
+        "^consensys/teku",
+        "^gcr.io/prysmaticlabs/prysm",
+        "^statusim/nimbus",
+        "^chainsafe/lodestar"
+      ],
+      "labels": ["renovate/validator-clients"],
+      "separateMinorPatch": true
+    },
+    {
+      "description": "Lighthouse updates",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["sigp/lighthouse"],
+      "groupName": "Lighthouse validator"
+    },
+    {
+      "description": "Teku updates",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["consensys/teku"],
+      "groupName": "Teku validator"
+    },
+    {
+      "description": "Prysm updates",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["gcr.io/prysmaticlabs/prysm/validator"],
+      "groupName": "Prysm validator"
+    },
+    {
+      "description": "Nimbus updates - group both images together",
+      "matchDatasources": ["docker"],
+      "matchPackagePatterns": ["^statusim/nimbus"],
+      "groupName": "Nimbus validator"
+    },
+    {
+      "description": "Lodestar updates",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["chainsafe/lodestar"],
+      "groupName": "Lodestar validator"
+    },
+    {
+      "description": "Infrastructure images",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": [
+        "bitnamisecure/kubectl",
+        "busybox",
+        "prom/prometheus"
+      ],
+      "labels": ["renovate/infrastructure"],
+      "groupName": "Infrastructure images"
+    }
+  ],
+  "regexManagers": [
+    {
+      "description": "Update Charon version in values.yaml",
+      "fileMatch": ["^charts/dv-pod/values\\.yaml$"],
+      "matchStrings": [
+        "# -- Charon image repository, pull policy, and tag version\\s+image:\\s+repository:\\s+(?<depName>obolnetwork/charon)\\s+pullPolicy:\\s+\\w+\\s+tag:\\s+(?<currentValue>v?[0-9]+\\.[0-9]+\\.[0-9]+)"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "semver"
+    },
+    {
+      "description": "Update DKG Sidecar image in values.yaml",
+      "fileMatch": ["^charts/dv-pod/values\\.yaml$"],
+      "matchStrings": [
+        "# -- Image repository for the DKG sidecar\\s+repository:\\s+\"(?<depName>obolnetwork/charon-dkg-sidecar)\"\\s+tag:\\s+\"(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "description": "Update kubectl image in values.yaml",
+      "fileMatch": ["^charts/dv-pod/values\\.yaml$"],
+      "matchStrings": [
+        "kubectlImage:\\s+repository:\\s+\"(?<depName>bitnamisecure/kubectl)\"\\s+tag:\\s+\"(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "description": "Update Charon ENR generation image in values.yaml",
+      "fileMatch": ["^charts/dv-pod/values\\.yaml$"],
+      "matchStrings": [
+        "generate:\\s+enabled:\\s+\\w+\\s+#[^\\n]*\\s+annotations:[^\\n]*\\s+#[^\\n]*\\s+nodeSelector:[^\\n]*\\s+image:\\s+repository:\\s+\"(?<depName>obolnetwork/charon)\"[^\\n]*\\s+tag:\\s+\"(?<currentValue>v?[0-9]+\\.[0-9]+\\.[0-9]+)\""
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "semver"
+    },
+    {
+      "description": "Update Lighthouse default version in statefulset.yaml",
+      "fileMatch": ["^charts/dv-pod/templates/statefulset\\.yaml$"],
+      "matchStrings": [
+        "image: \\{\\{ \\.Values\\.validatorClient\\.image\\.repository \\| default \"(?<depName>sigp/lighthouse)\" \\}\\}:\\{\\{ \\.Values\\.validatorClient\\.image\\.tag \\| default \"(?<currentValue>v?[0-9]+\\.[0-9]+\\.[0-9]+)\" \\}\\}"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "semver"
+    },
+    {
+      "description": "Update Teku default version in statefulset.yaml",
+      "fileMatch": ["^charts/dv-pod/templates/statefulset\\.yaml$"],
+      "matchStrings": [
+        "image: \\{\\{ \\.Values\\.validatorClient\\.image\\.repository \\| default \"(?<depName>consensys/teku)\" \\}\\}:\\{\\{ \\.Values\\.validatorClient\\.image\\.tag \\| default \"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\" \\}\\}"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "semver"
+    },
+    {
+      "description": "Update Prysm default version in statefulset.yaml",
+      "fileMatch": ["^charts/dv-pod/templates/statefulset\\.yaml$"],
+      "matchStrings": [
+        "image: \\{\\{ \\.Values\\.validatorClient\\.image\\.repository \\| default \"(?<depName>gcr\\.io/prysmaticlabs/prysm/validator)\" \\}\\}:\\{\\{ \\.Values\\.validatorClient\\.image\\.tag \\| default \"(?<currentValue>v?[0-9]+\\.[0-9]+\\.[0-9]+)\" \\}\\}"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "semver"
+    },
+    {
+      "description": "Update Nimbus eth2 default version in statefulset.yaml",
+      "fileMatch": ["^charts/dv-pod/templates/statefulset\\.yaml$"],
+      "matchStrings": [
+        "image: \\{\\{ \\.Values\\.validatorClient\\.image\\.repository \\| default \"(?<depName>statusim/nimbus-eth2)\" \\}\\}:\\{\\{ \\.Values\\.validatorClient\\.image\\.tag \\| default \"(?<currentValue>multiarch-v[0-9]+\\.[0-9]+\\.[0-9]+)\" \\}\\}"
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "description": "Update Nimbus validator-client default version in statefulset.yaml",
+      "fileMatch": ["^charts/dv-pod/templates/statefulset\\.yaml$"],
+      "matchStrings": [
+        "image: \\{\\{ \\.Values\\.validatorClient\\.image\\.repository \\| default \"(?<depName>statusim/nimbus-validator-client)\" \\}\\}:\\{\\{ \\.Values\\.validatorClient\\.image\\.tag \\| default \"(?<currentValue>multiarch-v[0-9]+\\.[0-9]+\\.[0-9]+)\" \\}\\}"
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "description": "Update Lodestar default version in statefulset.yaml",
+      "fileMatch": ["^charts/dv-pod/templates/statefulset\\.yaml$"],
+      "matchStrings": [
+        "image: \\{\\{ \\.Values\\.validatorClient\\.image\\.repository \\| default \"(?<depName>chainsafe/lodestar)\" \\}\\}:\\{\\{ \\.Values\\.validatorClient\\.image\\.tag \\| default \"(?<currentValue>v?[0-9]+\\.[0-9]+\\.[0-9]+)\" \\}\\}"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "semver"
+    },
+    {
+      "description": "Update busybox version in statefulset.yaml",
+      "fileMatch": ["^charts/dv-pod/templates/statefulset\\.yaml$"],
+      "matchStrings": [
+        "image: (?<depName>busybox):(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "semver"
+    },
+    {
+      "description": "Update Prometheus version in prometheus-deployment.yaml",
+      "fileMatch": ["^charts/dv-pod/templates/prometheus-deployment\\.yaml$"],
+      "matchStrings": [
+        "image: (?<depName>prom/prometheus):(?<currentValue>v?[0-9]+\\.[0-9]+\\.[0-9]+)"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "semver"
     }
   ]
 }
