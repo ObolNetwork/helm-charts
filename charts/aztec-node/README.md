@@ -15,10 +15,10 @@ A Helm chart for deploying an Aztec node
 | customNetwork | object | `{"feeAssetHandlerContractAddress":null,"l1ChainId":null,"registryContractAddress":null,"slashFactoryAddress":null}` | Custom network - (not recommended) - Only for custom testnet usecases Must have deployed your own protocol contracts first |
 | fullnameOverride | string | `""` | Overrides the chart computed fullname |
 | hostNetwork | bool | `true` | Use host network - provides best P2P performance by binding directly to node's network This is the recommended configuration for Aztec nodes |
-| image | object | `{"pullPolicy":"IfNotPresent","repository":"aztecprotocol/aztec","tag":"2.1.0-rc.24"}` | Image to use for the container |
+| image | object | `{"pullPolicy":"IfNotPresent","repository":"aztecprotocol/aztec","tag":"2.1.4"}` | Image to use for the container |
 | image.pullPolicy | string | `"IfNotPresent"` | Container pull policy |
 | image.repository | string | `"aztecprotocol/aztec"` | Image repository |
-| image.tag | string | `"2.1.0-rc.24"` | Image tag |
+| image.tag | string | `"2.1.4"` | Image tag |
 | initContainers | list | `[]` | Additional init containers |
 | nameOverride | string | `""` | Overrides the chart name |
 | network | string | `nil` | Network name - this is a predefined network - testnet, devnet |
@@ -62,7 +62,8 @@ A Helm chart for deploying an Aztec node
 | rbac.rules | list | See `values.yaml` | Required ClusterRole rules |
 | role | string | `"sequencer"` | Role determines the type of Aztec node deployment Valid roles: fullnode, sequencer, prover |
 | rollupVersion | string | `"canonical"` | Which rollup contract we want to follow from the registry |
-| sequencer.attesterPrivateKey | string | `""` | Ethereum private key for attester (signs blocks and attestations) REQUIRED when role is 'sequencer' |
+| sequencer.attesterPrivateKey | string | `""` | Ethereum private key for attester (signs blocks and attestations) REQUIRED when role is 'sequencer' (unless using attesterPrivateKeySecretName) Use this field OR attesterPrivateKeySecretName, not both |
+| sequencer.attesterPrivateKeySecretName | string | `""` | Name of existing Kubernetes secret containing keystore.json Use this field OR attesterPrivateKey, not both When set, the chart will use the external secret instead of creating one The secret must contain a key named "keystore.json" with the full keystore structure Create with: kubectl create secret generic <name> --from-file=keystore.json=keystore.json |
 | service.admin.enabled | bool | `true` |  |
 | service.admin.port | int | `8081` |  |
 | service.headless.enabled | bool | `true` |  |
@@ -119,6 +120,8 @@ helm install aztec-sequencer ./charts/aztec-node \
 
 **Requirements:**
 - Ethereum private key with minimum 0.1 ETH on L1 (Sepolia for testnet)
+
+**For production deployments:** Instead of passing the private key inline, you can reference an external Kubernetes secret. See [Using External Kubernetes Secrets](#using-external-kubernetes-secrets-sequencer) for details.
 
 ### Install a Prover
 
@@ -421,55 +424,6 @@ kubectl delete pvc -n aztec-testnet -l app.kubernetes.io/name=aztec-node
 2. **Sequencer:** Use `--set sequencer.attesterPrivateKey="0x..."` when deploying
 3. **Prover:** Use `--set prover.node.publisherPrivateKey="0x..."` when deploying
 4. **Secrets Management:** Consider using external secret managers (Vault, Sealed Secrets, etc.)
-
-### Using External Kubernetes Secrets (Sequencer)
-
-For production deployments, you can reference an existing Kubernetes secret instead of providing the private key inline. This is recommended for GKE and other production environments.
-
-**Step 1: Create your Kubernetes secret with the keystore.json content**
-
-```bash
-# Create the keystore.json content
-cat > keystore.json << EOF
-{
-  "schemaVersion": 1,
-  "validators": [
-    {
-      "attester": ["0xYOUR_PRIVATE_KEY"],
-      "feeRecipient": "0x0000000000000000000000000000000000000000000000000000000000000000"
-    }
-  ]
-}
-EOF
-
-# Create the Kubernetes secret
-kubectl create secret generic aztec-sequencer-keystore \
-  --from-file=keystore.json=keystore.json \
-  -n aztec-testnet
-
-# Clean up local file
-rm keystore.json
-```
-
-**Step 2: Deploy the chart referencing the external secret**
-
-```bash
-helm install aztec-sequencer ./charts/aztec-node \
-  -f charts/aztec-node/values-examples/sequencer.yaml \
-  --set sequencer.attesterPrivateKeySecretName="aztec-sequencer-keystore" \
-  -n aztec-testnet --create-namespace
-```
-
-**Or using a values file:**
-
-```yaml
-role: sequencer
-sequencer:
-  attesterPrivateKeySecretName: "aztec-sequencer-keystore"
-  feeRecipient: "0x0000000000000000000000000000000000000000000000000000000000000000"
-```
-
-**Important:** When using `attesterPrivateKeySecretName`, do NOT set `attesterPrivateKey`. Use one method or the other, not both.
 
 ## Troubleshooting
 

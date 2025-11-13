@@ -8,7 +8,7 @@ repos:
           Uses 'helm-docs' to create documentation from the Helm chart's 'values.yaml' file,
           and inserts the result into a corresponding 'README.md' file.
           If this hook modifies files, stage the changes (git add) and commit again.
-        entry: jnorwood/helm-docs:v1.11.0
+        entry: jnorwood/helm-docs:v1.14.2
         files: (README\.md\.gotmpl|(Chart|requirements|values)\.yaml)$
         language: docker_image
         require_serial: true
