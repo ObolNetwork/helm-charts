@@ -110,10 +110,15 @@ Validate sequencer configuration
 */}}
 {{- define "chart.validateSequencer" -}}
 {{- if eq .Values.role "sequencer" -}}
-{{- if not .Values.sequencer.attesterPrivateKey -}}
-{{- fail "sequencer.attesterPrivateKey is REQUIRED when role is 'sequencer'" -}}
+{{- $hasInlineKey := .Values.sequencer.attesterPrivateKey -}}
+{{- $hasExternalSecret := .Values.sequencer.attesterPrivateKeySecretName -}}
+{{- if and $hasInlineKey $hasExternalSecret -}}
+{{- fail "Cannot use both sequencer.attesterPrivateKey and sequencer.attesterPrivateKeySecretName - choose one method" -}}
 {{- end -}}
-{{- if not (hasPrefix "0x" .Values.sequencer.attesterPrivateKey) -}}
+{{- if and (not $hasInlineKey) (not $hasExternalSecret) -}}
+{{- fail "Must provide either sequencer.attesterPrivateKey OR sequencer.attesterPrivateKeySecretName when role is 'sequencer'" -}}
+{{- end -}}
+{{- if and $hasInlineKey (not (hasPrefix "0x" .Values.sequencer.attesterPrivateKey)) -}}
 {{- fail "sequencer.attesterPrivateKey must start with '0x'" -}}
 {{- end -}}
 {{- end -}}
