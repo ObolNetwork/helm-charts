@@ -141,10 +141,20 @@ Create comma-separated list of primary beacon node endpoints
 
 {{/*
 Create comma-separated list of fallback beacon node endpoints
+Returns user-specified endpoints or intelligent defaults based on network
 */}}
 {{- define "dv-pod.fallbackBeaconNodeEndpoints" -}}
 {{- if .Values.charon.fallbackBeaconNodeEndpoints -}}
 {{- join "," .Values.charon.fallbackBeaconNodeEndpoints -}}
+{{- else -}}
+{{- $network := .Values.network -}}
+{{- if eq $network "mainnet" -}}
+https://ethereum-beacon-api.publicnode.com
+{{- else if eq $network "sepolia" -}}
+https://ethereum-sepolia-beacon-api.publicnode.com
+{{- else if eq $network "hoodi" -}}
+https://ethereum-hoodi-beacon-api.publicnode.com
+{{- end -}}
 {{- end -}}
 {{- end -}}
 

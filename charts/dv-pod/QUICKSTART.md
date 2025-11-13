@@ -20,7 +20,7 @@ Each operator deploys their node:
 ```bash
 helm upgrade --install my-dv-pod charts/dv-pod/ \
   --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS \
-  --set chainId=1 \
+  --set network=mainnet \
   --namespace=dv-pod \
   --timeout=10m --create-namespace
 ```
@@ -122,7 +122,7 @@ Expected output: `["charon-enr-private-key", "enr"]`
 helm upgrade --install my-dv-pod charts/dv-pod/ \
   --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS \
   --set charon.dkgSidecar.targetConfigHash=0xYOUR_CONFIG_HASH \
-  --set chainId=1 \
+  --set network=mainnet \
   --set 'charon.beaconNodeEndpoints[0]=http://YOUR_BEACON_NODE:5052' \
   --set charon.enr.existingSecret.name=charon-enr-private-key \
   --namespace=dv-pod \
@@ -156,16 +156,13 @@ kubectl exec -n dv-pod my-dv-pod-dv-pod-0 -- ls -la /charon-data/cluster-lock.js
 
 ```bash
 # Mainnet (default)
---set chainId=1
+--set network=mainnet
 
 # Sepolia testnet
---set chainId=11155111
+--set network=sepolia
 
 # Hoodi testnet
---set chainId=560048
-
-# Gnosis Chain
---set chainId=100
+--set network=hoodi
 ```
 
 ### Custom DKG Sidecar Image
@@ -198,8 +195,7 @@ kubectl exec -n dv-pod my-dv-pod-dv-pod-0 -- ls -la /charon-data/cluster-lock.js
 --set validatorClient.type=teku
 
 # Prysm
---set validatorClient.type=prysm \
---set validatorClient.config.prysm.acceptTermsOfUse=true
+--set validatorClient.type=prysm
 
 # Lodestar
 --set validatorClient.type=lodestar
@@ -290,6 +286,73 @@ kubectl port-forward -n dv-pod my-dv-pod-dv-pod-0 3620:3620
 5. **Namespace Isolation**: ENR secrets are only detected in the same namespace as the Helm release.
 
 6. **Secret Naming**: By default, auto-generated secrets use the name `charon-enr-private-key`. To use release-based naming (`{release-name}-dv-pod-enr-key`), set `secrets.defaultEnrPrivateKey=""`.
+
+---
+
+## Challenge & Testing Environments
+
+For testing, development, or challenge environments, you may need to override the default API endpoint or use a specific DKG sidecar version.
+
+### Override API Endpoint
+
+To point to a different Obol API (e.g., dev, staging, or local):
+
+```bash
+# Using development API
+helm upgrade --install my-dv-pod charts/dv-pod/ \
+  --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS \
+  --set charon.dkgSidecar.apiEndpoint=https://obol-api-nonprod-dev.dev.obol.tech \
+  --set network=hoodi \
+  --namespace=dv-pod \
+  --timeout=10m --create-namespace
+
+# Using local API for development
+helm upgrade --install my-dv-pod charts/dv-pod/ \
+  --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS \
+  --set charon.dkgSidecar.apiEndpoint=http://localhost:3000 \
+  --set network=hoodi \
+  --namespace=dv-pod \
+  --timeout=10m --create-namespace
+```
+
+### Use Specific DKG Sidecar Commit
+
+To test with a specific DKG sidecar commit or branch:
+
+```bash
+# Using a specific commit SHA
+helm upgrade --install my-dv-pod charts/dv-pod/ \
+  --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS \
+  --set charon.dkgSidecar.image.tag=90a1656 \
+  --set charon.dkgSidecar.image.pullPolicy=Always \
+  --set network=hoodi \
+  --namespace=dv-pod \
+  --timeout=10m --create-namespace
+
+### Complete Challenge Example
+
+Full example combining custom API endpoint, specific DKG sidecar commit, and hoodi testnet:
+
+```bash
+helm upgrade --install challenge-dv-pod charts/dv-pod/ \
+  --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS \
+  --set network=hoodi \
+  --set 'charon.fallbackBeaconNodeEndpoints[0]=https://ethereum-hoodi-beacon-api.publicnode.com' \
+  --set charon.dkgSidecar.apiEndpoint=https://obol-api-nonprod-dev.dev.obol.tech \
+  --set charon.dkgSidecar.image.tag=90a1656 \
+  --set charon.dkgSidecar.image.pullPolicy=Always \
+  --set validatorClient.type=prysm \
+  --set centralMonitoring.enabled=true \
+  --set-string centralMonitoring.token='YOUR_MONITORING_TOKEN' \
+  --namespace=dv-pod \
+  --timeout=10m --create-namespace
+```
+
+**Key Parameters for Challenges:**
+- `network=hoodi` - Use Hoodi testnet for testing
+- `charon.dkgSidecar.apiEndpoint` - Point to dev/staging API
+- `charon.dkgSidecar.image.tag` - Specific commit SHA or branch name
+- `charon.dkgSidecar.image.pullPolicy=Always` - Force pull latest image
 
 ---
 
