@@ -225,7 +225,11 @@ spec:
         {{- if eq .Values.role "sequencer" }}
         - name: keystore
           secret:
+            {{- if .Values.sequencer.attesterPrivateKeySecretName }}
+            secretName: {{ .Values.sequencer.attesterPrivateKeySecretName }}
+            {{- else }}
             secretName: {{ include "chart.resourceName" . }}-keystore
+            {{- end }}
         {{- end }}
   {{- if not .Values.persistence.enabled }}
         - name: storage
