@@ -42,4 +42,4 @@ charon:
     retryDelayFactor: 2
 
 # Other standard configurations
-chainId: "11155111" # Sepolia
+network: sepolia

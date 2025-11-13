@@ -67,7 +67,7 @@ kubectl create secret generic validator-keys \
 kubectl create configmap cluster-lock --from-file=cluster/node0/cluster-lock.json
 
 # Install the chart, referencing your ConfigMap and Secrets
-helm install my-dv-pod obol/dv-pod \
+helm upgrade --install my-dv-pod obol/dv-pod \
   --set configMaps.clusterLock=cluster-lock \
   --set validatorClient.keystores.secretName=validator-keys
 ```
@@ -103,7 +103,7 @@ kubectl create configmap cluster-lock \
   --from-file=.charon/cluster-lock.json
 
 # Install the chart
-helm install my-dv-pod obol/dv-pod \
+helm upgrade --install my-dv-pod obol/dv-pod \
   --set configMaps.clusterLock=cluster-lock \
   --set validatorClient.keystores.secretName=validator-keys
 ```
@@ -121,7 +121,7 @@ If you don't have pre-existing artifacts, the chart can automatically:
 
 Simply deploy the chart with your operator address:
 ```sh
-helm install my-dv-pod obol/dv-pod \
+helm upgrade --install my-dv-pod obol/dv-pod \
   --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS
 ```
 
@@ -170,13 +170,13 @@ validatorClient:
       - --suggested-fee-recipient=0xYOUR_FEE_RECIPIENT_ADDRESS
 ```
 
-With a `helm install` command for pre-existing artifacts.
+With a `helm upgrade --install` command for pre-existing artifacts.
 
 ```sh
-helm install my-dv-pod obol/dv-pod \
+helm upgrade --install my-dv-pod obol/dv-pod \
   --set configMaps.clusterLock=cluster-lock \
   --set validatorClient.keystores.secretName=validator-keys \
-  --set validatorClient.type=prysm --set validatorClient.config.prysm.acceptTermsOfUse=true
+  --set validatorClient.type=prysm
 ```
 
 > [!NOTE]
@@ -199,7 +199,7 @@ kubectl create secret generic validator-keys \
   --from-file=keystore-1.txt
 
 # Deploy the chart with the keystore secret
-helm install my-dv-pod obol/dv-pod \
+helm upgrade --install my-dv-pod obol/dv-pod \
   --set validatorClient.keystores.secretName=validator-keys \
   --set configMaps.clusterLock=my-cluster-lock
 ```
@@ -227,11 +227,11 @@ The ENR (Ethereum Node Record) secret **MUST** be created in the same namespace 
 ```bash
 # Wrong approach - secret and chart in different namespaces
 kubectl create secret generic charon-enr-private-key -n dv-pod --from-literal=...
-helm install my-dv-pod obol/dv-pod  # Installs in default namespace - ENR will be regenerated!
+helm upgrade --install my-dv-pod obol/dv-pod  # Installs in default namespace - ENR will be regenerated!
 
 # Correct approach - both in same namespace
 kubectl create secret generic charon-enr-private-key -n dv-pod --from-literal=...
-helm install my-dv-pod obol/dv-pod -n dv-pod  # Both in dv-pod namespace
+helm upgrade --install my-dv-pod obol/dv-pod -n dv-pod  # Both in dv-pod namespace
 ```
 
 ## Advanced Usage
@@ -278,7 +278,7 @@ In this case, you have two options:
 
 2. Install the chart with the lockHash value:
    ```sh
-   helm install my-dv-pod obol/dv-pod \
+   helm upgrade --install my-dv-pod obol/dv-pod \
      --set charon.lockHash=$LOCK_HASH \
      --set charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>
    ```
@@ -294,7 +294,7 @@ In this case, you have two options:
 
 2. Install the chart referencing the ConfigMap:
    ```sh
-   helm install my-dv-pod obol/dv-pod \
+   helm upgrade --install my-dv-pod obol/dv-pod \
      --set configMaps.lockHash=cluster-lock-hash \
      --set charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>
    ```
