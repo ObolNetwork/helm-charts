@@ -14,7 +14,7 @@ image:
   # -- Image repository
   repository: aztecprotocol/aztec
   # -- Image tag
-  tag: latest  # Auto-updates to latest stable (currently 2.0.3)
+  tag: 2.1.4  # Auto-updates to latest stable
   # -- Container pull policy
   pullPolicy: Always  # Required for Keel auto-updates
 
