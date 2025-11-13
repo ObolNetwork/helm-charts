@@ -425,6 +425,55 @@ kubectl delete pvc -n aztec-testnet -l app.kubernetes.io/name=aztec-node
 3. **Prover:** Use `--set prover.node.publisherPrivateKey="0x..."` when deploying
 4. **Secrets Management:** Consider using external secret managers (Vault, Sealed Secrets, etc.)
 
+### Using External Kubernetes Secrets (Sequencer)
+
+For production deployments, you can reference an existing Kubernetes secret instead of providing the private key inline. This is recommended for GKE and other production environments.
+
+**Step 1: Create your Kubernetes secret with the keystore.json content**
+
+```bash
+# Create the keystore.json content
+cat > keystore.json << EOF
+{
+  "schemaVersion": 1,
+  "validators": [
+    {
+      "attester": ["0xYOUR_PRIVATE_KEY"],
+      "feeRecipient": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ]
+}
+EOF
+
+# Create the Kubernetes secret
+kubectl create secret generic aztec-sequencer-keystore \
+  --from-file=keystore.json=keystore.json \
+  -n aztec-testnet
+
+# Clean up local file
+rm keystore.json
+```
+
+**Step 2: Deploy the chart referencing the external secret**
+
+```bash
+helm install aztec-sequencer ./charts/aztec-node \
+  -f charts/aztec-node/values-examples/sequencer.yaml \
+  --set sequencer.attesterPrivateKeySecretName="aztec-sequencer-keystore" \
+  -n aztec-testnet --create-namespace
+```
+
+**Or using a values file:**
+
+```yaml
+role: sequencer
+sequencer:
+  attesterPrivateKeySecretName: "aztec-sequencer-keystore"
+  feeRecipient: "0x0000000000000000000000000000000000000000000000000000000000000000"
+```
+
+**Important:** When using `attesterPrivateKeySecretName`, do NOT set `attesterPrivateKey`. Use one method or the other, not both.
+
 ## Troubleshooting
 
 ### Pod Not Starting
