@@ -175,10 +175,14 @@ spec:
               value: "10000"
             - name: DATA_DIRECTORY
               value: {{ .Values.node.storage.dataDirectory | quote }}
+            {{- if .Values.node.storage.dataStoreMapSize }}
             - name: DATA_STORE_MAP_SIZE_KB
               value: {{ .Values.node.storage.dataStoreMapSize | quote }}
+            {{- end }}
+            {{- if .Values.node.storage.worldStateMapSize }}
             - name: WS_DB_MAP_SIZE_KB
               value: {{ .Values.node.storage.worldStateMapSize | quote }}
+            {{- end }}
             - name: USE_GCLOUD_LOGGING
               value: {{ .Values.node.metrics.useGcloudLogging | quote }}
             {{- if .Values.node.metrics.otelCollectorEndpoint }}
