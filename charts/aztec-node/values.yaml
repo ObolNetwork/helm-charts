@@ -17,8 +17,15 @@ role: sequencer
 
 sequencer:
   # -- Ethereum private key for attester (signs blocks and attestations)
-  # REQUIRED when role is 'sequencer'
+  # REQUIRED when role is 'sequencer' (unless using attesterPrivateKeySecretName)
+  # Use this field OR attesterPrivateKeySecretName, not both
   attesterPrivateKey: ""
+  # -- Name of existing Kubernetes secret containing keystore.json
+  # Use this field OR attesterPrivateKey, not both
+  # When set, the chart will use the external secret instead of creating one
+  # The secret must contain a key named "keystore.json" with the full keystore structure
+  # Create with: kubectl create secret generic <name> --from-file=keystore.json=keystore.json
+  attesterPrivateKeySecretName: ""
   # -- Aztec address (32 bytes) to receive unburnt transaction fees
   # feeRecipient: "0x0000000000000000000000000000000000000000000000000000000000000000"
 
@@ -81,7 +88,7 @@ image:
   # -- Image repository
   repository: aztecprotocol/aztec
   # -- Image tag
-  tag: 2.1.0-rc.24
+  tag: 2.1.4
   # -- Container pull policy
   pullPolicy: IfNotPresent
 
