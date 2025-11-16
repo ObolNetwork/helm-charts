@@ -1,0 +1,103 @@
+# Example values for deploying Geth execution client on Sepolia
+# This is designed for use with the ethpandaops/geth Helm chart
+#
+# Installation:
+#   helm repo add ethpandaops https://ethpandaops.github.io/ethereum-helm-charts
+#   helm install geth-sepolia ethpandaops/geth -n l1 -f geth-sepolia.yaml
+#
+# This Geth instance will serve as the L1 execution client for your Aztec sequencer
+
+# Override the full name to ensure consistent service naming
+# This ensures the service is accessible at geth-sepolia.l1.svc.cluster.local
+fullnameOverride: geth-sepolia
+
+# Number of Geth replicas (typically 1 for a single sequencer)
+replicas: 1
+
+# Container image
+image:
+  repository: ethereum/client-go
+  tag: v1.16.7
+  pullPolicy: IfNotPresent
+
+# Port configuration
+p2pPort: 30303      # P2P networking port (TCP and UDP)
+httpPort: 8545      # JSON-RPC HTTP endpoint
+wsPort: 8546        # WebSocket endpoint
+authPort: 8551      # Engine API (authenticated RPC for consensus client)
+metricsPort: 6060   # Prometheus metrics
+
+# JWT secret for Engine API authentication
+# This MUST match the JWT used by your consensus client (Prysm)
+# The same JWT is used in prysm-sepolia.yaml
+jwt: ecb22bc24e7d4061f7ed690ccd5846d7d73f5d2b9733267e12f56790398d908a
+
+# Additional Geth command-line arguments
+# These are flags not covered by the chart's default configuration
+extraArgs:
+  # CRITICAL: Network flag - must be first
+  - --sepolia
+
+  # Sync mode - "snap" is fastest for initial sync
+  - --syncmode=snap
+
+  # Maximum number of network peers
+  - --maxpeers=50
+
+  # HTTP API configuration
+  - --http.api=eth,net,web3,engine,admin
+
+  # WebSocket API configuration
+  - --ws.api=eth,net,web3
+
+# Persistence configuration
+# Minimum requirement: 1TB NVMe SSD (500Gi is sufficient for Sepolia testnet)
+# For mainnet, use 2TB+ to accommodate growth
+persistence:
+  enabled: true
+  size: 500Gi  # Sepolia testnet size - increase for mainnet
+  storageClassName: local-path  # Use NVMe-backed storage class for best performance
+  accessModes:
+    - ReadWriteOnce
+
+# Pin to specific node for local storage persistence
+# IMPORTANT: This should match your Aztec sequencer's node for low latency
+nodeSelector:
+  kubernetes.io/hostname: silverfib
+
+# Resource allocation
+# Sepolia testnet minimum: 4 cores, 8-16 GB RAM
+# Recommended for production: 4 cores, 16GB RAM
+resources:
+  requests:
+    cpu: 2000m      # 2 cores minimum
+    memory: 8Gi     # 8GB minimum, 16GB recommended
+  limits:
+    cpu: 4000m      # 4 cores
+    memory: 16Gi    # 16GB for optimal performance
+
+# Probes
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 60
+  periodSeconds: 120
+
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+# Service configuration
+service:
+  type: ClusterIP
+
+# RBAC and ServiceAccount
+serviceAccount:
+  create: true
+
+rbac:
+  create: true
+
+# Pod management
+podManagementPolicy: OrderedReady
+terminationGracePeriodSeconds: 300
