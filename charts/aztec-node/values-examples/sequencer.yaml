@@ -29,7 +29,7 @@ networkName: staging-public
 # Container image configuration
 image:
   repository: aztecprotocol/aztec
-  tag: 2.1.4
+  tag: 2.1.5
   pullPolicy: Always  # Use Always for auto-updates with keel.sh
 
 # Node configuration

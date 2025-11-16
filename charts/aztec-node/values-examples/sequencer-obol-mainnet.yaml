@@ -1,9 +1,9 @@
-# Example values for deploying an Aztec sequencer on mainnet
+# Example values for deploying an Aztec sequencer
 # A sequencer produces blocks and attestations for the network
 #
 # IMPORTANT: This example assumes you have deployed:
-# 1. Geth execution client (see geth-mainnet.yaml example)
-# 2. Prysm/Lighthouse consensus client (see prysm-mainnet.yaml example)
+# 1. Geth execution client (see geth-sepolia.yaml)
+# 2. Prysm consensus client (see prysm-sepolia.yaml)
 #
 # Deploy those L1 clients first, then deploy this sequencer
 
@@ -12,16 +12,11 @@ role: sequencer
 
 # Sequencer-specific configuration
 sequencer:
-  # OPTION 1: Inline private key (NOT recommended for production)
+  # REQUIRED: Ethereum private key for attester (signs blocks and attestations)
+  # Must start with '0x' and have sufficient ETH on L1 (minimum 0.1 ETH recommended)
+  # SECURITY: Never commit real private keys to version control
   # Use --set sequencer.attesterPrivateKey="0xYOUR_KEY" when deploying
-  # attesterPrivateKey: ""
-
-  # OPTION 2: External Kubernetes secret (RECOMMENDED for production)
-  # Create secret first:
-  #   kubectl create secret generic aztec-sequencer-mainnet-keystore \
-  #     --from-file=keystore.json=keystore.json -n aztec
-  # Then reference it:
-  attesterPrivateKeySecretName: "aztec-sequencer-mainnet-keystore"
+  attesterPrivateKey: "0xYOUR_PRIVATE_KEY_HERE"
 
   # REQUIRED: Aztec address (64-character hex string) to receive unburnt transaction fees
   # WARNING: If not set, the node will crash with "Invalid AztecAddress length 0"
@@ -35,7 +30,7 @@ networkName: mainnet
 image:
   repository: aztecprotocol/aztec
   tag: 2.1.5
-  pullPolicy: IfNotPresent  # Use IfNotPresent for pinned versions, or Always for auto-updates
+  pullPolicy: Always  # Use Always for auto-updates with keel.sh
 
 # Node configuration
 node:
@@ -43,7 +38,7 @@ node:
 
   # Log level configuration
   # Format: "default_level; override: component, other_component"
-  logLevel: "info"
+  logLevel: "debug; info: aztec:simulator, json-rpc"
 
   # Startup command - REQUIRED for sequencer
   # These flags tell Aztec to run as a full sequencer with archiver
@@ -55,13 +50,12 @@ node:
     - mainnet  # WARNING: Must match network field above
 
   # L1 Ethereum configuration
-  # Point to your deployed Geth + Prysm/Lighthouse stack
-  # These should match the service names from your L1 deployment
-  # Pattern: <service-name>.<namespace>.svc.cluster.local:<port>
+  # Point to your locally deployed Geth + Prysm stack
+  # These should match the service names from geth-sepolia.yaml and prysm-sepolia.yaml
   l1ExecutionUrls:
-    - "http://geth-mainnet.l1.svc.cluster.local:8545"
+    - "http://geth-lighthouse-mainnet-2.bn-mainnet-archive.svc.cluster.local:8545"
   l1ConsensusUrls:
-    - "http://prysm-mainnet.l1.svc.cluster.local:3500"
+    - "http://prysm-geth-mainnet-1.bn-prysm-geth-mainnet-1.svc.cluster.local:3500"
 
   # Resource allocation
   # Aztec minimum requirements: 2-4 cores, 16GB RAM, 1TB NVMe SSD, 25 Mbps network
@@ -75,10 +69,10 @@ node:
       memory: "32Gi" # 32GB for optimal performance
 
   # Storage configuration
-  storage:
-    dataDirectory: /data
-    dataStoreMapSize: "134217728"  # 128 GB
-    worldStateMapSize: "134217728"  # 128 GB
+  # storage:
+  #   dataDirectory: /data
+  #   dataStoreMapSize: "134217728"  # 128 GB
+  #   worldStateMapSize: "134217728"  # 128 GB
 
   # Startup probe - sequencers need extended startup time
   # 60s * 60 = 1 hour max startup time
@@ -88,28 +82,19 @@ node:
 
 # Persistence
 # Aztec minimum requirement: 1TB NVMe SSD
+# 512Gi is currently sufficient for staging-public network
+# Increase size as network grows
 persistence:
   enabled: true
-  size: 1000Gi  # 1TB recommended for mainnet
-  storageClassName: premium-rwo  # Use NVMe-backed storage class
+  size: 1000Gi  # Minimum 1TB recommended for production
+  storageClassName: premium-rwo # Use NVMe-backed storage class
   accessModes:
     - ReadWriteOnce
   selector: {}
 
-# Networking configuration
-# Choose ONE of the following networking strategies:
-
-# OPTION 1: Host networking (recommended for best P2P performance)
+# Use host networking for best P2P performance
 # This allows direct binding to node's network interface
 hostNetwork: true
-
-# OPTION 2: NodePort (alternative if host networking not available)
-# Uncomment if using NodePort instead of hostNetwork
-# hostNetwork: false
-# service:
-#   p2p:
-#     nodePortEnabled: true
-#     nodePort: 30400
 
 # Service configuration
 service:
@@ -125,10 +110,11 @@ service:
   # Admin API for debugging and metrics
   admin:
     enabled: true
-    port: 8081
+    port: 8082
 
-# Pod annotations (optional - for auto-updates with keel.sh)
-# podAnnotations:
-#   keel.sh/policy: force
-#   keel.sh/pollSchedule: "@every 10m"
-#   keel.sh/trigger: poll
+# Auto-update configuration with keel.sh
+# Polls for new images and force updates every 10 minutes
+podAnnotations:
+  keel.sh/policy: force
+  keel.sh/pollSchedule: "@every 10m"
+  keel.sh/trigger: poll
