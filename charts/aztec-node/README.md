@@ -23,7 +23,7 @@ A Helm chart for deploying an Aztec node
 | nameOverride | string | `""` | Overrides the chart name |
 | network | string | `nil` | Network name - this is a predefined network - testnet, devnet |
 | networkName | string | `"staging-public"` | Network identifier used in resource naming (l2-{role}-node-{networkName}-{component}) This appears in service/statefulset names for easy identification |
-| node | object | `{"coinbase":null,"l1ConsensusHostApiKeyHeaders":[],"l1ConsensusHostApiKeys":[],"l1ConsensusUrls":["http://l1-full-node-sepolia-beacon.l1.svc.cluster.local:5052"],"l1ExecutionUrls":["http://l1-full-node-sepolia-execution.l1.svc.cluster.local:8545"],"logLevel":"info","metrics":{"otelCollectorEndpoint":"","otelExcludeMetrics":"","useGcloudLogging":false},"nodeJsOptions":["--no-warnings","--max-old-space-size=4096"],"preStartScript":"","remoteUrl":{"archiver":null,"blobSink":null,"proverBroker":null,"proverCoordinationNodes":[]},"replicas":1,"resources":{},"sentinel":{"enabled":false},"startCmd":[],"startupProbe":{"failureThreshold":20,"periodSeconds":30},"storage":{"archiveStorageMapSize":null,"dataDirectory":"/data","dataStoreMapSize":"134217728","p2pStorageMapSize":null,"worldStateMapSize":"134217728"}}` | Aztec node configuration |
+| node | object | `{"coinbase":null,"l1ConsensusHostApiKeyHeaders":[],"l1ConsensusHostApiKeys":[],"l1ConsensusUrls":["http://l1-full-node-sepolia-beacon.l1.svc.cluster.local:5052"],"l1ExecutionUrls":["http://l1-full-node-sepolia-execution.l1.svc.cluster.local:8545"],"logLevel":"info","metrics":{"otelCollectorEndpoint":"","otelExcludeMetrics":"","useGcloudLogging":false},"nodeJsOptions":["--no-warnings","--max-old-space-size=4096"],"preStartScript":"","remoteUrl":{"archiver":null,"blobSink":null,"proverBroker":null,"proverCoordinationNodes":[]},"replicas":1,"resources":{},"sentinel":{"enabled":false},"startCmd":[],"startupProbe":{"failureThreshold":20,"periodSeconds":30},"storage":{"archiveStorageMapSize":null,"dataDirectory":"/data","dataStoreMapSize":null,"p2pStorageMapSize":null,"worldStateMapSize":null}}` | Aztec node configuration |
 | node.coinbase | string | `nil` | Address that will receive block or proof rewards For prover roles, this is the PROVER_ID |
 | node.l1ExecutionUrls | list | `["http://l1-full-node-sepolia-execution.l1.svc.cluster.local:8545"]` | L1 Ethereum configuration Ethereum execution layer RPC endpoint(s) - comma separated list |
 | node.logLevel | string | `"info"` | Log level - info, verbose, debug, trace |
@@ -36,7 +36,7 @@ A Helm chart for deploying an Aztec node
 | node.sentinel | object | `{"enabled":false}` | Sentinel configuration - gathers slashing information |
 | node.startCmd | list | `[]` | Start command flags Auto-generated based on role, but can be overridden for custom configurations Leave empty to use role-based defaults |
 | node.startupProbe | object | `{"failureThreshold":20,"periodSeconds":30}` | Startup probe configuration |
-| node.storage | object | `{"archiveStorageMapSize":null,"dataDirectory":"/data","dataStoreMapSize":"134217728","p2pStorageMapSize":null,"worldStateMapSize":"134217728"}` | Storage configuration |
+| node.storage | object | `{"archiveStorageMapSize":null,"dataDirectory":"/data","dataStoreMapSize":null,"p2pStorageMapSize":null,"worldStateMapSize":null}` | Storage configuration |
 | persistence.accessModes | list | `["ReadWriteOnce"]` | AccessModes |
 | persistence.annotations | object | `{}` | Annotations for volume claim template |
 | persistence.enabled | bool | `false` | Uses an emptyDir when not enabled |
