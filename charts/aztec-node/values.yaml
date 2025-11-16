@@ -88,7 +88,7 @@ image:
   # -- Image repository
   repository: aztecprotocol/aztec
   # -- Image tag
-  tag: 2.1.4
+  tag: 2.1.5
   # -- Container pull policy
   pullPolicy: IfNotPresent
 
@@ -184,9 +184,11 @@ node:
     # Data directory
     dataDirectory: /data
     # Data store map size in kB (per database)
-    dataStoreMapSize: "134217728"  # 128 GB
+    # Leave empty to use Aztec's built-in default (128 GB)
+    dataStoreMapSize:
     # World state map size in kB (per merkle tree)
-    worldStateMapSize: "134217728"  # 128 GB
+    # Leave empty to use Aztec's built-in default (falls back to dataStoreMapSize)
+    worldStateMapSize:
     # P2P storage map size (kB)
     p2pStorageMapSize:
     # Archive storage map size (kB)

@@ -34,7 +34,7 @@ networkName: mainnet
 # Container image configuration
 image:
   repository: aztecprotocol/aztec
-  tag: latest  # For production, pin to specific version like "2.1.4"
+  tag: 2.1.5  # For production, pin to specific version like "2.1.4"
   pullPolicy: Always  # Use Always for auto-updates, or IfNotPresent for pinned versions
 
 # Node configuration
