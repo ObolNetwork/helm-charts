@@ -66,7 +66,7 @@ kubectl create secret generic validator-keys \
 kubectl create configmap cluster-lock --from-file=cluster/node0/cluster-lock.json
 
 # Install the chart, referencing your ConfigMap and Secrets
-helm install my-dv-pod obol/dv-pod \
+helm upgrade --install my-dv-pod obol/dv-pod \
   --set configMaps.clusterLock=cluster-lock \
   --set validatorClient.keystores.secretName=validator-keys
 ```
@@ -102,7 +102,7 @@ kubectl create configmap cluster-lock \
   --from-file=.charon/cluster-lock.json
 
 # Install the chart
-helm install my-dv-pod obol/dv-pod \
+helm upgrade --install my-dv-pod obol/dv-pod \
   --set configMaps.clusterLock=cluster-lock \
   --set validatorClient.keystores.secretName=validator-keys
 ```
@@ -119,7 +119,7 @@ If you don't have pre-existing artifacts, the chart can automatically:
 
 Simply deploy the chart with your operator address:
 ```sh
-helm install my-dv-pod obol/dv-pod \
+helm upgrade --install my-dv-pod obol/dv-pod \
   --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS
 ```
 
@@ -168,13 +168,13 @@ validatorClient:
       - --suggested-fee-recipient=0xYOUR_FEE_RECIPIENT_ADDRESS
 ```
 
-With a `helm install` command for pre-existing artifacts.
+With a `helm upgrade --install` command for pre-existing artifacts.
 
 ```sh
-helm install my-dv-pod obol/dv-pod \
+helm upgrade --install my-dv-pod obol/dv-pod \
   --set configMaps.clusterLock=cluster-lock \
   --set validatorClient.keystores.secretName=validator-keys \
-  --set validatorClient.type=prysm --set validatorClient.config.prysm.acceptTermsOfUse=true
+  --set validatorClient.type=prysm
 ```
 
 > [!NOTE]
@@ -197,7 +197,7 @@ kubectl create secret generic validator-keys \
   --from-file=keystore-1.txt
 
 # Deploy the chart with the keystore secret
-helm install my-dv-pod obol/dv-pod \
+helm upgrade --install my-dv-pod obol/dv-pod \
   --set validatorClient.keystores.secretName=validator-keys \
   --set configMaps.clusterLock=my-cluster-lock
 ```
@@ -225,11 +225,11 @@ The ENR (Ethereum Node Record) secret **MUST** be created in the same namespace 
 ```bash
 # Wrong approach - secret and chart in different namespaces
 kubectl create secret generic charon-enr-private-key -n dv-pod --from-literal=...
-helm install my-dv-pod obol/dv-pod  # Installs in default namespace - ENR will be regenerated!
+helm upgrade --install my-dv-pod obol/dv-pod  # Installs in default namespace - ENR will be regenerated!
 
 # Correct approach - both in same namespace
 kubectl create secret generic charon-enr-private-key -n dv-pod --from-literal=...
-helm install my-dv-pod obol/dv-pod -n dv-pod  # Both in dv-pod namespace
+helm upgrade --install my-dv-pod obol/dv-pod -n dv-pod  # Both in dv-pod namespace
 ```
 
 ## Advanced Usage
@@ -276,7 +276,7 @@ In this case, you have two options:
 
 2. Install the chart with the lockHash value:
    ```sh
-   helm install my-dv-pod obol/dv-pod \
+   helm upgrade --install my-dv-pod obol/dv-pod \
      --set charon.lockHash=$LOCK_HASH \
      --set charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>
    ```
@@ -292,7 +292,7 @@ In this case, you have two options:
 
 2. Install the chart referencing the ConfigMap:
    ```sh
-   helm install my-dv-pod obol/dv-pod \
+   helm upgrade --install my-dv-pod obol/dv-pod \
      --set configMaps.lockHash=cluster-lock-hash \
      --set charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>
    ```
@@ -344,7 +344,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | charon.enr.privateKey | string | `""` | Provide the ENR private key directly (hex format, e.g., 0x...).  If set, 'generate' and 'existingSecret' are ignored. |
 | charon.enrJob.enabled | bool | `true` | Enable or disable the Kubernetes Job that generates/manages the ENR. Note: This is typically not needed as the job automatically detects existing secrets. The job will check if the ENR secret already exists and skip generation if found. Only set to false for advanced use cases where you need to completely disable the job. |
 | charon.executionClientRpcEndpoint | string | `""` | Optional: Execution client RPC endpoint URL (e.g., your Ethereum execution client) Note: Charon currently only supports a single execution endpoint This is only needed if an operator in the cluster uses a smart contract wallet for an operator signature.  If that does not apply to this cluster, this field can be left unset. |
-| charon.fallbackBeaconNodeEndpoints | list | `["https://ethereum-beacon-api.publicnode.com"]` | Fallback beacon node endpoints (optional) These will be used if the primary beaconNodeEndpoints are unavailable |
+| charon.fallbackBeaconNodeEndpoints | list | `["https://ethereum-beacon-api.publicnode.com"]` | Fallback beacon node endpoints (optional) These will be used if the primary beaconNodeEndpoints are unavailable If not specified, intelligent defaults based on network will be used:   - mainnet: https://ethereum-beacon-api.publicnode.com   - sepolia: https://ethereum-sepolia-beacon-api.publicnode.com   - hoodi: https://ethereum-hoodi-beacon-api.publicnode.com |
 | charon.featureSet | string | `"stable"` | Minimum feature set to enable by default: alpha, beta, or stable. Warning: modify at own risk. (default "stable") |
 | charon.featureSetDisable | string | `""` | Comma-separated list of features to disable, overriding the default minimum feature set. |
 | charon.featureSetEnable | string | `""` | Comma-separated list of features to enable, overriding the default minimum feature set. |
