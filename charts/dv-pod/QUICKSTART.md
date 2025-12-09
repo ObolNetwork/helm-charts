@@ -18,7 +18,7 @@ Use this if you're creating a new DV cluster from scratch.
 Each operator deploys their node:
 
 ```bash
-helm upgrade --install my-dv-pod charts/dv-pod/ \
+helm upgrade --install my-dv-pod obol/dv-pod \
   --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS \
   --set chainId=1 \
   --namespace=dv-pod \
@@ -119,7 +119,7 @@ Expected output: `["charon-enr-private-key", "enr"]`
 ### Step 2: Deploy DV-Pod Targeting Specific Cluster
 
 ```bash
-helm upgrade --install my-dv-pod charts/dv-pod/ \
+helm upgrade --install my-dv-pod obol/dv-pod \
   --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS \
   --set charon.dkgSidecar.targetConfigHash=0xYOUR_CONFIG_HASH \
   --set chainId=1 \
