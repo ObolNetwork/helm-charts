@@ -12,6 +12,8 @@ A Helm chart for deploying a single distributed validator pod consisting of a Ch
 
 * <https://github.com/ObolNetwork/charon>
 
+For a quick start guide, please refer to [QUICKSTART.md](./QUICKSTART.md).
+
 # How to use this chart
 
 A distributed validator cluster is composed of the following containers:
