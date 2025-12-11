@@ -174,7 +174,7 @@ charon:
     image:
       # -- Image repository for the DKG sidecar
       repository: "obolnetwork/charon-dkg-sidecar"
-      tag: "main"
+      tag: "v1.7.2"
       pullPolicy: "IfNotPresent"
     # -- Initial delay in seconds before the first retry of a polling cycle.
     initialRetryDelaySeconds: 10
@@ -318,7 +318,7 @@ centralMonitoring:
 image:
   repository: obolnetwork/charon
   pullPolicy: IfNotPresent
-  tag: v1.7.1
+  tag: v1.7.2
 
 # -- Credentials to fetch images from private registry
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/

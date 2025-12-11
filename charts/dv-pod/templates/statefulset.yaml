@@ -344,7 +344,7 @@ spec:
         # Follows Obol reference: https://github.com/ObolNetwork/charon-distributed-validator-node/blob/main/prysm/run.sh
         {{- if and .Values.validatorClient.enabled (eq .Values.validatorClient.type "prysm") }}
         - name: prysm-wallet-import
-          image: {{ .Values.validatorClient.image.repository | default "gcr.io/prysmaticlabs/prysm/validator" }}:{{ .Values.validatorClient.image.tag | default "v6.1.2" }}
+          image: {{ .Values.validatorClient.image.repository | default "gcr.io/prysmaticlabs/prysm/validator" }}:{{ .Values.validatorClient.image.tag | default "v7.0.0" }}
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -438,7 +438,7 @@ spec:
         # Follows Obol reference: https://github.com/ObolNetwork/charon-distributed-validator-node/blob/main/nimbus/run.sh
         {{- if and .Values.validatorClient.enabled (eq .Values.validatorClient.type "nimbus") }}
         - name: nimbus-import
-          image: {{ .Values.validatorClient.image.repository | default "statusim/nimbus-eth2" }}:{{ .Values.validatorClient.image.tag | default "multiarch-v25.9.2" }}
+          image: {{ .Values.validatorClient.image.repository | default "statusim/nimbus-eth2" }}:{{ .Values.validatorClient.image.tag | default "multiarch-v25.11.1" }}
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -650,7 +650,7 @@ spec:
         # Validator Client Container
         - name: validator-client
           {{- if eq .Values.validatorClient.type "lighthouse" }}
-          image: {{ .Values.validatorClient.image.repository | default "sigp/lighthouse" }}:{{ .Values.validatorClient.image.tag | default "v7.1.0" }}
+          image: {{ .Values.validatorClient.image.repository | default "sigp/lighthouse" }}:{{ .Values.validatorClient.image.tag | default "v8.0.1" }}
           command:
             - lighthouse
             - validator_client
@@ -671,7 +671,7 @@ spec:
             - {{ . }}
             {{- end }}
           {{- else if eq .Values.validatorClient.type "teku" }}
-          image: {{ .Values.validatorClient.image.repository | default "consensys/teku" }}:{{ .Values.validatorClient.image.tag | default "25.9.3" }}
+          image: {{ .Values.validatorClient.image.repository | default "consensys/teku" }}:{{ .Values.validatorClient.image.tag | default "25.11.1" }}
           command:
             - /opt/teku/bin/teku
             - validator-client
@@ -697,11 +697,10 @@ spec:
             - {{ . }}
             {{- end }}
           {{- else if eq .Values.validatorClient.type "prysm" }}
-          image: {{ .Values.validatorClient.image.repository | default "gcr.io/prysmaticlabs/prysm/validator" }}:{{ .Values.validatorClient.image.tag | default "v6.1.2" }}
+          image: {{ .Values.validatorClient.image.repository | default "gcr.io/prysmaticlabs/prysm/validator" }}:{{ .Values.validatorClient.image.tag | default "v7.0.0" }}
           command:
             - /app/cmd/validator/validator
             - --beacon-rest-api-provider=http://localhost:3600
-            - --enable-beacon-rest-api
             - --suggested-fee-recipient=0x0000000000000000000000000000000000000000
             # By using Prysm, you accept the Terms of Service: https://github.com/prysmaticlabs/prysm/blob/develop/TERMS_OF_SERVICE.md
             - --accept-terms-of-use
@@ -728,7 +727,7 @@ spec:
             - {{ . }}
             {{- end }}
           {{- else if eq .Values.validatorClient.type "nimbus" }}
-          image: {{ .Values.validatorClient.image.repository | default "statusim/nimbus-validator-client" }}:{{ .Values.validatorClient.image.tag | default "multiarch-v25.9.2" }}
+          image: {{ .Values.validatorClient.image.repository | default "statusim/nimbus-validator-client" }}:{{ .Values.validatorClient.image.tag | default "multiarch-v25.11.1" }}
           command:
             - /home/user/nimbus_validator_client
             - --beacon-node=http://localhost:3600
@@ -745,7 +744,7 @@ spec:
             - {{ . }}
             {{- end }}
           {{- else if eq .Values.validatorClient.type "lodestar" }}
-          image: {{ .Values.validatorClient.image.repository | default "chainsafe/lodestar" }}:{{ .Values.validatorClient.image.tag | default "v1.35.0" }}
+          image: {{ .Values.validatorClient.image.repository | default "chainsafe/lodestar" }}:{{ .Values.validatorClient.image.tag | default "v1.36.0" }}
           command:
             - node
             - /usr/app/packages/cli/bin/lodestar
