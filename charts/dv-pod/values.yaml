@@ -46,8 +46,12 @@ charon:
   
   # -- Fallback beacon node endpoints (optional)
   # These will be used if the primary beaconNodeEndpoints are unavailable
+  # If not specified, intelligent defaults based on network will be used:
+  #   - mainnet: https://ethereum-beacon-api.publicnode.com
+  #   - sepolia: https://ethereum-sepolia-beacon-api.publicnode.com
+  #   - hoodi: https://ethereum-hoodi-beacon-api.publicnode.com
   fallbackBeaconNodeEndpoints:
-  # Example:
+  # Example for custom fallback endpoints:
     - "https://ethereum-beacon-api.publicnode.com"
   # - "http://backup-beacon-2:5052"
   
