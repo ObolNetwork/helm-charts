@@ -90,7 +90,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: OUTPUT_DEFINITION_FILE
-              value: "/charon-data/cluster-definition.json"
+              value: "/tmp/cluster-definition.json"
             - name: API_ENDPOINT
               value: "{{ .Values.charon.dkgSidecar.apiEndpoint }}"
             - name: INITIAL_RETRY_INTERVAL_SECONDS
