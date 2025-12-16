@@ -517,8 +517,9 @@ spec:
               {{- if and .Values.charon.beaconNodeHeaders (not .Values.charon.beaconNodeHeadersSecretName) }}
               --beacon-node-headers={{ .Values.charon.beaconNodeHeaders | quote }}
               {{- end }}
-              {{- if .Values.charon.fallbackBeaconNodeEndpoints }}
-              --fallback-beacon-node-endpoints={{ include "dv-pod.fallbackBeaconNodeEndpoints" . }}
+              {{- $fallbackEndpoints := include "dv-pod.fallbackBeaconNodeEndpoints" . }}
+              {{- if $fallbackEndpoints }}
+              --fallback-beacon-node-endpoints={{ $fallbackEndpoints }}
               {{- end }}
               {{- if .Values.charon.lockFile }}
               --lock-file={{ .Values.charon.lockFile }}
