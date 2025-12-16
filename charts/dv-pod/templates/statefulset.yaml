@@ -344,7 +344,7 @@ spec:
         # Follows Obol reference: https://github.com/ObolNetwork/charon-distributed-validator-node/blob/main/prysm/run.sh
         {{- if and .Values.validatorClient.enabled (eq .Values.validatorClient.type "prysm") }}
         - name: prysm-wallet-import
-          image: {{ .Values.validatorClient.image.repository | default "gcr.io/prysmaticlabs/prysm/validator" }}:{{ .Values.validatorClient.image.tag | default "v6.1.2" }}
+          image: {{ .Values.validatorClient.image.repository | default "gcr.io/prysmaticlabs/prysm/validator" }}:{{ .Values.validatorClient.image.tag | default "v7.1.0" }}
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -697,11 +697,10 @@ spec:
             - {{ . }}
             {{- end }}
           {{- else if eq .Values.validatorClient.type "prysm" }}
-          image: {{ .Values.validatorClient.image.repository | default "gcr.io/prysmaticlabs/prysm/validator" }}:{{ .Values.validatorClient.image.tag | default "v6.1.2" }}
+          image: {{ .Values.validatorClient.image.repository | default "gcr.io/prysmaticlabs/prysm/validator" }}:{{ .Values.validatorClient.image.tag | default "v7.1.0" }}
           command:
             - /app/cmd/validator/validator
             - --beacon-rest-api-provider=http://localhost:3600
-            - --enable-beacon-rest-api
             - --suggested-fee-recipient=0x0000000000000000000000000000000000000000
             # By using Prysm, you accept the Terms of Service: https://github.com/prysmaticlabs/prysm/blob/develop/TERMS_OF_SERVICE.md
             - --accept-terms-of-use
