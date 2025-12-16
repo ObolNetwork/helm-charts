@@ -18,12 +18,35 @@
       "groupName": "GitHub Actions updates"
     },
     {
-      "description": "Obol core images - minor and patch updates only",
+      "description": "Obol core images - ignore unstable/RC versions",
       "matchDatasources": ["docker"],
       "matchPackagePatterns": ["^obolnetwork/charon", "^obolnetwork/charon-dkg-sidecar"],
-      "matchUpdateTypes": ["minor", "patch"],
-      "labels": ["renovate/obol-core"],
-      "groupName": "Obol core images"
+      "ignoreUnstable": true,
+      "labels": ["renovate/obol-core"]
+    },
+    {
+      "description": "Charon chart updates",
+      "matchPackagePatterns": ["^obolnetwork/charon"],
+      "matchManagers": ["regex"],
+      "matchFileNames": ["charts/charon/**"],
+      "labels": ["renovate/charon"],
+      "groupName": "Charon chart updates"
+    },
+    {
+      "description": "Charon-cluster chart updates",
+      "matchPackagePatterns": ["^obolnetwork/charon"],
+      "matchManagers": ["regex"],
+      "matchFileNames": ["charts/charon-cluster/**"],
+      "labels": ["renovate/charon-cluster"],
+      "groupName": "Charon-cluster chart updates"
+    },
+    {
+      "description": "DV-pod chart updates",
+      "matchPackagePatterns": ["^obolnetwork/charon"],
+      "matchManagers": ["regex"],
+      "matchFileNames": ["charts/dv-pod/**"],
+      "labels": ["renovate/dv-pod"],
+      "groupName": "DV-pod chart updates"
     },
     {
       "description": "Validator client images - group by client type",
@@ -82,13 +105,64 @@
   ],
   "regexManagers": [
     {
-      "description": "Update Charon version in values.yaml",
+      "description": "Update Charon version in charon/values.yaml",
+      "fileMatch": ["^charts/charon/values\\.yaml$"],
+      "matchStrings": [
+        "repository:\\s*obolnetwork/charon\\n\\s*pullPolicy:\\s*\\w+\\n\\s*tag:\\s*(?<currentValue>v[\\d.]+)"
+      ],
+      "depNameTemplate": "obolnetwork/charon",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    },
+    {
+      "description": "Update Charon version in charon-cluster/values.yaml",
+      "fileMatch": ["^charts/charon-cluster/values\\.yaml$"],
+      "matchStrings": [
+        "repository:\\s*obolnetwork/charon\\n\\s*pullPolicy:\\s*\\w+\\n\\s*tag:\\s*(?<currentValue>v[\\d.]+)"
+      ],
+      "depNameTemplate": "obolnetwork/charon",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    },
+    {
+      "description": "Update Charon version in dv-pod/values.yaml",
       "fileMatch": ["^charts/dv-pod/values\\.yaml$"],
       "matchStrings": [
-        "# -- Charon image repository, pull policy, and tag version\\s+image:\\s+repository:\\s+(?<depName>obolnetwork/charon)\\s+pullPolicy:\\s+\\w+\\s+tag:\\s+(?<currentValue>v?[0-9]+\\.[0-9]+\\.[0-9]+)"
+        "repository:\\s*obolnetwork/charon\\n\\s*pullPolicy:\\s*\\w+\\n\\s*tag:\\s*(?<currentValue>v[\\d.]+)"
       ],
+      "depNameTemplate": "obolnetwork/charon",
       "datasourceTemplate": "docker",
-      "versioningTemplate": "semver"
+      "versioningTemplate": "docker"
+    },
+    {
+      "description": "Update appVersion in charon/Chart.yaml",
+      "fileMatch": ["^charts/charon/Chart\\.yaml$"],
+      "matchStrings": [
+        "appVersion:\\s*\"(?<currentValue>[\\d.]+)\""
+      ],
+      "depNameTemplate": "obolnetwork/charon",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    },
+    {
+      "description": "Update appVersion in charon-cluster/Chart.yaml",
+      "fileMatch": ["^charts/charon-cluster/Chart\\.yaml$"],
+      "matchStrings": [
+        "appVersion:\\s*\"(?<currentValue>[\\d.]+)\""
+      ],
+      "depNameTemplate": "obolnetwork/charon",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    },
+    {
+      "description": "Update appVersion in dv-pod/Chart.yaml",
+      "fileMatch": ["^charts/dv-pod/Chart\\.yaml$"],
+      "matchStrings": [
+        "appVersion:\\s*\"(?<currentValue>[\\d.]+)\""
+      ],
+      "depNameTemplate": "obolnetwork/charon",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
     },
     {
       "description": "Update DKG Sidecar image in values.yaml",
