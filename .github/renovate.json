@@ -4,7 +4,36 @@
     "config:recommended"
   ],
   "enabledManagers": [
-    "github-actions"
+    "github-actions",
+    "regex"
+  ],
+  "regexManagers": [
+    {
+      "fileMatch": [
+        "charts/charon/values\\.yaml$",
+        "charts/charon-cluster/values\\.yaml$",
+        "charts/dv-pod/values\\.yaml$"
+      ],
+      "matchStrings": [
+        "repository:\\s*obolnetwork/charon\\n\\s*pullPolicy:\\s*\\w+\\n\\s*tag:\\s*(?<currentValue>v[\\d.]+)"
+      ],
+      "depNameTemplate": "obolnetwork/charon",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    },
+    {
+      "fileMatch": [
+        "charts/charon/Chart\\.yaml$",
+        "charts/charon-cluster/Chart\\.yaml$",
+        "charts/dv-pod/Chart\\.yaml$"
+      ],
+      "matchStrings": [
+        "appVersion:\\s*\"(?<currentValue>[\\d.]+)\""
+      ],
+      "depNameTemplate": "obolnetwork/charon",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    }
   ],
   "packageRules": [
     {
@@ -24,6 +53,54 @@
         "renovate/github-actions"
       ],
       "groupName": "GitHub Actions updates"
+    },
+    {
+      "matchPackageNames": [
+        "obolnetwork/charon"
+      ],
+      "matchManagers": [
+        "regex"
+      ],
+      "matchFileNames": [
+        "charts/charon/**"
+      ],
+      "ignoreUnstable": true,
+      "labels": [
+        "renovate/charon"
+      ],
+      "groupName": "Charon chart updates"
+    },
+    {
+      "matchPackageNames": [
+        "obolnetwork/charon"
+      ],
+      "matchManagers": [
+        "regex"
+      ],
+      "matchFileNames": [
+        "charts/charon-cluster/**"
+      ],
+      "ignoreUnstable": true,
+      "labels": [
+        "renovate/charon-cluster"
+      ],
+      "groupName": "Charon-cluster chart updates"
+    },
+    {
+      "matchPackageNames": [
+        "obolnetwork/charon"
+      ],
+      "matchManagers": [
+        "regex"
+      ],
+      "matchFileNames": [
+        "charts/dv-pod/**"
+      ],
+      "ignoreUnstable": true,
+      "labels": [
+        "renovate/dv-pod"
+      ],
+      "groupName": "DV-pod chart updates"
     }
   ]
 }
