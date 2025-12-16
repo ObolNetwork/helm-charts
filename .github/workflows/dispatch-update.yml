@@ -14,30 +14,52 @@ jobs:
       - name: Extract tag name
         run: echo "TAG_NAME=${{ github.event.client_payload.tag }}" >> $GITHUB_ENV
 
+      - name: Check if tag is a release candidate
+        id: check_rc
+        run: |
+          if echo "${{ env.TAG_NAME }}" | grep -qiE '[-]?rc[0-9]*$'; then
+            echo "is_rc=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_rc=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Update Helm chart versions
         run: |
           TAG_NAME="$(echo "${TAG_NAME}" | sed 's/^v//')"
+          IS_RC="${{ steps.check_rc.outputs.is_rc }}"
 
           increment_version() {
             echo "$1" | awk -F. '{printf "%d.%d.%d", $1, $2, $3+1}'
           }
 
-          # Update charon Chart.yaml
-          CHART_VERSION=$(grep '^version:' charts/charon/Chart.yaml | awk '{print $2}')
-          NEW_CHART_VERSION=$(increment_version $CHART_VERSION)
-          sed -i "s/^version: .*/version: ${NEW_CHART_VERSION}/" charts/charon/Chart.yaml
-          sed -i "s/^appVersion: .*/appVersion: \"${TAG_NAME}\"/" charts/charon/Chart.yaml
+          # Skip charon, charon-cluster, and dv-pod charts for RC versions
+          if [ "$IS_RC" != "true" ]; then
+            # Update charon Chart.yaml
+            CHART_VERSION=$(grep '^version:' charts/charon/Chart.yaml | awk '{print $2}')
+            NEW_CHART_VERSION=$(increment_version $CHART_VERSION)
+            sed -i "s/^version: .*/version: ${NEW_CHART_VERSION}/" charts/charon/Chart.yaml
+            sed -i "s/^appVersion: .*/appVersion: \"${TAG_NAME}\"/" charts/charon/Chart.yaml
 
-          # Update charon-cluster Chart.yaml
-          CHART_CLUSTER_VERSION=$(grep '^version:' charts/charon-cluster/Chart.yaml | awk '{print $2}')
-          NEW_CHART_CLUSTER_VERSION=$(increment_version $CHART_CLUSTER_VERSION)
-          sed -i "s/^version: .*/version: ${NEW_CHART_CLUSTER_VERSION}/" charts/charon-cluster/Chart.yaml
-          sed -i "s/^appVersion: .*/appVersion: \"${TAG_NAME}\"/" charts/charon-cluster/Chart.yaml
+            # Update charon-cluster Chart.yaml
+            CHART_CLUSTER_VERSION=$(grep '^version:' charts/charon-cluster/Chart.yaml | awk '{print $2}')
+            NEW_CHART_CLUSTER_VERSION=$(increment_version $CHART_CLUSTER_VERSION)
+            sed -i "s/^version: .*/version: ${NEW_CHART_CLUSTER_VERSION}/" charts/charon-cluster/Chart.yaml
+            sed -i "s/^appVersion: .*/appVersion: \"${TAG_NAME}\"/" charts/charon-cluster/Chart.yaml
 
-          # Update charon and charon-cluster values.yaml
-          sed -i -E "/tag:/s/v\.?[0-9]+\.[0-9]+\.[0-9]+[a-zA-Z0-9\-]*/v${TAG_NAME}/" charts/charon-cluster/values.yaml charts/charon/values.yaml
+            # Update dv-pod Chart.yaml
+            CHART_DV_POD_VERSION=$(grep '^version:' charts/dv-pod/Chart.yaml | awk '{print $2}')
+            NEW_CHART_DV_POD_VERSION=$(increment_version $CHART_DV_POD_VERSION)
+            sed -i "s/^version: .*/version: ${NEW_CHART_DV_POD_VERSION}/" charts/dv-pod/Chart.yaml
+            sed -i "s/^appVersion: .*/appVersion: \"${TAG_NAME}\"/" charts/dv-pod/Chart.yaml
+
+            # Update charon, charon-cluster, and dv-pod values.yaml image tags
+            sed -i -E "/tag:/s/v\.?[0-9]+\.[0-9]+\.[0-9]+[a-zA-Z0-9\-]*/v${TAG_NAME}/" charts/charon-cluster/values.yaml charts/charon/values.yaml charts/dv-pod/values.yaml
+          else
+            echo "Skipping charon, charon-cluster, and dv-pod updates for RC version: ${TAG_NAME}"
+          fi
 
       - name: Create Pull Request
+        if: steps.check_rc.outputs.is_rc != 'true'
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
