@@ -650,7 +650,7 @@ spec:
         # Validator Client Container
         - name: validator-client
           {{- if eq .Values.validatorClient.type "lighthouse" }}
-          image: {{ .Values.validatorClient.image.repository | default "sigp/lighthouse" }}:{{ .Values.validatorClient.image.tag | default "v7.1.0" }}
+          image: {{ .Values.validatorClient.image.repository | default "sigp/lighthouse" }}:{{ .Values.validatorClient.image.tag | default "v8.0.1" }}
           command:
             - lighthouse
             - validator_client
