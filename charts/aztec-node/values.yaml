@@ -328,3 +328,26 @@ serviceAccount:
   name: ""
   # -- Annotations for the service account
   annotations: {}
+
+# =====================================================================
+# MONITORING
+# =====================================================================
+
+# -- Local Monitoring Stack
+# Deploys OTEL collector + Prometheus for metrics collection
+monitoring:
+  # -- Specifies whether local monitoring should be enabled
+  # Deploys OTEL collector (receives OTLP, exposes Prometheus metrics on :8889)
+  # and Prometheus (scrapes OTEL collector on :8889, exposes :9090)
+  enabled: false
+
+# -- Central Monitoring (Obol)
+# Configures Prometheus remote_write to central Obol endpoint
+# Automatically enables monitoring stack if not already enabled
+centralMonitoring:
+  # -- Specifies whether central monitoring should be enabled
+  enabled: false
+  # -- https endpoint to obol central prometheus
+  promEndpoint: "https://vm.monitoring.gcp.obol.tech/write"
+  # -- The authentication token to the central prometheus
+  token: ""
