@@ -78,6 +78,13 @@
       ],
       "labels": ["renovate/infrastructure"],
       "groupName": "Infrastructure images"
+    },
+    {
+      "description": "Aztec node image updates",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["aztecprotocol/aztec"],
+      "labels": ["renovate/aztec"],
+      "groupName": "Aztec node"
     }
   ],
   "regexManagers": [
@@ -181,6 +188,15 @@
       "fileMatch": ["^charts/dv-pod/templates/prometheus-deployment\\.yaml$"],
       "matchStrings": [
         "image: (?<depName>prom/prometheus):(?<currentValue>v?[0-9]+\\.[0-9]+\\.[0-9]+)"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "semver"
+    },
+    {
+      "description": "Update Aztec image in aztec-node values.yaml",
+      "fileMatch": ["^charts/aztec-node/values\\.yaml$"],
+      "matchStrings": [
+        "# -- Image repository\\s+repository:\\s+(?<depName>aztecprotocol/aztec)\\s+# -- Image tag\\s+tag:\\s+(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"
       ],
       "datasourceTemplate": "docker",
       "versioningTemplate": "semver"
