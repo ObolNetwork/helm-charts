@@ -167,40 +167,33 @@ Validate validator client type
 {{- $currentType := .Values.validatorClient.type -}}
 {{- if not (has $currentType $validTypes) -}}
 {{- $errorMsg := printf "\n\nERROR: Invalid validator client type '%s'.\n\nValid options: %s" $currentType (join ", " $validTypes) -}}
-{{- /* Try to find the closest match using simple heuristics */ -}}
-{{- $suggestion := "" -}}
+{{- /* Try to find the closest match using proximity detection */ -}}
 {{- $currentLower := lower $currentType -}}
-{{- /* Check for common typos and confusions */ -}}
-{{- $typoMap := dict "loki" "lodestar" "lodestar-" "lodestar" "lighthose" "lighthouse" "lighthouse-" "lighthouse" "tekku" "teku" "teku-" "teku" "prisim" "prysm" "prism" "prysm" "prysm-" "prysm" "nimbos" "nimbus" "nimbus-" "nimbus" -}}
-{{- if hasKey $typoMap $currentLower -}}
-{{- $suggestion = get $typoMap $currentLower -}}
-{{- else -}}
-{{- /* Check for prefix matches (at least 2 characters) */ -}}
+{{- $ctx := dict "suggestion" "" -}}
 {{- range $validType := $validTypes -}}
 {{- $validLower := lower $validType -}}
-{{- if and (gt (len $currentLower) 1) (hasPrefix $validLower (substr 0 2 $currentLower)) -}}
-{{- $suggestion = $validType -}}
+{{- /* Check if they share at least 3 character prefix */ -}}
+{{- $minLen := min (len $currentLower) (len $validLower) -}}
+{{- if ge $minLen 3 -}}
+{{- $inputPrefix := substr 0 3 $currentLower -}}
+{{- $validPrefix := substr 0 3 $validLower -}}
+{{- if eq $inputPrefix $validPrefix -}}
+{{- $_ := set $ctx "suggestion" $validType -}}
 {{- end -}}
-{{- if and (gt (len $currentLower) 2) (hasPrefix $validLower (substr 0 3 $currentLower)) -}}
-{{- $suggestion = $validType -}}
 {{- end -}}
-{{- /* Check if valid type contains the input or vice versa */ -}}
-{{- if and (gt (len $currentLower) 2) (contains $validLower $currentLower) -}}
-{{- $suggestion = $validType -}}
-{{- end -}}
-{{- if and (gt (len $currentLower) 2) (contains $currentLower $validLower) -}}
-{{- $suggestion = $validType -}}
-{{- end -}}
+{{- /* Check if one contains the other */ -}}
+{{- if or (contains $currentLower $validLower) (contains $validLower $currentLower) -}}
+{{- $_ := set $ctx "suggestion" $validType -}}
 {{- end -}}
 {{- end -}}
 {{- /* Add suggestion to error message if found */ -}}
-{{- if $suggestion -}}
-{{- $errorMsg = printf "%s\n\n⚠️  Did you mean '%s'?" $errorMsg $suggestion -}}
+{{- if $ctx.suggestion -}}
+{{- $errorMsg = printf "%s\n\n⚠️  Did you mean '%s'?" $errorMsg $ctx.suggestion -}}
 {{- end -}}
 {{- /* Use suggestion if available, otherwise use lodestar as example */ -}}
 {{- $exampleType := "lodestar" -}}
-{{- if $suggestion -}}
-{{- $exampleType = $suggestion -}}
+{{- if $ctx.suggestion -}}
+{{- $exampleType = $ctx.suggestion -}}
 {{- end -}}
 {{- $errorMsg = printf "%s\n\nHow to fix this:\n  • Using --set flag:\n    --set validatorClient.type=%s\n\n  • In your values.yaml file:\n    validatorClient:\n      type: %s\n\n  • Using custom values file:\n    helm install my-dv-pod obol/dv-pod -f myvalues.yaml\n\nFor more information, see the Validator Client section in charts/dv-pod/README.md\n" $errorMsg $exampleType $exampleType -}}
 {{- fail $errorMsg -}}
