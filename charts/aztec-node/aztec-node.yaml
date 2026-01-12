@@ -1,0 +1,74 @@
+# Sequencer deployment for Sepolia testnet
+role: sequencer
+
+# Sequencer configuration
+sequencer:
+  # Ethereum private key for attester (signs blocks and attestations)
+  # Ensure this account has at least 0.1 ETH on Sepolia to avoid slashing
+  attesterPrivateKey: ""
+  # Aztec address to receive unburnt transaction fees
+  feeRecipient: "0x0000000000000000000000000000000000000000000000000000000000000000"
+
+# -- Image to use for the container
+image:
+  # -- Image repository
+  repository: aztecprotocol/aztec
+  # -- Image tag
+  tag: 2.1.5  # Auto-updates to latest stable
+  # -- Container pull policy
+  pullPolicy: Always  # Required for Keel auto-updates
+
+network: testnet
+
+# Use host network for P2P connectivity (port 40400)
+hostNetwork: true
+
+# Keel auto-update configuration
+podAnnotations:
+  keel.sh/policy: force              # Always update to latest tag
+  keel.sh/trigger: poll              # Poll for updates
+  keel.sh/pollSchedule: "@every 10m" # Check every 10 minutes
+
+node:
+  replicas: 1
+  logLevel: "debug; info: aztec:simulator, json-rpc"
+
+  l1ExecutionUrls: ["http://l1-full-node-sepolia-execution.l1.svc.cluster.local:8545"]
+  l1ConsensusUrls: ["http://l1-full-node-sepolia-beacon.l1.svc.cluster.local:5052"]
+
+  startCmd:
+    - --node
+    - --archiver
+    - --sequencer
+    - --network
+    - testnet
+
+
+  startupProbe:
+    # -- Period seconds
+    periodSeconds: 60
+    # -- Failure threshold
+    failureThreshold: 60
+
+persistence:
+  enabled: true
+  size: 512Gi
+  storageClassName: local-path
+  accessModes:
+    - ReadWriteOnce
+  selector: {}
+
+# Pin to specific node for local-path storage
+nodeSelector:
+  kubernetes.io/hostname: silvernuc2
+
+service:
+  p2p:
+    enabled: true
+    nodePortEnabled: false
+    port: 40400
+    announcePort: 40400
+  admin:
+    enabled: true
+    port: 8082
+  httpPort: 8080

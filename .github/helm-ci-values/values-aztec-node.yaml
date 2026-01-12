@@ -1,0 +1,20 @@
+# CI test values for aztec-node chart
+# Minimal configuration for fullnode role
+
+# Deployment role
+role: fullnode
+
+# Network to connect to
+network: mainnet
+
+# Container image configuration
+image:
+  repository: aztecprotocol/aztec
+  tag: 2.1.5
+  pullPolicy: IfNotPresent
+
+  # L1 Ethereum configuration (mock URLs for CI)
+  l1ExecutionUrls:
+    - "http://mock-l1-execution:8545"
+  l1ConsensusUrls:
+    - "http://mock-l1-consensus:5052"
