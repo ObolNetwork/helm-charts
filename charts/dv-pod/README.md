@@ -376,7 +376,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | fullnameOverride | string | `""` | Provide a name to substitute for the full names of resources |
 | global | object | `{"annotations":{}}` | Global configuration that can be referenced across the chart Used for test configurations and shared settings |
 | global.annotations | object | `{}` | Global annotations applied to resources |
-| image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.7.1"}` | Charon image repository, pull policy, and tag version |
+| image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.8.1"}` | Charon image repository, pull policy, and tag version |
 | imagePullSecrets | list | `[]` | Credentials to fetch images from private registry # ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ |
 | livenessProbe | object | `{"enabled":false,"httpGet":{"path":"/livez","port":3620},"initialDelaySeconds":10,"periodSeconds":5}` | Configure liveness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ |
 | livenessProbe.httpGet.port | int | `3620` | Port for liveness probe HTTP checks |
