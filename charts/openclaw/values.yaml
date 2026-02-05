@@ -131,16 +131,15 @@ models:
     enabled: true
     # -- OpenAI-compatible base URL for Ollama
     baseUrl: http://ollama.llm.svc.cluster.local:11434/v1
-    # -- OpenClaw provider API type
-    api: openai-chat-completions
-    chatCompletionsPath: /chat/completions
+    # -- OpenClaw provider API type (optional; omit to let OpenClaw auto-detect)
+    api: ""
     # -- Env var used for provider API key interpolation in openclaw.json
     apiKeyEnvVar: OLLAMA_API_KEY
     # -- Value set for the apiKey env var (not a secret for Ollama)
     apiKeyValue: ollama-local
     models:
       - id: glm-4.7-flash
-        model: glm-4.7-flash
+        name: glm-4.7-flash
 
 # -- Skills injection from a ConfigMap archive (created by an external tool; e.g. `obol openclaw skills sync`)
 skills:
@@ -178,19 +177,35 @@ secrets:
   extraEnvFromSecrets: []
 
 # -- Resource requests and limits
-resources: {}
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    memory: 2Gi
+
+# -- Startup probe (tcpSocket; allows generous boot time before liveness kicks in)
+startupProbe:
+  enabled: true
+  periodSeconds: 5
+  failureThreshold: 30
+  timeoutSeconds: 3
 
 # -- Liveness probe (tcpSocket by default to avoid auth-protected HTTP endpoints)
 livenessProbe:
   enabled: true
-  initialDelaySeconds: 20
+  initialDelaySeconds: 10
   periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
 
 # -- Readiness probe (tcpSocket by default to avoid auth-protected HTTP endpoints)
 readinessProbe:
   enabled: true
   initialDelaySeconds: 5
   periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
 
 # -- Additional volumes
 extraVolumes: []

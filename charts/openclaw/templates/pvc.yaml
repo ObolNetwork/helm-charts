@@ -5,6 +5,8 @@ metadata:
   name: {{ include "openclaw.pvcName" . }}
   labels:
     {{- include "openclaw.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/resource-policy": keep
 spec:
   accessModes:
     {{- toYaml .Values.persistence.accessModes | nindent 4 }}

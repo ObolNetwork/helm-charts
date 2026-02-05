@@ -137,7 +137,7 @@ Render openclaw.json as strict JSON. If config.content is provided, it is used v
 {{- else -}}
 {{- $gatewayAuth := dict "mode" .Values.openclaw.gateway.auth.mode -}}
 {{- if ne .Values.openclaw.gateway.auth.mode "none" -}}
-{{- $_ := set $gatewayAuth "token" (printf "${env:%s}" .Values.secrets.gatewayToken.key) -}}
+{{- $_ := set $gatewayAuth "token" (printf "${%s}" .Values.secrets.gatewayToken.key) -}}
 {{- end -}}
 
 {{- $gateway := dict
@@ -156,24 +156,23 @@ Render openclaw.json as strict JSON. If config.content is provided, it is used v
 {{- if .Values.skills.enabled -}}
 {{- $_ := set $cfg "skills" (dict "load" (dict
   "extraDirs" (list .Values.skills.extractDir)
-  "code" (dict "extraDirs" (list .Values.skills.extractDir))
 )) -}}
 {{- end -}}
 
 {{- if .Values.models.ollama.enabled -}}
 {{- $models := list -}}
 {{- range $m := .Values.models.ollama.models -}}
-{{- $models = append $models (dict "id" $m.id "model" $m.model) -}}
+{{- $models = append $models (dict "id" $m.id "name" $m.name) -}}
 {{- end -}}
-{{- $_ := set $cfg "models" (dict "providers" (dict "ollama" (dict
-  "enabled" true
-  "type" "ollama"
+{{- $provider := dict
   "baseUrl" .Values.models.ollama.baseUrl
-  "api" .Values.models.ollama.api
-  "chatCompletionsPath" .Values.models.ollama.chatCompletionsPath
-  "apiKey" (printf "${env:%s}" .Values.models.ollama.apiKeyEnvVar)
+  "apiKey" (printf "${%s}" .Values.models.ollama.apiKeyEnvVar)
   "models" $models
-))) -}}
+-}}
+{{- if .Values.models.ollama.api -}}
+{{- $_ := set $provider "api" .Values.models.ollama.api -}}
+{{- end -}}
+{{- $_ := set $cfg "models" (dict "providers" (dict "ollama" $provider)) -}}
 {{- end -}}
 
 {{- $cfg | toPrettyJson -}}
