@@ -1,0 +1,205 @@
+# Default values for openclaw.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# -- Number of replicas (OpenClaw should run as a single instance)
+replicaCount: 1
+
+# -- OpenClaw image repository, pull policy, and tag version
+image:
+  repository: ghcr.io/obolnetwork/openclaw
+  pullPolicy: IfNotPresent
+  tag: "v2026.2.3"
+
+  # -- Override the container command (ENTRYPOINT)
+  command:
+    - openclaw
+  # -- Override the container args (CMD)
+  args:
+    - gateway
+
+  # -- Additional environment variables for the container
+  env: []
+  # - name: FOO
+  #   value: bar
+
+# -- Credentials to fetch images from private registry
+imagePullSecrets: []
+
+# -- Override the chart name
+nameOverride: ""
+# -- Override the full resource name
+fullnameOverride: ""
+
+# -- Create a ServiceAccount for OpenClaw
+serviceAccount:
+  create: true
+  # -- Automatically mount a ServiceAccount's API credentials?
+  automount: false
+  annotations: {}
+  name: ""
+
+# -- Pod annotations
+podAnnotations: {}
+# -- Pod labels
+podLabels: {}
+
+# -- Pod security context
+podSecurityContext:
+  fsGroup: 1000
+
+# -- Container security context
+containerSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  seccompProfile:
+    type: RuntimeDefault
+
+# -- Service configuration
+service:
+  type: ClusterIP
+  port: 18789
+
+# -- Kubernetes Ingress (optional; not used in Obol Stack which uses Gateway API)
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# -- Gateway API HTTPRoute (recommended for Obol Stack / Traefik Gateway API)
+httpRoute:
+  enabled: false
+  annotations: {}
+  # -- Hostnames for routing (required when enabled)
+  hostnames: []
+  # - openclaw-myid.obol.stack
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+      sectionName: web
+  pathPrefix: /
+
+# -- Persistence settings for OpenClaw state directory (contains runtime state + secrets)
+persistence:
+  enabled: true
+  existingClaim: ""
+  storageClass: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 1Gi
+  mountPath: /data
+
+# -- Configuration for the OpenClaw config file (openclaw.json)
+config:
+  # -- Use an existing ConfigMap instead of creating one
+  existingConfigMap: ""
+  # -- ConfigMap key / filename
+  key: openclaw.json
+  # -- Optional raw JSON5 configuration (overrides generated config when set)
+  content: ""
+
+# -- OpenClaw state/workspace settings (paths should be inside persistence.mountPath)
+openclaw:
+  stateDir: /data/.openclaw
+  workspaceDir: /data/.openclaw/workspace
+
+  gateway:
+    mode: local
+    bind: lan
+    auth:
+      mode: token
+
+    http:
+      endpoints:
+        chatCompletions:
+          enabled: true
+
+# -- Model provider configuration
+models:
+  ollama:
+    enabled: true
+    # -- OpenAI-compatible base URL for Ollama
+    baseUrl: http://ollama.llm.svc.cluster.local:11434/v1
+    # -- OpenClaw provider API type
+    api: openai-chat-completions
+    chatCompletionsPath: /chat/completions
+    # -- Env var used for provider API key interpolation in openclaw.json
+    apiKeyEnvVar: OLLAMA_API_KEY
+    # -- Value set for the apiKey env var (not a secret for Ollama)
+    apiKeyValue: ollama-local
+    models:
+      - id: glm-4.7-flash
+        model: glm-4.7-flash
+
+# -- Skills injection from a ConfigMap archive (created by an external tool; e.g. `obol openclaw skills sync`)
+skills:
+  enabled: false
+  # -- Name of the ConfigMap containing the skills archive
+  configMapName: ""
+  archiveKey: skills.tgz
+  extractDir: /data/.openclaw/skills-injected
+  initContainer:
+    image:
+      repository: busybox
+      tag: 1.36.1
+      pullPolicy: IfNotPresent
+
+# -- eRPC integration (exposed as ERPC_URL env var)
+erpc:
+  url: http://erpc.erpc.svc.cluster.local:4000/rpc
+
+# -- OpenClaw secrets (one Secret per instance)
+secrets:
+  # -- Use an existing secret instead of creating one
+  existingSecret: ""
+  # -- Create the secret when existingSecret is not set
+  create: true
+  # -- Override the created Secret name (defaults to <release>-openclaw-secrets)
+  name: ""
+
+  gatewayToken:
+    # -- Secret key name + env var name for gateway token
+    key: OPENCLAW_GATEWAY_TOKEN
+    # -- Explicit token value (discouraged). If empty, a token is generated and persisted across upgrades.
+    value: ""
+
+  # -- Extra Secret names to load via envFrom (for provider/channel keys, etc.)
+  extraEnvFromSecrets: []
+
+# -- Resource requests and limits
+resources: {}
+
+# -- Liveness probe (tcpSocket by default to avoid auth-protected HTTP endpoints)
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 20
+  periodSeconds: 10
+
+# -- Readiness probe (tcpSocket by default to avoid auth-protected HTTP endpoints)
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 5
+  periodSeconds: 5
+
+# -- Additional volumes
+extraVolumes: []
+# -- Additional volume mounts
+extraVolumeMounts: []
+# -- Additional environment variables
+extraEnv: []
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+priorityClassName: ""

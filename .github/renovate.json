@@ -184,6 +184,15 @@
       ],
       "datasourceTemplate": "docker",
       "versioningTemplate": "semver"
+    },
+    {
+      "description": "Update OpenClaw image tag in values.yaml",
+      "fileMatch": ["^charts/openclaw/values\\.yaml$"],
+      "matchStrings": [
+        "# -- OpenClaw image repository, pull policy, and tag version\\s+image:\\s+repository:\\s+(?<depName>ghcr\\.io/obolnetwork/openclaw)\\s+pullPolicy:\\s+\\w+\\s+tag:\\s+\"(?<currentValue>v?[0-9]+\\.[0-9]+\\.[0-9]+)\""
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "semver"
     }
   ]
 }

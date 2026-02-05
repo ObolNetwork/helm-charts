@@ -1,0 +1,72 @@
+OpenClaw
+===========
+{{ template "chart.deprecationWarning" . }}
+
+{{ template "chart.versionBadge" . }}{{ template "chart.typeBadge" . }}{{ template "chart.appVersionBadge" . }}
+
+{{ template "chart.description" . }}
+
+{{ template "chart.homepageLine" . }}
+
+{{ template "chart.sourcesSection" . }}
+
+{{ template "chart.requirementsSection" . }}
+
+{{ template "chart.valuesSection" . }}
+
+## Quick start
+
+Add Obol's Helm Charts:
+
+```sh
+helm repo add obol https://obolnetwork.github.io/helm-charts/
+helm repo update
+```
+
+Install OpenClaw (ClusterIP only):
+
+```sh
+helm upgrade --install openclaw obol/openclaw --create-namespace --namespace openclaw
+```
+
+Port-forward for local access:
+
+```sh
+export POD_NAME=$(kubectl get pods -n openclaw -l "app.kubernetes.io/name=openclaw,app.kubernetes.io/instance=openclaw" -o jsonpath="{.items[0].metadata.name}")
+kubectl -n openclaw port-forward $POD_NAME 18789:18789
+open http://127.0.0.1:18789
+```
+
+Fetch the gateway token:
+
+```sh
+kubectl get secret -n openclaw openclaw-openclaw-secrets -o jsonpath='{.data.OPENCLAW_GATEWAY_TOKEN}' | base64 --decode
+```
+
+## Obol Stack (Gateway API)
+
+If you're running Obol Stack with Traefik + Gateway API, enable `httpRoute`:
+
+```sh
+helm upgrade --install openclaw obol/openclaw \
+  --namespace openclaw \
+  --set httpRoute.enabled=true \
+  --set httpRoute.hostnames[0]=openclaw-myid.obol.stack
+```
+
+## Skills injection (ConfigMap archive)
+
+This chart can extract a `skills.tgz` archive from a ConfigMap into the OpenClaw state volume.
+
+Expected ConfigMap:
+- Name: `skills.configMapName`
+- Key: `skills.archiveKey` (default `skills.tgz`)
+
+Enable extraction:
+
+```sh
+helm upgrade --install openclaw obol/openclaw \
+  --namespace openclaw \
+  --set skills.enabled=true \
+  --set skills.configMapName=openclaw-skills
+```
