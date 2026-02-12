@@ -29,10 +29,11 @@ helm repo update
 ```sh
 helm upgrade --install openclaw obol/openclaw \
   --namespace openclaw --create-namespace \
+  --set-string secrets.gatewayToken.value=replace-with-long-random-token \
   --set models.anthropic.enabled=true \
   --set models.anthropic.apiKeyValue=sk-ant-api03-XXXX \
   --set models.ollama.enabled=false \
-  --set openclaw.agentModel=anthropic/claude-sonnet-4-5-20250929
+  --set openclaw.agentModel=anthropic/claude-opus-4-6
 ```
 
 ### OpenAI
@@ -40,10 +41,11 @@ helm upgrade --install openclaw obol/openclaw \
 ```sh
 helm upgrade --install openclaw obol/openclaw \
   --namespace openclaw --create-namespace \
+  --set-string secrets.gatewayToken.value=replace-with-long-random-token \
   --set models.openai.enabled=true \
   --set models.openai.apiKeyValue=sk-XXXX \
   --set models.ollama.enabled=false \
-  --set openclaw.agentModel=openai/gpt-4o
+  --set openclaw.agentModel=openai/gpt-5.2
 ```
 
 ### Ollama (local models)
@@ -55,6 +57,7 @@ the base URL:
 ```sh
 helm upgrade --install openclaw obol/openclaw \
   --namespace openclaw --create-namespace \
+  --set-string secrets.gatewayToken.value=replace-with-long-random-token \
   --set models.ollama.baseUrl=http://ollama.ollama.svc.cluster.local:11434/v1 \
   --set models.ollama.api=""
 ```
@@ -77,7 +80,7 @@ kubectl get secret -n openclaw openclaw-openclaw-secrets \
 
 ## Model providers
 
-Three providers are supported. Enable one or more in `models.<provider>.enabled`.
+Three providers are supported. Enable any needed provider(s) with `models.<provider>.enabled`; all providers may be disabled.
 API keys are stored in a Kubernetes Secret and injected as environment variables.
 
 | Provider | `models.<name>.enabled` | API key value | Notes |
@@ -86,7 +89,7 @@ API keys are stored in a Kubernetes Secret and injected as environment variables
 | OpenAI | `models.openai.enabled=true` | `models.openai.apiKeyValue` | Direct API access |
 | Ollama | `models.ollama.enabled=true` (default) | N/A | Default routes through llmspy in Obol Stack |
 
-Set the default agent model with `openclaw.agentModel` (e.g. `anthropic/claude-sonnet-4-5-20250929`).
+Set the default agent model with `openclaw.agentModel` (e.g. `anthropic/claude-opus-4-6`).
 
 ## Chat channels
 
@@ -126,21 +129,28 @@ channels:
 
 Grant the OpenClaw service account read-only access to namespace resources:
 
+If reusing an existing ServiceAccount (`serviceAccount.create=false`), you must also set `serviceAccount.name`.
+
 ```sh
 helm upgrade --install openclaw obol/openclaw \
   --namespace openclaw \
   --set rbac.create=true \
-  --set serviceAccount.automount=true
+  --set serviceAccount.automount=true \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=openclaw-sa
 ```
 
 ## Init Job
 
 Run a one-shot Job after install to bootstrap the workspace:
 
+The init Job requires persistent storage; keep `persistence.enabled=true`.
+
 ```sh
 helm upgrade --install openclaw obol/openclaw \
   --namespace openclaw \
-  --set initJob.enabled=true
+  --set initJob.enabled=true \
+  --set persistence.enabled=true
 ```
 
 ## Skills injection
@@ -206,10 +216,11 @@ helm upgrade --install openclaw obol/openclaw \
 | imagePullSecrets | list | `[]` | Credentials to fetch images from private registry |
 | ingress | object | `{"annotations":{},"className":"","enabled":false,"hosts":[{"host":"chart-example.local","paths":[{"path":"/","pathType":"Prefix"}]}],"tls":[]}` | Kubernetes Ingress (optional; not used in Obol Stack which uses Gateway API) |
 | initJob | object | `{"args":[],"command":["node","openclaw.mjs","agent","init"],"enabled":false,"env":[],"image":{"pullPolicy":"IfNotPresent","repository":"ghcr.io/obolnetwork/openclaw","tag":""},"resources":{"limits":{"memory":"512Mi"},"requests":{"cpu":"100m","memory":"128Mi"}}}` | One-shot init Job (runs once to bootstrap workspace/personality) |
+| initJob.enabled | bool | `false` | Enable a one-shot post-install bootstrap Job. Requires persistence.enabled=true. |
 | initJob.env | list | `[]` | Extra environment variables for the init job |
 | initJob.resources | object | `{"limits":{"memory":"512Mi"},"requests":{"cpu":"100m","memory":"128Mi"}}` | Resource requests/limits for the init job |
 | livenessProbe | object | `{"enabled":true,"failureThreshold":3,"initialDelaySeconds":10,"periodSeconds":10,"timeoutSeconds":5}` | Liveness probe (tcpSocket by default to avoid auth-protected HTTP endpoints) |
-| models | object | `{"anthropic":{"api":"","apiKeyEnvVar":"ANTHROPIC_API_KEY","apiKeyValue":"","baseUrl":"https://api.anthropic.com/v1","enabled":false,"models":[{"id":"claude-sonnet-4-5-20250929","name":"Claude Sonnet 4.5"}]},"ollama":{"api":"openai-completions","apiKeyEnvVar":"OLLAMA_API_KEY","apiKeyValue":"ollama-local","baseUrl":"http://llmspy.llm.svc.cluster.local:8000/v1","enabled":true,"models":[{"id":"glm-4.7-flash","name":"glm-4.7-flash"}]},"openai":{"api":"","apiKeyEnvVar":"OPENAI_API_KEY","apiKeyValue":"","baseUrl":"https://api.openai.com/v1","enabled":false,"models":[{"id":"gpt-4o","name":"GPT-4o"}]}}` | Model provider configuration Each provider is independently toggled. At least one must be enabled. API keys are stored in the chart Secret and injected as env vars. |
+| models | object | `{"anthropic":{"api":"","apiKeyEnvVar":"ANTHROPIC_API_KEY","apiKeyValue":"","baseUrl":"https://api.anthropic.com/v1","enabled":false,"models":[{"id":"claude-sonnet-4-5-20250929","name":"Claude Sonnet 4.5"},{"id":"claude-opus-4-6","name":"Claude Opus 4.6"}]},"ollama":{"api":"openai-completions","apiKeyEnvVar":"OLLAMA_API_KEY","apiKeyValue":"ollama-local","baseUrl":"http://llmspy.llm.svc.cluster.local:8000/v1","enabled":true,"models":[{"id":"glm-4.7-flash","name":"glm-4.7-flash"}]},"openai":{"api":"","apiKeyEnvVar":"OPENAI_API_KEY","apiKeyValue":"","baseUrl":"https://api.openai.com/v1","enabled":false,"models":[{"id":"gpt-5.2","name":"GPT-5.2"}]}}` | Model provider configuration Each provider is independently toggled. All providers may be disabled. API keys are stored in the chart Secret and injected as env vars. |
 | models.anthropic.apiKeyValue | string | `""` | API key value (stored in Secret). Leave empty to provide via extraEnvFromSecrets. |
 | models.ollama.api | string | `"openai-completions"` | OpenClaw provider API type. Set to "openai-completions" because llmspy exposes an OpenAI-compatible chat/completions endpoint. |
 | models.ollama.apiKeyEnvVar | string | `"OLLAMA_API_KEY"` | Env var used for provider API key interpolation in openclaw.json |
@@ -233,13 +244,14 @@ helm upgrade --install openclaw obol/openclaw \
 | secrets.create | bool | `true` | Create the secret when existingSecret is not set |
 | secrets.existingSecret | string | `""` | Use an existing secret instead of creating one |
 | secrets.extraEnvFromSecrets | list | `[]` | Extra Secret names to load via envFrom (for provider/channel keys, etc.) |
-| secrets.gatewayToken.key | string | `"OPENCLAW_GATEWAY_TOKEN"` | Secret key name + env var name for gateway token |
-| secrets.gatewayToken.value | string | `""` | Explicit token value (discouraged). If empty, a token is generated and persisted across upgrades. |
+| secrets.gatewayToken.key | string | `"OPENCLAW_GATEWAY_TOKEN"` | Secret key name + env var name for the gateway API authentication token. This token is required to access OpenClaw's HTTP gateway (chat/completions endpoint and dashboard). |
+| secrets.gatewayToken.value | string | `""` | Explicit token value. Required for token auth unless using secrets.existingSecret. |
 | secrets.name | string | `""` | Override the created Secret name (defaults to <release>-openclaw-secrets) |
 | service | object | `{"port":18789,"type":"ClusterIP"}` | Service configuration |
 | serviceAccount | object | `{"annotations":{},"automount":false,"create":true,"name":""}` | Create a ServiceAccount for OpenClaw |
 | serviceAccount.automount | bool | `false` | Automatically mount a ServiceAccount's API credentials? Set to true when rbac.create is true so the agent can access the K8s API. |
-| skills | object | `{"archiveKey":"skills.tgz","configMapName":"","createDefault":true,"enabled":false,"extractDir":"/data/.openclaw/skills-injected","initContainer":{"image":{"pullPolicy":"IfNotPresent","repository":"busybox","tag":"1.36.1"}}}` | Skills injection from a ConfigMap archive (created by an external tool; e.g. `obol openclaw skills sync`) |
+| serviceAccount.name | string | `""` | ServiceAccount name. Required when serviceAccount.create=false and rbac.create=true. |
+| skills | object | `{"archiveKey":"skills.tgz","configMapName":"","createDefault":true,"enabled":false,"extractDir":"/data/.openclaw/skills-injected","initContainer":{"image":{"pullPolicy":"IfNotPresent","repository":"busybox","tag":"1.36.1"}}}` | Skills injection from a ConfigMap archive (created by an external tool; e.g. `obol openclaw skills sync`). The archive is extracted to `extractDir` by a busybox init container and wired into OpenClaw via `skills.load.extraDirs` in _helpers.tpl. Note: ConfigMap total size is limited to ~1 MB by Kubernetes. |
 | skills.configMapName | string | `""` | Name of the ConfigMap containing the skills archive (overrides createDefault) |
 | skills.createDefault | bool | `true` | Create a default empty skills ConfigMap when configMapName is not set. This allows the chart to deploy without requiring an external ConfigMap. Use `obol openclaw skills sync` to populate it later. |
 | startupProbe | object | `{"enabled":true,"failureThreshold":30,"periodSeconds":5,"timeoutSeconds":3}` | Startup probe (tcpSocket; allows generous boot time before liveness kicks in) |
