@@ -148,9 +148,14 @@ Render openclaw.json as strict JSON. If config.content is provided, it is used v
   "http" (dict "endpoints" (dict "chatCompletions" (dict "enabled" .Values.openclaw.gateway.http.endpoints.chatCompletions.enabled)))
 -}}
 
+{{- $agentDefaults := dict "workspace" .Values.openclaw.workspaceDir -}}
+{{- if .Values.openclaw.agentModel -}}
+{{- $_ := set $agentDefaults "model" (dict "primary" .Values.openclaw.agentModel) -}}
+{{- end -}}
+
 {{- $cfg := dict
   "gateway" $gateway
-  "agents" (dict "defaults" (dict "workspace" .Values.openclaw.workspaceDir))
+  "agents" (dict "defaults" $agentDefaults)
 -}}
 
 {{- if .Values.skills.enabled -}}
@@ -159,22 +164,65 @@ Render openclaw.json as strict JSON. If config.content is provided, it is used v
 )) -}}
 {{- end -}}
 
-{{- if .Values.models.ollama.enabled -}}
+{{- /* Build providers map from all enabled model providers */ -}}
+{{- $providers := dict -}}
+{{- range $name := list "anthropic" "openai" "ollama" -}}
+{{- $p := index $.Values.models $name -}}
+{{- if $p.enabled -}}
 {{- $models := list -}}
-{{- range $m := .Values.models.ollama.models -}}
+{{- range $m := $p.models -}}
 {{- $models = append $models (dict "id" $m.id "name" $m.name) -}}
 {{- end -}}
-{{- $provider := dict
-  "baseUrl" .Values.models.ollama.baseUrl
-  "apiKey" (printf "${%s}" .Values.models.ollama.apiKeyEnvVar)
+{{- $entry := dict
+  "baseUrl" $p.baseUrl
+  "apiKey" (printf "${%s}" $p.apiKeyEnvVar)
   "models" $models
 -}}
-{{- if .Values.models.ollama.api -}}
-{{- $_ := set $provider "api" .Values.models.ollama.api -}}
+{{- if $p.api -}}
+{{- $_ := set $entry "api" $p.api -}}
 {{- end -}}
-{{- $_ := set $cfg "models" (dict "providers" (dict "ollama" $provider)) -}}
+{{- $_ := set $providers $name $entry -}}
+{{- end -}}
+{{- end -}}
+{{- if $providers -}}
+{{- $_ := set $cfg "models" (dict "providers" $providers) -}}
+{{- end -}}
+
+{{- /* Build channels config from enabled integrations */ -}}
+{{- $channels := dict -}}
+{{- if .Values.channels.telegram.enabled -}}
+{{- $tg := dict "botToken" (printf "${TELEGRAM_BOT_TOKEN}") -}}
+{{- if .Values.channels.telegram.dmPolicy -}}
+{{- $_ := set $tg "dmPolicy" .Values.channels.telegram.dmPolicy -}}
+{{- end -}}
+{{- $_ := set $channels "telegram" $tg -}}
+{{- end -}}
+{{- if .Values.channels.discord.enabled -}}
+{{- $dc := dict "botToken" (printf "${DISCORD_BOT_TOKEN}") -}}
+{{- if .Values.channels.discord.dmPolicy -}}
+{{- $_ := set $dc "dmPolicy" .Values.channels.discord.dmPolicy -}}
+{{- end -}}
+{{- $_ := set $channels "discord" $dc -}}
+{{- end -}}
+{{- if .Values.channels.slack.enabled -}}
+{{- $sl := dict "botToken" (printf "${SLACK_BOT_TOKEN}") "appToken" (printf "${SLACK_APP_TOKEN}") -}}
+{{- $_ := set $channels "slack" $sl -}}
+{{- end -}}
+{{- if $channels -}}
+{{- $_ := set $cfg "channels" $channels -}}
 {{- end -}}
 
 {{- $cfg | toPrettyJson -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Name of the skills ConfigMap (user-provided or chart-created default).
+*/}}
+{{- define "openclaw.skillsConfigMapName" -}}
+{{- if .Values.skills.configMapName -}}
+{{- .Values.skills.configMapName -}}
+{{- else -}}
+{{- printf "%s-skills" (include "openclaw.fullname" .) -}}
 {{- end -}}
 {{- end }}

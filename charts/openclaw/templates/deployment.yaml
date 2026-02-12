@@ -52,8 +52,13 @@ spec:
             - |
               set -eu
               mkdir -p {{ .Values.skills.extractDir | quote }}
-              rm -rf {{ .Values.skills.extractDir | quote }}/*
-              tar -xzf /skills/{{ .Values.skills.archiveKey }} -C {{ .Values.skills.extractDir | quote }}
+              if [ -f /skills/{{ .Values.skills.archiveKey }} ]; then
+                rm -rf {{ .Values.skills.extractDir | quote }}/*
+                tar -xzf /skills/{{ .Values.skills.archiveKey }} -C {{ .Values.skills.extractDir | quote }}
+                echo "Skills extracted successfully"
+              else
+                echo "No skills archive found, skipping extraction"
+              fi
           volumeMounts:
             - name: data
               mountPath: {{ .Values.persistence.mountPath }}
@@ -88,9 +93,13 @@ spec:
               value: {{ .Values.openclaw.stateDir | quote }}
             - name: ERPC_URL
               value: {{ .Values.erpc.url | quote }}
-            {{- if .Values.models.ollama.enabled }}
-            - name: {{ .Values.models.ollama.apiKeyEnvVar }}
-              value: {{ .Values.models.ollama.apiKeyValue | quote }}
+            {{- /* Inject non-secret provider API key values (e.g. Ollama placeholder) */ -}}
+            {{- range $name := list "anthropic" "openai" "ollama" }}
+            {{- $p := index $.Values.models $name }}
+            {{- if and $p.enabled $p.apiKeyValue (not (has $name (list "anthropic" "openai"))) }}
+            - name: {{ $p.apiKeyEnvVar }}
+              value: {{ $p.apiKeyValue | quote }}
+            {{- end }}
             {{- end }}
             {{- with .Values.image.env }}
             {{- toYaml . | nindent 12 }}
@@ -158,7 +167,8 @@ spec:
         {{- if .Values.skills.enabled }}
         - name: skills-archive
           configMap:
-            name: {{ .Values.skills.configMapName | quote }}
+            name: {{ include "openclaw.skillsConfigMapName" . }}
+            optional: true
         {{- end }}
         {{- with .Values.extraVolumes }}
         {{- toYaml . | nindent 8 }}

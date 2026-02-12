@@ -12,8 +12,6 @@ OpenClaw
 
 {{ template "chart.requirementsSection" . }}
 
-{{ template "chart.valuesSection" . }}
-
 ## Quick start
 
 Add Obol's Helm Charts:
@@ -23,24 +21,144 @@ helm repo add obol https://obolnetwork.github.io/helm-charts/
 helm repo update
 ```
 
-Install OpenClaw (ClusterIP only):
+### Anthropic (recommended)
 
 ```sh
-helm upgrade --install openclaw obol/openclaw --create-namespace --namespace openclaw
+helm upgrade --install openclaw obol/openclaw \
+  --namespace openclaw --create-namespace \
+  --set models.anthropic.enabled=true \
+  --set models.anthropic.apiKeyValue=sk-ant-api03-XXXX \
+  --set models.ollama.enabled=false \
+  --set openclaw.agentModel=anthropic/claude-sonnet-4-5-20250929
 ```
+
+### OpenAI
+
+```sh
+helm upgrade --install openclaw obol/openclaw \
+  --namespace openclaw --create-namespace \
+  --set models.openai.enabled=true \
+  --set models.openai.apiKeyValue=sk-XXXX \
+  --set models.ollama.enabled=false \
+  --set openclaw.agentModel=openai/gpt-4o
+```
+
+### Ollama (local models)
+
+The default values assume an [Obol Stack](https://github.com/ObolNetwork/obol-stack) environment
+where Ollama traffic is routed through the llmspy proxy. For a standalone Ollama deployment, override
+the base URL:
+
+```sh
+helm upgrade --install openclaw obol/openclaw \
+  --namespace openclaw --create-namespace \
+  --set models.ollama.baseUrl=http://ollama.ollama.svc.cluster.local:11434/v1 \
+  --set models.ollama.api=""
+```
+
+## Access
 
 Port-forward for local access:
 
 ```sh
-export POD_NAME=$(kubectl get pods -n openclaw -l "app.kubernetes.io/name=openclaw,app.kubernetes.io/instance=openclaw" -o jsonpath="{.items[0].metadata.name}")
-kubectl -n openclaw port-forward $POD_NAME 18789:18789
+kubectl -n openclaw port-forward svc/openclaw-openclaw 18789:18789
 open http://127.0.0.1:18789
 ```
 
 Fetch the gateway token:
 
 ```sh
-kubectl get secret -n openclaw openclaw-openclaw-secrets -o jsonpath='{.data.OPENCLAW_GATEWAY_TOKEN}' | base64 --decode
+kubectl get secret -n openclaw openclaw-openclaw-secrets \
+  -o jsonpath='{.data.OPENCLAW_GATEWAY_TOKEN}' | base64 --decode
+```
+
+## Model providers
+
+Three providers are supported. Enable one or more in `models.<provider>.enabled`.
+API keys are stored in a Kubernetes Secret and injected as environment variables.
+
+| Provider | `models.<name>.enabled` | API key value | Notes |
+|----------|------------------------|---------------|-------|
+| Anthropic | `models.anthropic.enabled=true` | `models.anthropic.apiKeyValue` | Direct API access |
+| OpenAI | `models.openai.enabled=true` | `models.openai.apiKeyValue` | Direct API access |
+| Ollama | `models.ollama.enabled=true` (default) | N/A | Default routes through llmspy in Obol Stack |
+
+Set the default agent model with `openclaw.agentModel` (e.g. `anthropic/claude-sonnet-4-5-20250929`).
+
+## Chat channels
+
+OpenClaw can connect to messaging platforms. Enable channels and provide bot tokens:
+
+### Telegram
+
+```yaml
+channels:
+  telegram:
+    enabled: true
+    botToken: "123456:ABC-DEF..."
+    dmPolicy: "open"  # open | paired | closed
+```
+
+### Discord
+
+```yaml
+channels:
+  discord:
+    enabled: true
+    botToken: "MTIz..."
+    dmPolicy: "open"
+```
+
+### Slack
+
+```yaml
+channels:
+  slack:
+    enabled: true
+    botToken: "xoxb-..."
+    appToken: "xapp-..."
+```
+
+## RBAC
+
+Grant the OpenClaw service account read-only access to namespace resources:
+
+```sh
+helm upgrade --install openclaw obol/openclaw \
+  --namespace openclaw \
+  --set rbac.create=true \
+  --set serviceAccount.automount=true
+```
+
+## Init Job
+
+Run a one-shot Job after install to bootstrap the workspace:
+
+```sh
+helm upgrade --install openclaw obol/openclaw \
+  --namespace openclaw \
+  --set initJob.enabled=true
+```
+
+## Skills injection
+
+Extract a `skills.tgz` archive from a ConfigMap into the OpenClaw state volume.
+When `skills.createDefault=true` (default), an empty ConfigMap is created automatically
+so the chart deploys without external dependencies.
+
+```sh
+helm upgrade --install openclaw obol/openclaw \
+  --namespace openclaw \
+  --set skills.enabled=true
+```
+
+To use an externally managed ConfigMap instead:
+
+```sh
+helm upgrade --install openclaw obol/openclaw \
+  --namespace openclaw \
+  --set skills.enabled=true \
+  --set skills.configMapName=my-skills-configmap
 ```
 
 ## Obol Stack (Gateway API)
@@ -51,22 +169,7 @@ If you're running Obol Stack with Traefik + Gateway API, enable `httpRoute`:
 helm upgrade --install openclaw obol/openclaw \
   --namespace openclaw \
   --set httpRoute.enabled=true \
-  --set httpRoute.hostnames[0]=openclaw-myid.obol.stack
+  --set "httpRoute.hostnames[0]=openclaw-myid.obol.stack"
 ```
 
-## Skills injection (ConfigMap archive)
-
-This chart can extract a `skills.tgz` archive from a ConfigMap into the OpenClaw state volume.
-
-Expected ConfigMap:
-- Name: `skills.configMapName`
-- Key: `skills.archiveKey` (default `skills.tgz`)
-
-Enable extraction:
-
-```sh
-helm upgrade --install openclaw obol/openclaw \
-  --namespace openclaw \
-  --set skills.enabled=true \
-  --set skills.configMapName=openclaw-skills
-```
+{{ template "chart.valuesSection" . }}

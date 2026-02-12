@@ -14,6 +14,6 @@
 {{- fail "openclaw: httpRoute.enabled is true but httpRoute.hostnames is empty" -}}
 {{- end -}}
 
-{{- if and .Values.skills.enabled (eq .Values.skills.configMapName "") -}}
-{{- fail "openclaw: skills.enabled is true but skills.configMapName is empty" -}}
+{{- if and .Values.skills.enabled (eq .Values.skills.configMapName "") (not .Values.skills.createDefault) -}}
+{{- fail "openclaw: skills.enabled is true but no skills.configMapName or skills.createDefault" -}}
 {{- end -}}

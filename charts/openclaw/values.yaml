@@ -9,14 +9,16 @@ replicaCount: 1
 image:
   repository: ghcr.io/obolnetwork/openclaw
   pullPolicy: IfNotPresent
-  tag: "v2026.2.3"
+  tag: "2026.2.9"
 
   # -- Override the container command (ENTRYPOINT)
   command:
-    - openclaw
+    - node
   # -- Override the container args (CMD)
   args:
+    - openclaw.mjs
     - gateway
+    - --allow-unconfigured
 
   # -- Additional environment variables for the container
   env: []
@@ -35,9 +37,39 @@ fullnameOverride: ""
 serviceAccount:
   create: true
   # -- Automatically mount a ServiceAccount's API credentials?
+  # Set to true when rbac.create is true so the agent can access the K8s API.
   automount: false
   annotations: {}
   name: ""
+
+# -- RBAC for the ServiceAccount (read-only access to namespace resources)
+rbac:
+  create: false
+  # -- Extra rules to append to the generated Role (list of PolicyRule objects)
+  extraRules: []
+
+# -- One-shot init Job (runs once to bootstrap workspace/personality)
+initJob:
+  enabled: false
+  image:
+    repository: ghcr.io/obolnetwork/openclaw
+    tag: ""
+    pullPolicy: IfNotPresent
+  command:
+    - node
+    - openclaw.mjs
+    - agent
+    - init
+  args: []
+  # -- Extra environment variables for the init job
+  env: []
+  # -- Resource requests/limits for the init job
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
 
 # -- Pod annotations
 podAnnotations: {}
@@ -113,6 +145,8 @@ config:
 openclaw:
   stateDir: /data/.openclaw
   workspaceDir: /data/.openclaw/workspace
+  # -- Default agent model (e.g. "anthropic/claude-sonnet-4-5-20250929"). Empty = use provider default.
+  agentModel: ""
 
   gateway:
     mode: local
@@ -126,13 +160,34 @@ openclaw:
           enabled: true
 
 # -- Model provider configuration
+# Each provider is independently toggled. At least one must be enabled.
+# API keys are stored in the chart Secret and injected as env vars.
 models:
+  anthropic:
+    enabled: false
+    baseUrl: https://api.anthropic.com/v1
+    api: ""
+    apiKeyEnvVar: ANTHROPIC_API_KEY
+    # -- API key value (stored in Secret). Leave empty to provide via extraEnvFromSecrets.
+    apiKeyValue: ""
+    models:
+      - id: claude-sonnet-4-5-20250929
+        name: Claude Sonnet 4.5
+  openai:
+    enabled: false
+    baseUrl: https://api.openai.com/v1
+    api: ""
+    apiKeyEnvVar: OPENAI_API_KEY
+    apiKeyValue: ""
+    models:
+      - id: gpt-4o
+        name: GPT-4o
   ollama:
     enabled: true
-    # -- OpenAI-compatible base URL for Ollama
-    baseUrl: http://ollama.llm.svc.cluster.local:11434/v1
-    # -- OpenClaw provider API type (optional; omit to let OpenClaw auto-detect)
-    api: ""
+    # -- OpenAI-compatible base URL for Ollama (routed through llmspy global proxy)
+    baseUrl: http://llmspy.llm.svc.cluster.local:8000/v1
+    # -- OpenClaw provider API type. Set to "openai-completions" because llmspy exposes an OpenAI-compatible chat/completions endpoint.
+    api: "openai-completions"
     # -- Env var used for provider API key interpolation in openclaw.json
     apiKeyEnvVar: OLLAMA_API_KEY
     # -- Value set for the apiKey env var (not a secret for Ollama)
@@ -141,10 +196,36 @@ models:
       - id: glm-4.7-flash
         name: glm-4.7-flash
 
+# -- Chat channel integrations
+# Tokens are stored in the chart Secret and injected as env vars.
+channels:
+  telegram:
+    enabled: false
+    # -- Telegram Bot API token (from @BotFather)
+    botToken: ""
+    # -- DM policy: "open" | "paired" | "closed"
+    dmPolicy: ""
+  discord:
+    enabled: false
+    # -- Discord bot token
+    botToken: ""
+    # -- DM policy: "open" | "paired" | "closed"
+    dmPolicy: ""
+  slack:
+    enabled: false
+    # -- Slack Bot User OAuth Token (xoxb-...)
+    botToken: ""
+    # -- Slack App-Level Token (xapp-...)
+    appToken: ""
+
 # -- Skills injection from a ConfigMap archive (created by an external tool; e.g. `obol openclaw skills sync`)
 skills:
   enabled: false
-  # -- Name of the ConfigMap containing the skills archive
+  # -- Create a default empty skills ConfigMap when configMapName is not set.
+  # This allows the chart to deploy without requiring an external ConfigMap.
+  # Use `obol openclaw skills sync` to populate it later.
+  createDefault: true
+  # -- Name of the ConfigMap containing the skills archive (overrides createDefault)
   configMapName: ""
   archiveKey: skills.tgz
   extractDir: /data/.openclaw/skills-injected
