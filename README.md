@@ -15,6 +15,7 @@ This repo contains Helm Charts for deploying Obol Distributed Validator [middlew
 - [`dv-pod`](charts/dv-pod) - A chart for running a Charon client + a Validator client, with automatic DKG completion as a feature. 
 - [`obol-app`](charts/obol-app) - A chart for running arbitrary docker images in the [Obol Stack](https://obol.org/stack).
 - [`aztec-node`](charts/aztec-node) - Aztec network node deployment (Full Node, Sequencer, or Prover)
+- [`openclaw`](charts/openclaw) - OpenClaw gateway deployment (agent runtime)
 
 ## Before you begin
 
