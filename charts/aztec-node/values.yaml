@@ -196,8 +196,8 @@ node:
 
   # -- Node.js options
   nodeJsOptions:
-      - --no-warnings
-      - --max-old-space-size=4096
+    - --no-warnings
+    - --max-old-space-size=4096
 
   # -- Startup probe configuration
   startupProbe:

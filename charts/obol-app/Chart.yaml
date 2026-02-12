@@ -6,7 +6,7 @@ home: https://obol.org/
 sources:
   - https://github.com/ObolNetwork/helm-charts
 maintainers:
-  - name: Obol Platform Team
+  - name: Eth2DevOps
     email: platform@obol.tech
 keywords:
   - ethereum

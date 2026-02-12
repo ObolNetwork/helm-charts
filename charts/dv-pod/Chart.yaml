@@ -6,7 +6,7 @@ home: https://docs.obol.org/
 sources:
   - https://github.com/ObolNetwork/charon
 maintainers:
-  - name: DV Labs
+  - name: Eth2DevOps
     email: devops@obol.tech
 keywords:
   - ethereum

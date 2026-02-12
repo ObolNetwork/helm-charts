@@ -33,7 +33,7 @@ configMaps:
 charon:
   # -- The Ethereum address of this operator. This MUST be provided by the user to use the auto-dkg functionality.
   operatorAddress: ""  # Set your operator address here. This will be used to sign approvals to DKG invites on the Obol Launchpad.
-  
+
   # -- The nickname this Charon appears as in monitoring and its peer's logs. Maximum 32 characters.
   nickname: ""
 
@@ -41,46 +41,46 @@ charon:
   # The default is the Obol Stack full node address. Change this to your own consensus client beacon API(s).
   # All beacon nodes specified here will be called for every charon request, if you want to leverage fallback behaviour
   # place secondary beacon nodes in charon.fallbackBeaconNodeEndpoints[]
-  beaconNodeEndpoints: 
+  beaconNodeEndpoints:
     - "http://l1-full-node-beacon.l1.cluster.svc.local:5052"
-  
+
   # -- Fallback beacon node endpoints (optional)
   # These will be used if the primary beaconNodeEndpoints are unavailable
   fallbackBeaconNodeEndpoints:
   # Example:
     - "https://ethereum-beacon-api.publicnode.com"
   # - "http://backup-beacon-2:5052"
-  
+
   # -- Beacon node authentication headers
   # WARNING: These headers will be sent to ALL beacon nodes, which could leak credentials
   # Format: "Authorization=Basic <base64_encoded_credentials>"
   # To generate: echo -n "username:password" | base64
   # Example: "Authorization=Basic am9objpkb2U="
   beaconNodeHeaders: ""
-  
+
   # -- Optional: Name of the secret containing beacon node headers
   # Use this for secure credential storage instead of beaconNodeHeaders
   # The secret should contain a key specified by charon.beaconNodeHeadersSecretKey
   beaconNodeHeadersSecretName: ""
-  
+
   # -- Optional: Key within the charon.beaconNodeHeaders secret to read from
   beaconNodeHeadersSecretKey: "headers"
 
   # -- Optional: Execution client RPC endpoint URL (e.g., your Ethereum execution client)
   # Note: Charon currently only supports a single execution endpoint
-  # This is only needed if an operator in the cluster uses a smart contract wallet for an operator signature. 
+  # This is only needed if an operator in the cluster uses a smart contract wallet for an operator signature.
   # If that does not apply to this cluster, this field can be left unset.
   executionClientRpcEndpoint: ""
 
   # --- Charon command line options ---
   ## ref: https://docs.obol.tech/docs/learn/charon/charon-cli-reference
-  
+
   # -- Enables the builder api (MEV) for validator proposals.
-  # The Builder API must also be enabled on your beacon node client(s). 
+  # The Builder API must also be enabled on your beacon node client(s).
   # The Beacon node must either be connected to a mev sidecar or a mev relay to access the builder network.
   # More documentation about MEV can be found [here](https://docs.obol.org/advanced-and-troubleshooting/advanced/enable-mev).
   builderApi: "true"
-  
+
   # -- Minimum feature set to enable by default: alpha, beta, or stable. Warning: modify at own risk. (default "stable")
   featureSet: "stable"
 
@@ -107,7 +107,7 @@ charon:
 
   # --  Enables sending of logfmt structured logs to these Loki log aggregation server addresses. This is in addition to normal stderr logs.
   lokiAddresses: ""
-  
+
   # -- Service label sent with logs to Loki.
   lokiService: ""
 
@@ -125,7 +125,7 @@ charon:
 
   # -- Disables TCP port reuse for outgoing libp2p connections.
   p2pDisableReuseport: ""
-  
+
   # --  The DNS hostname advertised by libp2p. This may be used to advertise an external DNS.
   p2pExternalHostname: ""
 
@@ -138,7 +138,7 @@ charon:
 
   # -- Comma-separated list of listening TCP addresses (ip and port) for libP2P traffic. Empty default doesn't bind to local port therefore only supports outgoing connections.
   p2pTcpAddress: "0.0.0.0:3610"
-  
+
   # -- Listening address (ip and port) for validator-facing traffic proxying the beacon-node API. (default "127.0.0.1:3600")
   validatorApiAddress: "0.0.0.0:3600"
 
@@ -148,7 +148,7 @@ charon:
 
   # -- Path within the Charon container where the ENR private key file will be mounted.
   privateKeyFile: "/data/charon-enr-private-key"
-  
+
   # -- Configuration for the DKG Sidecar init container
   # This init container orchestrates the Distributed Key Generation (DKG) process for Charon clusters.
   #
@@ -213,7 +213,7 @@ charon:
 
   # --- Configuration for ENR management ---
   enr:
-    # -- Provide the ENR private key directly (hex format, e.g., 0x...). 
+    # -- Provide the ENR private key directly (hex format, e.g., 0x...).
     # If set, 'generate' and 'existingSecret' are ignored.
     privateKey: ""
 
@@ -249,25 +249,24 @@ charon:
         tag: "latest"
         pullPolicy: "IfNotPresent"
 
- 
-  
+
 # -- Validator client configuration
 validatorClient:
   # -- Enable the validator client container
-  # If you want to use an externally managed validator client. 
-  # Set this to false, and set your external validator to communicate with the 'validator-api' service created by this chart as if it were a beacon node API. 
+  # If you want to use an externally managed validator client.
+  # Set this to false, and set your external validator to communicate with the 'validator-api' service created by this chart as if it were a beacon node API.
   enabled: true
   # -- Type of validator client to use
   # Options: lighthouse, teku, prysm, nimbus, lodestar
   type: "lighthouse"
-  
+
   # -- Image configuration for validator client
   # Repository and tag will be auto-selected based on validator client type if not specified
   image:
     repository: ""
     tag: ""
     pullPolicy: IfNotPresent
-  
+
   # -- Validator client specific configuration
   config:
     # -- Graffiti to include in proposed blocks
@@ -286,7 +285,7 @@ validatorClient:
     prysm:
       # -- Additional CLI arguments passed to the Prysm validator client only
       extraArgs: []
-  
+
   # -- Resource limits and requests for validator client
   resources:
     limits:
@@ -295,7 +294,7 @@ validatorClient:
     requests:
       cpu: 500m
       memory: 1Gi
-  
+
   # -- Validator keystores configuration
   keystores:
     # -- Name of the Secret containing validator keystores
@@ -309,7 +308,7 @@ validatorClient:
 centralMonitoring:
   # -- Specifies whether central monitoring should be enabled
   enabled: false
-  # -- https endpoint to obol central prometheus 
+  # -- https endpoint to obol central prometheus
   promEndpoint: "https://vm.monitoring.gcp.obol.tech/write"
   # -- The authentication token to the central prometheus
   token: ""
@@ -478,7 +477,7 @@ clusterThreshold: ""
 
 # -- allows you to configure and disable automated rolling updates for containers, labels, resource request/limits, and annotations for the Pods in a StatefulSet.
 updateStrategy: RollingUpdate
-  
+
 # -- Persistence configuration for DKG artifacts and charon data
 persistence:
   # -- Enable persistence using a PersistentVolumeClaim.

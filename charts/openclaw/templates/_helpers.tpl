@@ -136,28 +136,17 @@ Render openclaw.json as strict JSON. If config.content is provided, it is used v
 {{- $_ := set $gatewayAuth "token" (printf "${%s}" .Values.secrets.gatewayToken.key) -}}
 {{- end -}}
 
-{{- $gateway := dict
-  "mode" .Values.openclaw.gateway.mode
-  "bind" .Values.openclaw.gateway.bind
-  "port" .Values.service.port
-  "auth" $gatewayAuth
-  "http" (dict "endpoints" (dict "chatCompletions" (dict "enabled" .Values.openclaw.gateway.http.endpoints.chatCompletions.enabled)))
--}}
+{{- $gateway := dict "mode" .Values.openclaw.gateway.mode "bind" .Values.openclaw.gateway.bind "port" .Values.service.port "auth" $gatewayAuth "http" (dict "endpoints" (dict "chatCompletions" (dict "enabled" .Values.openclaw.gateway.http.endpoints.chatCompletions.enabled))) -}}
 
 {{- $agentDefaults := dict "workspace" .Values.openclaw.workspaceDir -}}
 {{- if .Values.openclaw.agentModel -}}
 {{- $_ := set $agentDefaults "model" (dict "primary" .Values.openclaw.agentModel) -}}
 {{- end -}}
 
-{{- $cfg := dict
-  "gateway" $gateway
-  "agents" (dict "defaults" $agentDefaults)
--}}
+{{- $cfg := dict "gateway" $gateway "agents" (dict "defaults" $agentDefaults) -}}
 
 {{- if .Values.skills.enabled -}}
-{{- $_ := set $cfg "skills" (dict "load" (dict
-  "extraDirs" (list .Values.skills.extractDir)
-)) -}}
+{{- $_ := set $cfg "skills" (dict "load" (dict "extraDirs" (list .Values.skills.extractDir))) -}}
 {{- end -}}
 
 {{- /* Build providers map from all enabled model providers */ -}}
@@ -169,11 +158,7 @@ Render openclaw.json as strict JSON. If config.content is provided, it is used v
 {{- range $m := $p.models -}}
 {{- $models = append $models (dict "id" $m.id "name" $m.name) -}}
 {{- end -}}
-{{- $entry := dict
-  "baseUrl" $p.baseUrl
-  "apiKey" (printf "${%s}" $p.apiKeyEnvVar)
-  "models" $models
--}}
+{{- $entry := dict "baseUrl" $p.baseUrl "apiKey" (printf "${%s}" $p.apiKeyEnvVar) "models" $models -}}
 {{- if $p.api -}}
 {{- $_ := set $entry "api" $p.api -}}
 {{- end -}}

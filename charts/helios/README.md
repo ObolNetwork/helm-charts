@@ -8,7 +8,7 @@ A Helm chart for Helios - a trustless, efficient, and portable Ethereum light cl
 
 | Name | Email | Url |
 | ---- | ------ | --- |
-| DV Labs |  | <https://dvlabs.tech> |
+| Eth2DevOps |  | <https://dvlabs.tech> |
 
 ## Values
 

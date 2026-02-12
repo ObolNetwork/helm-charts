@@ -175,7 +175,7 @@ config:
 
   # --  Enables sending of logfmt structured logs to these Loki log aggregation server addresses. This is in addition to normal stderr logs.
   lokiAddresses: ""
-  
+
   # -- Service label sent with logs to Loki.
   lokiService: ""
 
@@ -193,10 +193,10 @@ config:
 
   # -- Libp2p maximum number of peers that can connect to this relay. (default 16384)
   p2pMaxConnections: "16384"
-  
+
   # -- Updates max circuit reservations per peer (each valid for 30min) (default 512)
   p2pMaxReservatoins: "512"
-  
+
   # Libp2p circuit relay log level. E.g., debug, info, warn, error.
   p2pRelayLogLevel: "debug"
 
@@ -252,7 +252,7 @@ readinessProbe:
 centralMonitoring:
   # -- Specifies whether central monitoring should be enabled
   enabled: false
-  # -- https endpoint to obol central prometheus 
+  # -- https endpoint to obol central prometheus
   promEndpoint: "https://vm.monitoring.gcp.obol.tech/write"
   # -- The authentication token to the central prometheus
   token: ""

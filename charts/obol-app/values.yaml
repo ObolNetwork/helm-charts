@@ -160,4 +160,3 @@ obol:
     enabled: true
     # This value is made available to the container as `OBOL_ETH_RPC_URL` in its environment
     ethRpcUrl: "http://rpc.l1.svc.cluster.local/rpc/mainnet"
-  
