@@ -12,7 +12,16 @@ clusterThreshold: 3
 image:
   repository: obolnetwork/charon
   pullPolicy: IfNotPresent
-  tag: v1.1.1
+  tag: v1.8.2
+
+# Workaround for it being too difficult to get a modern 
+# charon version ready in this current helm ci test.
+readinessProbe:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  httpGet:
+    path: /livez
+    port: monitoring
 
 # -- Credentials to fetch images from private registry
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
