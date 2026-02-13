@@ -98,13 +98,13 @@
       "matchFileNames": [
         "charts/dv-pod/**"
       ],
-      "excludePackageNames": [
-        "/^obolnetwork/charon/"
-      ],
       "labels": [
         "renovate/dv-pod"
       ],
-      "groupName": "DV-pod dependency updates"
+      "groupName": "DV-pod dependency updates",
+      "matchPackageNames": [
+        "!/^obolnetwork/charon/"
+      ]
     },
     {
       "description": "Charon-relay chart updates",
