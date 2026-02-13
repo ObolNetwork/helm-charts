@@ -46,7 +46,8 @@
         "custom.regex"
       ],
       "matchFileNames": [
-        "charts/charon/**"
+        "charts/charon/**",
+        ".github/helm-ci-values/values-charon.yaml"
       ],
       "labels": [
         "renovate/charon"
@@ -62,7 +63,8 @@
         "custom.regex"
       ],
       "matchFileNames": [
-        "charts/charon-cluster/**"
+        "charts/charon-cluster/**",
+        ".github/helm-ci-values/values-charon-cluster.yaml"
       ],
       "labels": [
         "renovate/charon-cluster"
@@ -123,7 +125,8 @@
         "custom.regex"
       ],
       "matchFileNames": [
-        "charts/aztec-node/**"
+        "charts/aztec-node/**",
+        ".github/helm-ci-values/values-aztec-node.yaml"
       ],
       "labels": [
         "renovate/aztec-node"
@@ -136,7 +139,8 @@
         "custom.regex"
       ],
       "matchFileNames": [
-        "charts/openclaw/**"
+        "charts/openclaw/**",
+        ".github/helm-ci-values/values-openclaw.yaml"
       ],
       "labels": [
         "renovate/openclaw"
@@ -392,6 +396,58 @@
       "matchStrings": [
         "# -- OpenClaw image repository, pull policy, and tag version\\s+image:\\s+repository:\\s+(?<depName>ghcr\\.io/obolnetwork/openclaw)\\s+pullPolicy:\\s+\\w+\\s+tag:\\s+\"(?<currentValue>v?[0-9]+\\.[0-9]+\\.[0-9]+)\""
       ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "description": "Update Charon tag in CI values-charon.yaml",
+      "managerFilePatterns": [
+        "/^\\.github/helm-ci-values/values-charon\\.yaml$/"
+      ],
+      "matchStrings": [
+        "repository:\\s*obolnetwork/charon\\n\\s*pullPolicy:\\s*\\w+\\n\\s*tag:\\s*(?<currentValue>v[\\d.]+)"
+      ],
+      "depNameTemplate": "obolnetwork/charon",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Update Charon tag in CI values-charon-cluster.yaml",
+      "managerFilePatterns": [
+        "/^\\.github/helm-ci-values/values-charon-cluster\\.yaml$/"
+      ],
+      "matchStrings": [
+        "repository:\\s*obolnetwork/charon\\n\\s*pullPolicy:\\s*\\w+\\n\\s*tag:\\s*(?<currentValue>v[\\d.]+)"
+      ],
+      "depNameTemplate": "obolnetwork/charon",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Update Aztec tag in CI values-aztec-node.yaml",
+      "managerFilePatterns": [
+        "/^\\.github/helm-ci-values/values-aztec-node\\.yaml$/"
+      ],
+      "matchStrings": [
+        "repository:\\s*aztecprotocol/aztec\\n\\s*tag:\\s*(?<currentValue>[\\d.]+)"
+      ],
+      "depNameTemplate": "aztecprotocol/aztec",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "description": "Update OpenClaw tag in CI values-openclaw.yaml",
+      "managerFilePatterns": [
+        "/^\\.github/helm-ci-values/values-openclaw\\.yaml$/"
+      ],
+      "matchStrings": [
+        "repository:\\s*ghcr\\.io/obolnetwork/openclaw\\n\\s*tag:\\s*\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""
+      ],
+      "depNameTemplate": "ghcr.io/obolnetwork/openclaw",
       "datasourceTemplate": "docker",
       "versioningTemplate": "semver"
     }

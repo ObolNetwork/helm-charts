@@ -1,0 +1,10 @@
+# CI test values for openclaw chart
+image:
+  repository: ghcr.io/obolnetwork/openclaw
+  tag: "2026.2.9"
+
+# Disable token auth to avoid needing a gateway token in CI
+openclaw:
+  gateway:
+    auth:
+      mode: none

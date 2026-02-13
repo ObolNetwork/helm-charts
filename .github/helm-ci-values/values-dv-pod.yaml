@@ -1,0 +1,3 @@
+# CI test values for dv-pod chart
+charon:
+  operatorAddress: "0x0000000000000000000000000000000000000001"

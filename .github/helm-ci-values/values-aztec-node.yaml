@@ -10,7 +10,7 @@ network: mainnet
 # Container image configuration
 image:
   repository: aztecprotocol/aztec
-  tag: 2.1.5
+  tag: 3.0.3
   pullPolicy: IfNotPresent
 
   # L1 Ethereum configuration (mock URLs for CI)
