@@ -5,108 +5,180 @@
   ],
   "enabledManagers": [
     "github-actions",
-    "regex"
+    "custom.regex"
   ],
   "packageRules": [
     {
       "description": "GitHub Actions updates",
-      "matchManagers": ["github-actions"],
-      "matchDepTypes": ["github-actions"],
-      "matchFileNames": [".github/workflows/**"],
-      "schedule": ["every weekend"],
-      "labels": ["renovate/github-actions"],
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchDepTypes": [
+        "github-actions"
+      ],
+      "matchFileNames": [
+        ".github/workflows/**"
+      ],
+      "schedule": [
+        "every weekend"
+      ],
+      "labels": [
+        "renovate/github-actions"
+      ],
       "groupName": "GitHub Actions updates"
     },
     {
       "description": "Obol core images - ignore unstable/RC versions",
-      "matchDatasources": ["docker"],
-      "matchPackagePatterns": ["^obolnetwork/charon", "^obolnetwork/charon-dkg-sidecar"],
+      "matchDatasources": [
+        "docker"
+      ],
       "ignoreUnstable": true,
-      "labels": ["renovate/obol-core"]
+      "labels": [
+        "renovate/obol-core"
+      ],
+      "matchPackageNames": [
+        "/^obolnetwork/charon/",
+        "/^obolnetwork/charon-dkg-sidecar/"
+      ]
     },
     {
       "description": "Charon chart updates",
-      "matchPackagePatterns": ["^obolnetwork/charon"],
-      "matchManagers": ["regex"],
-      "matchFileNames": ["charts/charon/**"],
-      "labels": ["renovate/charon"],
-      "groupName": "Charon chart updates"
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchFileNames": [
+        "charts/charon/**"
+      ],
+      "labels": [
+        "renovate/charon"
+      ],
+      "groupName": "Charon chart updates",
+      "matchPackageNames": [
+        "/^obolnetwork/charon/"
+      ]
     },
     {
       "description": "Charon-cluster chart updates",
-      "matchPackagePatterns": ["^obolnetwork/charon"],
-      "matchManagers": ["regex"],
-      "matchFileNames": ["charts/charon-cluster/**"],
-      "labels": ["renovate/charon-cluster"],
-      "groupName": "Charon-cluster chart updates"
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchFileNames": [
+        "charts/charon-cluster/**"
+      ],
+      "labels": [
+        "renovate/charon-cluster"
+      ],
+      "groupName": "Charon-cluster chart updates",
+      "matchPackageNames": [
+        "/^obolnetwork/charon/"
+      ]
     },
     {
       "description": "DV-pod chart updates",
-      "matchPackagePatterns": ["^obolnetwork/charon"],
-      "matchManagers": ["regex"],
-      "matchFileNames": ["charts/dv-pod/**"],
-      "labels": ["renovate/dv-pod"],
-      "groupName": "DV-pod chart updates"
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchFileNames": [
+        "charts/dv-pod/**"
+      ],
+      "labels": [
+        "renovate/dv-pod"
+      ],
+      "groupName": "DV-pod chart updates",
+      "matchPackageNames": [
+        "/^obolnetwork/charon/"
+      ]
     },
     {
       "description": "Validator client images - group by client type",
-      "matchDatasources": ["docker"],
-      "matchPackagePatterns": [
-        "^sigp/lighthouse",
-        "^consensys/teku",
-        "^gcr.io/prysmaticlabs/prysm",
-        "^statusim/nimbus",
-        "^chainsafe/lodestar"
+      "matchDatasources": [
+        "docker"
       ],
-      "labels": ["renovate/validator-clients"],
-      "separateMinorPatch": true
+      "labels": [
+        "renovate/validator-clients"
+      ],
+      "separateMinorPatch": true,
+      "matchPackageNames": [
+        "/^sigp/lighthouse/",
+        "/^consensys/teku/",
+        "/^gcr.io/prysmaticlabs/prysm/",
+        "/^statusim/nimbus/",
+        "/^chainsafe/lodestar/"
+      ]
     },
     {
       "description": "Lighthouse updates",
-      "matchDatasources": ["docker"],
-      "matchPackageNames": ["sigp/lighthouse"],
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "sigp/lighthouse"
+      ],
       "groupName": "Lighthouse validator"
     },
     {
       "description": "Teku updates",
-      "matchDatasources": ["docker"],
-      "matchPackageNames": ["consensys/teku"],
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "consensys/teku"
+      ],
       "groupName": "Teku validator"
     },
     {
       "description": "Prysm updates",
-      "matchDatasources": ["docker"],
-      "matchPackageNames": ["gcr.io/prysmaticlabs/prysm/validator"],
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "gcr.io/prysmaticlabs/prysm/validator"
+      ],
       "groupName": "Prysm validator"
     },
     {
       "description": "Nimbus updates - group both images together",
-      "matchDatasources": ["docker"],
-      "matchPackagePatterns": ["^statusim/nimbus"],
-      "groupName": "Nimbus validator"
+      "matchDatasources": [
+        "docker"
+      ],
+      "groupName": "Nimbus validator",
+      "matchPackageNames": [
+        "/^statusim/nimbus/"
+      ]
     },
     {
       "description": "Lodestar updates",
-      "matchDatasources": ["docker"],
-      "matchPackageNames": ["chainsafe/lodestar"],
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "chainsafe/lodestar"
+      ],
       "groupName": "Lodestar validator"
     },
     {
       "description": "Infrastructure images",
-      "matchDatasources": ["docker"],
+      "matchDatasources": [
+        "docker"
+      ],
       "matchPackageNames": [
         "bitnamisecure/kubectl",
         "busybox",
         "prom/prometheus"
       ],
-      "labels": ["renovate/infrastructure"],
+      "labels": [
+        "renovate/infrastructure"
+      ],
       "groupName": "Infrastructure images"
     }
   ],
-  "regexManagers": [
+  "customManagers": [
     {
+      "customType": "regex",
       "description": "Update Charon version in charon/values.yaml",
-      "fileMatch": ["^charts/charon/values\\.yaml$"],
+      "managerFilePatterns": [
+        "/^charts/charon/values\\.yaml$/"
+      ],
       "matchStrings": [
         "repository:\\s*obolnetwork/charon\\n\\s*pullPolicy:\\s*\\w+\\n\\s*tag:\\s*(?<currentValue>v[\\d.]+)"
       ],
@@ -115,8 +187,11 @@
       "versioningTemplate": "docker"
     },
     {
+      "customType": "regex",
       "description": "Update Charon version in charon-cluster/values.yaml",
-      "fileMatch": ["^charts/charon-cluster/values\\.yaml$"],
+      "managerFilePatterns": [
+        "/^charts/charon-cluster/values\\.yaml$/"
+      ],
       "matchStrings": [
         "repository:\\s*obolnetwork/charon\\n\\s*pullPolicy:\\s*\\w+\\n\\s*tag:\\s*(?<currentValue>v[\\d.]+)"
       ],
@@ -125,8 +200,11 @@
       "versioningTemplate": "docker"
     },
     {
+      "customType": "regex",
       "description": "Update Charon version in dv-pod/values.yaml",
-      "fileMatch": ["^charts/dv-pod/values\\.yaml$"],
+      "managerFilePatterns": [
+        "/^charts/dv-pod/values\\.yaml$/"
+      ],
       "matchStrings": [
         "repository:\\s*obolnetwork/charon\\n\\s*pullPolicy:\\s*\\w+\\n\\s*tag:\\s*(?<currentValue>v[\\d.]+)"
       ],
@@ -135,8 +213,11 @@
       "versioningTemplate": "docker"
     },
     {
+      "customType": "regex",
       "description": "Update appVersion in charon/Chart.yaml",
-      "fileMatch": ["^charts/charon/Chart\\.yaml$"],
+      "managerFilePatterns": [
+        "/^charts/charon/Chart\\.yaml$/"
+      ],
       "matchStrings": [
         "appVersion:\\s*\"(?<currentValue>[\\d.]+)\""
       ],
@@ -145,8 +226,11 @@
       "versioningTemplate": "docker"
     },
     {
+      "customType": "regex",
       "description": "Update appVersion in charon-cluster/Chart.yaml",
-      "fileMatch": ["^charts/charon-cluster/Chart\\.yaml$"],
+      "managerFilePatterns": [
+        "/^charts/charon-cluster/Chart\\.yaml$/"
+      ],
       "matchStrings": [
         "appVersion:\\s*\"(?<currentValue>[\\d.]+)\""
       ],
@@ -155,8 +239,11 @@
       "versioningTemplate": "docker"
     },
     {
+      "customType": "regex",
       "description": "Update appVersion in dv-pod/Chart.yaml",
-      "fileMatch": ["^charts/dv-pod/Chart\\.yaml$"],
+      "managerFilePatterns": [
+        "/^charts/dv-pod/Chart\\.yaml$/"
+      ],
       "matchStrings": [
         "appVersion:\\s*\"(?<currentValue>[\\d.]+)\""
       ],
@@ -165,24 +252,33 @@
       "versioningTemplate": "docker"
     },
     {
+      "customType": "regex",
       "description": "Update DKG Sidecar image in values.yaml",
-      "fileMatch": ["^charts/dv-pod/values\\.yaml$"],
+      "managerFilePatterns": [
+        "/^charts/dv-pod/values\\.yaml$/"
+      ],
       "matchStrings": [
         "# -- Image repository for the DKG sidecar\\s+repository:\\s+\"(?<depName>obolnetwork/charon-dkg-sidecar)\"\\s+tag:\\s+\"(?<currentValue>[^\"]+)\""
       ],
       "datasourceTemplate": "docker"
     },
     {
+      "customType": "regex",
       "description": "Update kubectl image in values.yaml",
-      "fileMatch": ["^charts/dv-pod/values\\.yaml$"],
+      "managerFilePatterns": [
+        "/^charts/dv-pod/values\\.yaml$/"
+      ],
       "matchStrings": [
         "kubectlImage:\\s+repository:\\s+\"(?<depName>bitnamisecure/kubectl)\"\\s+tag:\\s+\"(?<currentValue>[^\"]+)\""
       ],
       "datasourceTemplate": "docker"
     },
     {
+      "customType": "regex",
       "description": "Update Charon ENR generation image in values.yaml",
-      "fileMatch": ["^charts/dv-pod/values\\.yaml$"],
+      "managerFilePatterns": [
+        "/^charts/dv-pod/values\\.yaml$/"
+      ],
       "matchStrings": [
         "generate:\\s+enabled:\\s+\\w+\\s+#[^\\n]*\\s+annotations:[^\\n]*\\s+#[^\\n]*\\s+nodeSelector:[^\\n]*\\s+image:\\s+repository:\\s+\"(?<depName>obolnetwork/charon)\"[^\\n]*\\s+tag:\\s+\"(?<currentValue>v?[0-9]+\\.[0-9]+\\.[0-9]+)\""
       ],
@@ -190,8 +286,11 @@
       "versioningTemplate": "semver"
     },
     {
+      "customType": "regex",
       "description": "Update Lighthouse default version in statefulset.yaml",
-      "fileMatch": ["^charts/dv-pod/templates/statefulset\\.yaml$"],
+      "managerFilePatterns": [
+        "/^charts/dv-pod/templates/statefulset\\.yaml$/"
+      ],
       "matchStrings": [
         "image: \\{\\{ \\.Values\\.validatorClient\\.image\\.repository \\| default \"(?<depName>sigp/lighthouse)\" \\}\\}:\\{\\{ \\.Values\\.validatorClient\\.image\\.tag \\| default \"(?<currentValue>v?[0-9]+\\.[0-9]+\\.[0-9]+)\" \\}\\}"
       ],
@@ -199,8 +298,11 @@
       "versioningTemplate": "semver"
     },
     {
+      "customType": "regex",
       "description": "Update Teku default version in statefulset.yaml",
-      "fileMatch": ["^charts/dv-pod/templates/statefulset\\.yaml$"],
+      "managerFilePatterns": [
+        "/^charts/dv-pod/templates/statefulset\\.yaml$/"
+      ],
       "matchStrings": [
         "image: \\{\\{ \\.Values\\.validatorClient\\.image\\.repository \\| default \"(?<depName>consensys/teku)\" \\}\\}:\\{\\{ \\.Values\\.validatorClient\\.image\\.tag \\| default \"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\" \\}\\}"
       ],
@@ -208,8 +310,11 @@
       "versioningTemplate": "semver"
     },
     {
+      "customType": "regex",
       "description": "Update Prysm default version in statefulset.yaml",
-      "fileMatch": ["^charts/dv-pod/templates/statefulset\\.yaml$"],
+      "managerFilePatterns": [
+        "/^charts/dv-pod/templates/statefulset\\.yaml$/"
+      ],
       "matchStrings": [
         "image: \\{\\{ \\.Values\\.validatorClient\\.image\\.repository \\| default \"(?<depName>gcr\\.io/prysmaticlabs/prysm/validator)\" \\}\\}:\\{\\{ \\.Values\\.validatorClient\\.image\\.tag \\| default \"(?<currentValue>v?[0-9]+\\.[0-9]+\\.[0-9]+)\" \\}\\}"
       ],
@@ -217,24 +322,33 @@
       "versioningTemplate": "semver"
     },
     {
+      "customType": "regex",
       "description": "Update Nimbus eth2 default version in statefulset.yaml",
-      "fileMatch": ["^charts/dv-pod/templates/statefulset\\.yaml$"],
+      "managerFilePatterns": [
+        "/^charts/dv-pod/templates/statefulset\\.yaml$/"
+      ],
       "matchStrings": [
         "image: \\{\\{ \\.Values\\.validatorClient\\.image\\.repository \\| default \"(?<depName>statusim/nimbus-eth2)\" \\}\\}:\\{\\{ \\.Values\\.validatorClient\\.image\\.tag \\| default \"(?<currentValue>multiarch-v[0-9]+\\.[0-9]+\\.[0-9]+)\" \\}\\}"
       ],
       "datasourceTemplate": "docker"
     },
     {
+      "customType": "regex",
       "description": "Update Nimbus validator-client default version in statefulset.yaml",
-      "fileMatch": ["^charts/dv-pod/templates/statefulset\\.yaml$"],
+      "managerFilePatterns": [
+        "/^charts/dv-pod/templates/statefulset\\.yaml$/"
+      ],
       "matchStrings": [
         "image: \\{\\{ \\.Values\\.validatorClient\\.image\\.repository \\| default \"(?<depName>statusim/nimbus-validator-client)\" \\}\\}:\\{\\{ \\.Values\\.validatorClient\\.image\\.tag \\| default \"(?<currentValue>multiarch-v[0-9]+\\.[0-9]+\\.[0-9]+)\" \\}\\}"
       ],
       "datasourceTemplate": "docker"
     },
     {
+      "customType": "regex",
       "description": "Update Lodestar default version in statefulset.yaml",
-      "fileMatch": ["^charts/dv-pod/templates/statefulset\\.yaml$"],
+      "managerFilePatterns": [
+        "/^charts/dv-pod/templates/statefulset\\.yaml$/"
+      ],
       "matchStrings": [
         "image: \\{\\{ \\.Values\\.validatorClient\\.image\\.repository \\| default \"(?<depName>chainsafe/lodestar)\" \\}\\}:\\{\\{ \\.Values\\.validatorClient\\.image\\.tag \\| default \"(?<currentValue>v?[0-9]+\\.[0-9]+\\.[0-9]+)\" \\}\\}"
       ],
@@ -242,8 +356,11 @@
       "versioningTemplate": "semver"
     },
     {
+      "customType": "regex",
       "description": "Update busybox version in statefulset.yaml",
-      "fileMatch": ["^charts/dv-pod/templates/statefulset\\.yaml$"],
+      "managerFilePatterns": [
+        "/^charts/dv-pod/templates/statefulset\\.yaml$/"
+      ],
       "matchStrings": [
         "image: (?<depName>busybox):(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"
       ],
@@ -251,8 +368,11 @@
       "versioningTemplate": "semver"
     },
     {
+      "customType": "regex",
       "description": "Update Prometheus version in prometheus-deployment.yaml",
-      "fileMatch": ["^charts/dv-pod/templates/prometheus-deployment\\.yaml$"],
+      "managerFilePatterns": [
+        "/^charts/dv-pod/templates/prometheus-deployment\\.yaml$/"
+      ],
       "matchStrings": [
         "image: (?<depName>prom/prometheus):(?<currentValue>v?[0-9]+\\.[0-9]+\\.[0-9]+)"
       ],
@@ -260,8 +380,11 @@
       "versioningTemplate": "semver"
     },
     {
+      "customType": "regex",
       "description": "Update OpenClaw image tag in values.yaml",
-      "fileMatch": ["^charts/openclaw/values\\.yaml$"],
+      "managerFilePatterns": [
+        "/^charts/openclaw/values\\.yaml$/"
+      ],
       "matchStrings": [
         "# -- OpenClaw image repository, pull policy, and tag version\\s+image:\\s+repository:\\s+(?<depName>ghcr\\.io/obolnetwork/openclaw)\\s+pullPolicy:\\s+\\w+\\s+tag:\\s+\"(?<currentValue>v?[0-9]+\\.[0-9]+\\.[0-9]+)\""
       ],
