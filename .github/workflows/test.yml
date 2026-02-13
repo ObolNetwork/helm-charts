@@ -170,37 +170,43 @@ jobs:
 
           echo "Secret validator-keys created"
 
-      - name: Lint and install all Helm charts
+      - name: Lint and validate all Helm charts
         run: |
-          skip_file=".github/helm-ci-values/skip-charts.txt"
-          skip_list=()
-
-          if [[ -f "$skip_file" ]]; then
-            mapfile -t skip_list < "$skip_file"
+          # Charts that can run standalone in kind (no external deps)
+          install_file=".github/helm-ci-values/install-charts.txt"
+          install_list=()
+          if [[ -f "$install_file" ]]; then
+            mapfile -t install_list < "$install_file"
           fi
 
           for chart_path in charts/*/; do
             chart=$(basename "$chart_path")
             values_file=".github/helm-ci-values/values-$chart.yaml"
 
-            if printf '%s\n' "${skip_list[@]}" | grep -qx "$chart"; then
-              echo "Skipping $chart (listed in $skip_file)"
-              continue
-            fi
-
             if [[ -f "$values_file" ]]; then
               values_flag="--values $values_file"
               echo "Using values file for $chart: $values_file"
             else
               values_flag=""
-              echo "No values file found for $chart, installing without custom values"
             fi
+
+            echo ""
+            echo "===== $chart ====="
 
             echo "Linting $chart..."
             helm lint "$chart_path" $values_flag
 
-            echo "Installing $chart..."
-            helm install "$chart" "$chart_path" $values_flag --wait
+            echo "Rendering templates for $chart..."
+            helm template "$chart" "$chart_path" $values_flag > /dev/null
+
+            # Full install only for charts that work standalone in kind
+            if printf '%s\n' "${install_list[@]}" | grep -qx "$chart"; then
+              echo "Installing $chart (full install + wait)..."
+              helm install "$chart" "$chart_path" $values_flag --wait
+            else
+              echo "Dry-run install for $chart..."
+              helm install "$chart" "$chart_path" $values_flag --dry-run
+            fi
           done
 
       - name: Dump pod logs and events on failure
