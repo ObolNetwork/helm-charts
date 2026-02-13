@@ -3,3 +3,4 @@ dv-pod
 obol-app
 aztec-node
 openclaw
+charon
