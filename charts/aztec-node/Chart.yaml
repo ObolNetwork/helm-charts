@@ -3,4 +3,4 @@ name: aztec-node
 description: A Helm chart for deploying an Aztec node
 type: application
 version: 0.2.0
-appVersion: "2.1.5"
+appVersion: "2.1.11"
