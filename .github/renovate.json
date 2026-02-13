@@ -37,8 +37,7 @@
         "renovate/obol-core"
       ],
       "matchPackageNames": [
-        "/^obolnetwork/charon/",
-        "/^obolnetwork/charon-dkg-sidecar/"
+        "/^obolnetwork/charon/"
       ]
     },
     {
@@ -226,28 +225,6 @@
     },
     {
       "customType": "regex",
-      "description": "Update DKG Sidecar image in values.yaml",
-      "managerFilePatterns": [
-        "/^charts/dv-pod/values\\.yaml$/"
-      ],
-      "matchStrings": [
-        "# -- Image repository for the DKG sidecar\\s+repository:\\s+\"(?<depName>obolnetwork/charon-dkg-sidecar)\"\\s+tag:\\s+\"(?<currentValue>[^\"]+)\""
-      ],
-      "datasourceTemplate": "docker"
-    },
-    {
-      "customType": "regex",
-      "description": "Update kubectl image in values.yaml",
-      "managerFilePatterns": [
-        "/^charts/dv-pod/values\\.yaml$/"
-      ],
-      "matchStrings": [
-        "kubectlImage:\\s+repository:\\s+\"(?<depName>bitnamisecure/kubectl)\"\\s+tag:\\s+\"(?<currentValue>[^\"]+)\""
-      ],
-      "datasourceTemplate": "docker"
-    },
-    {
-      "customType": "regex",
       "description": "Update Charon ENR generation image in values.yaml",
       "managerFilePatterns": [
         "/^charts/dv-pod/values\\.yaml$/"
@@ -303,7 +280,8 @@
       "matchStrings": [
         "image: \\{\\{ \\.Values\\.validatorClient\\.image\\.repository \\| default \"(?<depName>statusim/nimbus-eth2)\" \\}\\}:\\{\\{ \\.Values\\.validatorClient\\.image\\.tag \\| default \"(?<currentValue>multiarch-v[0-9]+\\.[0-9]+\\.[0-9]+)\" \\}\\}"
       ],
-      "datasourceTemplate": "docker"
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "regex:^multiarch-v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
     },
     {
       "customType": "regex",
@@ -314,7 +292,8 @@
       "matchStrings": [
         "image: \\{\\{ \\.Values\\.validatorClient\\.image\\.repository \\| default \"(?<depName>statusim/nimbus-validator-client)\" \\}\\}:\\{\\{ \\.Values\\.validatorClient\\.image\\.tag \\| default \"(?<currentValue>multiarch-v[0-9]+\\.[0-9]+\\.[0-9]+)\" \\}\\}"
       ],
-      "datasourceTemplate": "docker"
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "regex:^multiarch-v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
     },
     {
       "customType": "regex",

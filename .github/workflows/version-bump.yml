@@ -61,8 +61,10 @@ jobs:
               elif [ "$NEW_MINOR" != "$OLD_MINOR" ]; then
                 BUMP_TYPE="minor"
               fi
+            else
+              # appVersion didn't change (e.g. validator client updates) → always minor
+              BUMP_TYPE="minor"
             fi
-            # If appVersion didn't change (e.g. validator client updates), BUMP_TYPE stays "patch"
 
             # Calculate new chart version
             CHART_MAJOR=$(echo "$CURRENT_CHART_VERSION" | cut -d. -f1)
