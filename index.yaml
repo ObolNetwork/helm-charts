@@ -2,6 +2,16 @@ apiVersion: v1
 entries:
   aztec-node:
   - apiVersion: v2
+    appVersion: 2.1.11
+    created: "2026-02-13T12:22:46.738755818Z"
+    description: A Helm chart for deploying an Aztec node
+    digest: ce519a157d6de4fd00f418aaf7951e2a354b64984f7e194ec72bb33060f80126
+    name: aztec-node
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/aztec-node-0.2.1/aztec-node-0.2.1.tgz
+    version: 0.2.1
+  - apiVersion: v2
     appVersion: 2.1.5
     created: "2025-11-17T23:38:43.838830513Z"
     description: A Helm chart for deploying an Aztec node
@@ -12,6 +22,31 @@ entries:
     - https://github.com/ObolNetwork/helm-charts/releases/download/aztec-node-0.2.0/aztec-node-0.2.0.tgz
     version: 0.2.0
   charon:
+  - apiVersion: v2
+    appVersion: 1.8.2
+    created: "2026-02-13T12:22:46.982960314Z"
+    description: Charon is an open-source Ethereum Distributed validator middleware
+      written in golang.
+    digest: 69b6fcfa165b583dce98968858a35ee789295a8770cbc5cc6c5503af37ed4997
+    home: https://obol.tech/
+    icon: https://raw.githubusercontent.com/ObolNetwork/charon/main/docs/images/charonlogo.svg
+    keywords:
+    - ethereum
+    - blockchain
+    - obol
+    - charon
+    - dvt
+    - node
+    maintainers:
+    - email: devops@obol.tech
+      name: Eth2DevOps
+    name: charon
+    sources:
+    - https://github.com/ObolNetwork/charon
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/charon-0.4.13/charon-0.4.13.tgz
+    version: 0.4.13
   - apiVersion: v2
     appVersion: 1.7.1
     created: "2025-10-23T17:40:01.224568109Z"
@@ -706,6 +741,31 @@ entries:
     - https://github.com/ObolNetwork/helm-charts/releases/download/charon-0.1.0/charon-0.1.0.tgz
     version: 0.1.0
   charon-cluster:
+  - apiVersion: v2
+    appVersion: 1.8.2
+    created: "2026-02-13T12:22:47.153205711Z"
+    description: Charon is an open-source Ethereum Distributed validator middleware
+      written in golang. This chart deploys a full Charon cluster.
+    digest: 9ef70b1cb210b1e91a25db40817dad7c821b19d582b181e897840ad48634586e
+    home: https://obol.tech/
+    icon: https://raw.githubusercontent.com/ObolNetwork/charon/main/docs/images/charonlogo.svg
+    keywords:
+    - ethereum
+    - blockchain
+    - obol
+    - charon
+    - dvt
+    - cluster
+    maintainers:
+    - email: devops@obol.tech
+      name: Eth2DevOps
+    name: charon-cluster
+    sources:
+    - https://github.com/ObolNetwork/charon
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/charon-cluster-0.3.13/charon-cluster-0.3.13.tgz
+    version: 0.3.13
   - apiVersion: v2
     appVersion: 1.7.1
     created: "2025-10-23T17:40:01.386178238Z"
@@ -1609,6 +1669,33 @@ entries:
     version: 0.1.0
   dv-pod:
   - apiVersion: v2
+    appVersion: 1.8.2
+    created: "2026-02-13T12:22:47.358026249Z"
+    description: A Helm chart for deploying a single distributed validator pod consisting
+      of a Charon middleware client and validator client.
+    digest: 22aeb915bdd3c5d2563fd3aa2089eb4cb9efb51cd5322905ace28ae09c2918fb
+    home: https://docs.obol.org/
+    icon: https://raw.githubusercontent.com/ObolNetwork/charon/main/docs/images/charonlogo.svg
+    keywords:
+    - ethereum
+    - blockchain
+    - obol
+    - charon
+    - dvt
+    - distributed-validator
+    - validator-client
+    - dv-pod
+    maintainers:
+    - email: devops@obol.tech
+      name: DV Labs
+    name: dv-pod
+    sources:
+    - https://github.com/ObolNetwork/charon
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/dv-pod-0.6.0/dv-pod-0.6.0.tgz
+    version: 0.6.0
+  - apiVersion: v2
     appVersion: 1.7.1
     created: "2025-11-07T13:10:22.223417226Z"
     description: A Helm chart for deploying a single distributed validator pod consisting
@@ -1831,4 +1918,28 @@ entries:
     urls:
     - https://github.com/ObolNetwork/helm-charts/releases/download/obol-app-0.1.0/obol-app-0.1.0.tgz
     version: 0.1.0
-generated: "2025-11-17T23:38:44.053156537Z"
+  openclaw:
+  - apiVersion: v2
+    appVersion: 2026.2.9
+    created: "2026-02-13T12:22:47.62581996Z"
+    description: OpenClaw gateway deployment (agent runtime) for Kubernetes.
+    digest: b4b821d8d4e0ec78b7aac688ed2509d30ff635aaae6c2837e695e72b0317d5a4
+    home: https://docs.openclaw.ai
+    keywords:
+    - openclaw
+    - agent
+    - ai
+    - gateway
+    - obol
+    kubeVersion: '>=1.26.0-0'
+    maintainers:
+    - email: platform@obol.tech
+      name: Obol Platform Team
+    name: openclaw
+    sources:
+    - https://docs.openclaw.ai
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/openclaw-0.1.0/openclaw-0.1.0.tgz
+    version: 0.1.0
+generated: "2026-02-13T12:22:47.626465147Z"
