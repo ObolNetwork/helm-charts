@@ -2,6 +2,16 @@ apiVersion: v1
 entries:
   aztec-node:
   - apiVersion: v2
+    appVersion: 3.0.3
+    created: "2026-02-13T12:26:59.416748488Z"
+    description: A Helm chart for deploying an Aztec node
+    digest: 6ed3c5351abcc2e47dd7317f1f713bd6a9848ba5f21eee684ba9908ddef60f21
+    name: aztec-node
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/aztec-node-1.0.0/aztec-node-1.0.0.tgz
+    version: 1.0.0
+  - apiVersion: v2
     appVersion: 2.1.11
     created: "2026-02-13T12:22:46.738755818Z"
     description: A Helm chart for deploying an Aztec node
@@ -1969,4 +1979,4 @@ entries:
     urls:
     - https://github.com/ObolNetwork/helm-charts/releases/download/openclaw-0.1.0/openclaw-0.1.0.tgz
     version: 0.1.0
-generated: "2026-02-13T12:25:01.499174311Z"
+generated: "2026-02-13T12:26:59.417187434Z"
