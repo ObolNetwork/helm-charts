@@ -7,16 +7,6 @@
     "github-actions",
     "regex"
   ],
-  "allowedPostUpgradeCommands": [
-    "^docker run .* jnorwood/helm-docs.*$"
-  ],
-  "postUpgradeTasks": {
-    "commands": [
-      "docker run --rm -v \"$(pwd):/helm-docs\" -u $(id -u) jnorwood/helm-docs:v1.14.2"
-    ],
-    "fileFilters": ["charts/**/README.md"],
-    "executionMode": "branch"
-  },
   "packageRules": [
     {
       "description": "GitHub Actions updates",
