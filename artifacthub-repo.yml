@@ -1,0 +1,6 @@
+# Artifact Hub repository metadata file
+# https://artifacthub.io/docs/topics/repositories/#helm-charts-repositories
+repositoryID: 3a7645d1-5442-4987-86fc-e04351306ac0
+owners:
+  - name: aly
+    email: aly@obol.tech

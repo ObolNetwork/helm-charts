@@ -4,3 +4,8 @@ description: A Helm chart for deploying an Aztec node
 type: application
 version: 1.0.0
 appVersion: "3.0.3"
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/signKey: |
+    fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+    url: https://obolnetwork.github.io/helm-charts/pubkey.asc

@@ -17,6 +17,8 @@ on:
       - ".github/helm-ci-values/**"
       - ".github/workflows/test.yml"
 
+permissions: {}
+
 jobs:
   fetch-versions:
     runs-on: ubuntu-latest

@@ -1,0 +1,486 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "affinity": {
+            "description": "Affinity for pod assignment # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity # # Example: # affinity: #   podAntiAffinity: #     requiredDuringSchedulingIgnoredDuringExecution: #     - labelSelector: #         matchExpressions: #         - key: app.kubernetes.io/name #           operator: In #           values: #           - charon #       topologyKey: kubernetes.io/hostname #",
+            "type": "object"
+        },
+        "centralMonitoring": {
+            "description": "Central Monitoring",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "enabled": {
+                    "description": "Specifies whether central monitoring should be enabled",
+                    "type": "boolean"
+                },
+                "promEndpoint": {
+                    "description": "https endpoint to obol central prometheus ",
+                    "type": "string"
+                },
+                "token": {
+                    "description": "The authentication token to the central prometheus",
+                    "type": "string"
+                }
+            }
+        },
+        "clusterSize": {
+            "description": "The number of nodes in the relay cluster",
+            "type": "integer"
+        },
+        "config": {
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "autoP2pKey": {
+                    "description": "Automatically create a p2pkey (secp256k1 private key used for p2p authentication and ENR) if none found in data directory. (default true)",
+                    "type": "string"
+                },
+                "httpAddress": {
+                    "description": "Listening address (ip and port) for the relay http server serving runtime ENR. (default \"127.0.0.1:3640\")",
+                    "type": "string"
+                },
+                "logFormat": {
+                    "description": "Log format; console, logfmt or json (default \"console\")",
+                    "type": "string"
+                },
+                "logLevel": {
+                    "description": "Log level; debug, info, warn or error (default \"info\")",
+                    "type": "string"
+                },
+                "lokiAddresses": {
+                    "description": "Enables sending of logfmt structured logs to these Loki log aggregation server addresses. This is in addition to normal stderr logs.",
+                    "type": "string"
+                },
+                "lokiService": {
+                    "description": "Service label sent with logs to Loki.",
+                    "type": "string"
+                },
+                "monitoringAddress": {
+                    "description": "Listening address (ip and port) for the monitoring API (prometheus, pprof). (default \"127.0.0.1:3620\")",
+                    "type": "string"
+                },
+                "p2pAllowlist": {
+                    "description": "Comma-separated list of CIDR subnets for allowing only certain peer connections. Example: 192.168.0.0/16 would permit connections to peers on your local network only. The default is to accept all connections.",
+                    "type": "string"
+                },
+                "p2pDenylist": {
+                    "description": "Comma-separated list of CIDR subnets for disallowing certain peer connections. Example: 192.168.0.0/16 would disallow connections to peers on your local network. The default is to accept all connections.",
+                    "type": "string"
+                },
+                "p2pDisableReuseport": {
+                    "description": "Disables TCP port reuse for outgoing libp2p connections.",
+                    "type": "string"
+                },
+                "p2pMaxConnections": {
+                    "description": "Libp2p maximum number of peers that can connect to this relay. (default 16384)",
+                    "type": "string"
+                },
+                "p2pMaxReservatoins": {
+                    "description": "Updates max circuit reservations per peer (each valid for 30min) (default 512)",
+                    "type": "string"
+                },
+                "p2pRelayLogLevel": {
+                    "type": "string"
+                },
+                "p2pRelays": {
+                    "description": "Comma-separated list of libp2p relay URLs or multiaddrs. (default [https://0.relay.obol.tech/enr])",
+                    "type": "string"
+                },
+                "p2pTcpAddress": {
+                    "description": "Comma-separated list of listening TCP addresses (ip and port) for libP2P traffic. Empty default doesn't bind to local port therefore only supports outgoing connections.",
+                    "type": "string"
+                }
+            }
+        },
+        "containerSecurityContext": {
+            "description": "The security context for containers",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "runAsUser": {
+                    "type": "integer"
+                }
+            }
+        },
+        "fullnameOverride": {
+            "description": "Provide a name to substitute for the full names of resources",
+            "type": "string"
+        },
+        "image": {
+            "description": "Charon image ropsitory, pull policy, and tag version",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "pullPolicy": {
+                    "type": "string"
+                },
+                "repository": {
+                    "type": "string"
+                },
+                "tag": {
+                    "type": "string"
+                }
+            }
+        },
+        "imagePullSecrets": {
+            "description": "Credentials to fetch images from private registry # ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/",
+            "type": "array"
+        },
+        "initContainerImage": {
+            "description": "Init container image",
+            "type": "string"
+        },
+        "livenessProbe": {
+            "description": "Configure liveness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "httpGet": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "path": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "initialDelaySeconds": {
+                    "type": "integer"
+                },
+                "periodSeconds": {
+                    "type": "integer"
+                }
+            }
+        },
+        "nameOverride": {
+            "description": "Provide a name in place of lighthouse for `app:` labels",
+            "type": "string"
+        },
+        "nodeSelector": {
+            "description": "Node labels for pod assignment # ref: https://kubernetes.io/docs/user-guide/node-selection/",
+            "type": "object"
+        },
+        "podAnnotations": {
+            "description": "Pod annotations",
+            "type": "object"
+        },
+        "podDisruptionBudget": {
+            "description": "Enable pod disruption budget # ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "maxUnavailable": {
+                    "type": "integer"
+                },
+                "minAvailable": {
+                    "type": "integer"
+                }
+            }
+        },
+        "priorityClassName": {
+            "description": "Used to assign priority to pods # ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/",
+            "type": "string"
+        },
+        "rbac": {
+            "description": "RBAC configuration. # ref: https://kubernetes.io/docs/reference/access-authn-authz/rbac/",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "clusterRules": {
+                    "description": "Required ClusterRole rules",
+                    "type": [
+                        "array",
+                        "null"
+                    ],
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "apiGroups": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "resources": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "verbs": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "enabled": {
+                    "description": "Specifies whether RBAC resources are to be created",
+                    "type": "boolean"
+                },
+                "name": {
+                    "description": "The name of the cluster role to use. If not set and create is true, a name is generated using the fullname template",
+                    "type": "string"
+                },
+                "rules": {
+                    "description": "Required Role rules",
+                    "type": [
+                        "array",
+                        "null"
+                    ],
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "apiGroups": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "resources": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "verbs": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "readinessProbe": {
+            "description": "Configure readiness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "httpGet": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "path": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "initialDelaySeconds": {
+                    "type": "integer"
+                },
+                "periodSeconds": {
+                    "type": "integer"
+                }
+            }
+        },
+        "resources": {
+            "description": "Pod resources limits and requests",
+            "type": "object"
+        },
+        "securityContext": {
+            "description": "The security context for pods",
+            "type": "object"
+        },
+        "service": {
+            "description": "Charon service ports",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "ports": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "http": {
+                            "type": [
+                                "object",
+                                "null"
+                            ],
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "port": {
+                                    "type": "integer"
+                                },
+                                "protocol": {
+                                    "type": "string"
+                                },
+                                "targetPort": {
+                                    "type": "integer"
+                                }
+                            }
+                        },
+                        "monitoring": {
+                            "type": [
+                                "object",
+                                "null"
+                            ],
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "port": {
+                                    "type": "integer"
+                                },
+                                "protocol": {
+                                    "type": "string"
+                                },
+                                "targetPort": {
+                                    "type": "integer"
+                                }
+                            }
+                        },
+                        "p2pTcp": {
+                            "type": [
+                                "object",
+                                "null"
+                            ],
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "port": {
+                                    "type": "integer"
+                                },
+                                "protocol": {
+                                    "type": "string"
+                                },
+                                "targetPort": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    }
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "serviceAccount": {
+            "description": "Service account # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "annotations": {
+                    "description": "Annotations to add to the service account",
+                    "type": "object"
+                },
+                "enabled": {
+                    "description": "Specifies whether a service account should be created",
+                    "type": "boolean"
+                },
+                "name": {
+                    "description": "The name of the service account to use. If not set and create is true, a name is generated using the default template",
+                    "type": "string"
+                }
+            }
+        },
+        "serviceMonitor": {
+            "description": "Prometheus Service Monitor # ref: https://github.com/coreos/prometheus-operator",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "annotations": {
+                    "description": "Additional ServiceMonitor annotations",
+                    "type": "object"
+                },
+                "enabled": {
+                    "description": "If true, a ServiceMonitor CRD is created for a prometheus operator. https://github.com/coreos/prometheus-operator",
+                    "type": "boolean"
+                },
+                "interval": {
+                    "description": "ServiceMonitor scrape interval",
+                    "type": "string"
+                },
+                "labels": {
+                    "description": "Additional ServiceMonitor labels",
+                    "type": "object"
+                },
+                "namespace": {
+                    "description": "Alternative namespace for ServiceMonitor",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "path": {
+                    "description": "Path to scrape",
+                    "type": "string"
+                },
+                "relabelings": {
+                    "description": "ServiceMonitor relabelings",
+                    "type": "array"
+                },
+                "scheme": {
+                    "description": "ServiceMonitor scheme",
+                    "type": "string"
+                },
+                "scrapeTimeout": {
+                    "description": "ServiceMonitor scrape timeout",
+                    "type": "string"
+                },
+                "tlsConfig": {
+                    "description": "ServiceMonitor TLS configuration",
+                    "type": "object"
+                }
+            }
+        },
+        "storageClassName": {
+            "description": "Persistent volume storage class (default \"standard\")",
+            "type": "string"
+        },
+        "tolerations": {
+            "description": "Tolerations for pod assignment # ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/",
+            "type": "object"
+        },
+        "updateStrategy": {
+            "description": "Allows you to configure and disable automated rolling updates for containers, labels, resource request/limits, and annotations for the Pods in a StatefulSet.",
+            "type": "string"
+        }
+    }
+}

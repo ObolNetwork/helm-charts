@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  pages: write
 
 jobs:
   release:
@@ -34,3 +35,48 @@ jobs:
           skip_existing: true
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+
+  deploy-metadata:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Import GPG key
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+          gpg --batch --pinentry-mode loopback --export-secret-keys > ~/.gnupg/secring.gpg
+          gpg --list-secret-keys
+
+      - name: Package and sign charts
+        run: |
+          mkdir -p .gpg-provenance
+          for chart in charts/*/; do
+            helm package --sign \
+              --key "DV Labs" \
+              --keyring ~/.gnupg/secring.gpg \
+              "$chart" -d .gpg-provenance
+          done
+
+      - name: Checkout gh-pages
+        uses: actions/checkout@v6
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Copy provenance and metadata to gh-pages
+        run: |
+          cp .gpg-provenance/*.tgz.prov gh-pages/ 2>/dev/null || true
+          cp artifacthub-repo.yml gh-pages/ 2>/dev/null || true
+          cp pubkey.asc gh-pages/ 2>/dev/null || true
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./gh-pages
+          keep_files: true

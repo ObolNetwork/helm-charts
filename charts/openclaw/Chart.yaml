@@ -5,7 +5,6 @@ type: application
 version: 0.1.0
 appVersion: "2026.2.9"
 kubeVersion: ">=1.26.0-0"
-
 home: https://docs.openclaw.ai
 sources:
   - https://docs.openclaw.ai
@@ -18,3 +17,8 @@ keywords:
   - ai
   - gateway
   - obol
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/signKey: |
+    fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+    url: https://obolnetwork.github.io/helm-charts/pubkey.asc
