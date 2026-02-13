@@ -23,25 +23,23 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - name: Get latest Kubernetes patch versions
+      - name: Get latest 4 Kubernetes minor versions from kind
         id: set-matrix
         run: |
-          declare -a versions=("v1.31" "v1.30" "v1.29" "v1.28")
+          # Fetch all tags, extract unique minor versions, pick the latest 4
+          ALL_TAGS=$(curl -s "https://registry.hub.docker.com/v2/repositories/kindest/node/tags?page_size=100" \
+            | jq -r '.results[].name' \
+            | grep --color=never -E '^v[0-9]+\.[0-9]+\.[0-9]+$')
+
+          # Get unique minor versions (v1.35, v1.34, ...) sorted descending, take top 4
+          MINORS=$(echo "$ALL_TAGS" | sed 's/\.[0-9]*$//' | sort -Vru | head -4)
+
           matrix=$(jq -n '[]')
-
-          for version in "${versions[@]}"; do
-            tags=$(curl -s "https://registry.hub.docker.com/v2/repositories/kindest/node/tags?page_size=100" \
-              | jq -r '.results[].name' \
-              | grep --color=never "^$version" \
-              | grep --color=never -v '-' \
-              | sort -V)
-
-            latest=$(echo "$tags" | tail -n 1)
-
+          for minor in $MINORS; do
+            latest=$(echo "$ALL_TAGS" | grep --color=never "^${minor}\." | sort -V | tail -1)
             if [[ -n "$latest" ]]; then
               matrix=$(echo "$matrix" | jq --arg version "$latest" '. + [{kubernetes_version: $version}]')
-            else
-              echo "No valid tag found for $version, skipping..."
+              echo "Found: $latest"
             fi
           done
 
