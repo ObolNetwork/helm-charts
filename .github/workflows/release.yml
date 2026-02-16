@@ -74,7 +74,6 @@ jobs:
         run: |
           for prov in .gpg-provenance/*.tgz.prov; do
             [ -f "$prov" ] || continue
-            # Extract chart name and version from filename (e.g. charon-0.4.14.tgz.prov)
             tgz_name=$(basename "$prov" .prov)
             chart_tag="${tgz_name%.tgz}"
             # Only upload if the release exists
