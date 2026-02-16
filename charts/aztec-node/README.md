@@ -10,6 +10,10 @@ A Helm chart for deploying an Aztec node
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
+| centralMonitoring | object | `{"enabled":false,"promEndpoint":"https://vm.monitoring.gcp.obol.tech/write","token":""}` | Central Monitoring (Obol) Configures Prometheus remote_write to central Obol endpoint Automatically enables monitoring stack if not already enabled |
+| centralMonitoring.enabled | bool | `false` | Specifies whether central monitoring should be enabled |
+| centralMonitoring.promEndpoint | string | `"https://vm.monitoring.gcp.obol.tech/write"` | https endpoint to obol central prometheus |
+| centralMonitoring.token | string | `""` | The authentication token to the central prometheus |
 | certificate.domains | list | `[]` |  |
 | certificate.enabled | bool | `false` |  |
 | customNetwork | object | `{"feeAssetHandlerContractAddress":null,"l1ChainId":null,"registryContractAddress":null,"slashFactoryAddress":null}` | Custom network - (not recommended) - Only for custom testnet usecases Must have deployed your own protocol contracts first |
@@ -20,6 +24,8 @@ A Helm chart for deploying an Aztec node
 | image.repository | string | `"aztecprotocol/aztec"` | Image repository |
 | image.tag | string | `"3.0.3"` | Image tag |
 | initContainers | list | `[]` | Additional init containers |
+| monitoring | object | `{"enabled":false}` | Local Monitoring Stack Deploys OTEL collector + Prometheus for metrics collection |
+| monitoring.enabled | bool | `false` | Specifies whether local monitoring should be enabled Deploys OTEL collector (receives OTLP, exposes Prometheus metrics on :8889) and Prometheus (scrapes OTEL collector on :8889, exposes :9090) |
 | nameOverride | string | `""` | Overrides the chart name |
 | network | string | `nil` | Network name - this is a predefined network - testnet, devnet |
 | networkName | string | `"staging-public"` | Network identifier used in resource naming (l2-{role}-node-{networkName}-{component}) This appears in service/statefulset names for easy identification |

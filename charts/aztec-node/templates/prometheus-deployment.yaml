@@ -1,0 +1,39 @@
+{{- if eq (include "chart.monitoringEnabled" .) "true" -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chart.resourceName" . }}-prometheus
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app: prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app: prometheus
+    spec:
+      containers:
+      - name: prometheus
+        image: prom/prometheus:v3.5.0
+        args:
+        - --config.file=/etc/prometheus/prometheus.yaml
+        ports:
+        - containerPort: 9090
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /etc/prometheus/prometheus.yaml
+          subPath: prometheus.yaml
+      securityContext:
+        runAsUser: 0
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "chart.resourceName" . }}-prometheus
+{{- end }}
