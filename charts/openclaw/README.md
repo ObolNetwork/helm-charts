@@ -1,7 +1,7 @@
 OpenClaw
 ===========
 
-![Version: 0.1.1](https://img.shields.io/badge/Version-0.1.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2026.2.9](https://img.shields.io/badge/AppVersion-2026.2.9-informational?style=flat-square)
+![Version: 0.1.2](https://img.shields.io/badge/Version-0.1.2-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2026.2.14](https://img.shields.io/badge/AppVersion-2026.2.14-informational?style=flat-square)
 
 OpenClaw gateway deployment (agent runtime) for Kubernetes.
 
@@ -209,7 +209,7 @@ helm upgrade --install openclaw obol/openclaw \
 | fullnameOverride | string | `""` | Override the full resource name |
 | httpRoute | object | `{"annotations":{},"enabled":false,"hostnames":[],"parentRefs":[{"name":"traefik-gateway","namespace":"traefik","sectionName":"web"}],"pathPrefix":"/"}` | Gateway API HTTPRoute (recommended for Obol Stack / Traefik Gateway API) |
 | httpRoute.hostnames | list | `[]` | Hostnames for routing (required when enabled) |
-| image | object | `{"args":["openclaw.mjs","gateway","--allow-unconfigured"],"command":["node"],"env":[],"pullPolicy":"IfNotPresent","repository":"ghcr.io/obolnetwork/openclaw","tag":"2026.2.9"}` | OpenClaw image repository, pull policy, and tag version |
+| image | object | `{"args":["openclaw.mjs","gateway","--allow-unconfigured"],"command":["node"],"env":[],"pullPolicy":"IfNotPresent","repository":"ghcr.io/obolnetwork/openclaw","tag":"2026.2.14"}` | OpenClaw image repository, pull policy, and tag version |
 | image.args | list | `["openclaw.mjs","gateway","--allow-unconfigured"]` | Override the container args (CMD) |
 | image.command | list | `["node"]` | Override the container command (ENTRYPOINT) |
 | image.env | list | `[]` | Additional environment variables for the container |

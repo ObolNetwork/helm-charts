@@ -10,11 +10,6 @@
 {{- fail "openclaw: set secrets.existingSecret or enable secrets.create" -}}
 {{- end -}}
 
-{{- $gatewayToken := include "openclaw.gatewayTokenValue" . | trim -}}
-{{- if and (eq .Values.openclaw.gateway.auth.mode "token") .Values.secrets.create (not .Values.secrets.existingSecret) (eq $gatewayToken "") -}}
-{{- fail "openclaw: token auth is enabled; set secrets.gatewayToken.value or use secrets.existingSecret" -}}
-{{- end -}}
-
 {{- if and .Values.httpRoute.enabled (eq (len .Values.httpRoute.hostnames) 0) -}}
 {{- fail "openclaw: httpRoute.enabled is true but httpRoute.hostnames is empty" -}}
 {{- end -}}

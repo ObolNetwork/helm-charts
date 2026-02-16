@@ -107,6 +107,13 @@ Name of the PVC used for state storage.
 
 {{/*
 Compute (or reuse) the gateway token value.
+Priority: explicit value > existing cluster Secret > auto-generate.
+The auto-generate fallback uses randAlphaNum so a fresh install does not
+require the caller to supply a token. On upgrades the lookup tier finds
+the previously-created Secret and reuses its value, keeping the token
+stable across helm upgrade cycles.
+NOTE: lookup returns empty during helm template (no cluster access),
+so dry-runs will show a newly generated token — this is cosmetic only.
 */}}
 {{- define "openclaw.gatewayTokenValue" -}}
 {{- if .Values.secrets.gatewayToken.value -}}
@@ -120,6 +127,8 @@ Compute (or reuse) the gateway token value.
   {{- if and $data (hasKey $data $key) -}}
     {{- index $data $key | b64dec -}}
   {{- end -}}
+{{- else -}}
+{{- randAlphaNum 32 -}}
 {{- end -}}
 {{- end -}}
 {{- end }}
