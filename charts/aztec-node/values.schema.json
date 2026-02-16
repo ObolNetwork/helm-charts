@@ -1,0 +1,547 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "certificate": {
+            "type": "object",
+            "properties": {
+                "domains": {
+                    "type": "array"
+                },
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "customNetwork": {
+            "description": "Custom network - (not recommended) - Only for custom testnet usecases Must have deployed your own protocol contracts first",
+            "type": "object",
+            "properties": {
+                "feeAssetHandlerContractAddress": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "l1ChainId": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "registryContractAddress": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "slashFactoryAddress": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            }
+        },
+        "fullnameOverride": {
+            "description": "Overrides the chart computed fullname",
+            "type": "string"
+        },
+        "hostNetwork": {
+            "description": "Use host network - provides best P2P performance by binding directly to node's network This is the recommended configuration for Aztec nodes",
+            "type": "boolean"
+        },
+        "image": {
+            "description": "Image to use for the container",
+            "type": "object",
+            "properties": {
+                "pullPolicy": {
+                    "description": "Container pull policy",
+                    "type": "string"
+                },
+                "repository": {
+                    "description": "Image repository",
+                    "type": "string"
+                },
+                "tag": {
+                    "description": "Image tag",
+                    "type": "string"
+                }
+            }
+        },
+        "initContainers": {
+            "description": "Additional init containers",
+            "type": "array"
+        },
+        "nameOverride": {
+            "description": "Overrides the chart name",
+            "type": "string"
+        },
+        "network": {
+            "description": "Network name - this is a predefined network - testnet, devnet",
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "networkName": {
+            "description": "Network identifier used in resource naming (l2-{role}-node-{networkName}-{component}) This appears in service/statefulset names for easy identification",
+            "type": "string"
+        },
+        "node": {
+            "description": "Aztec node configuration",
+            "type": "object",
+            "properties": {
+                "coinbase": {
+                    "description": "Address that will receive block or proof rewards For prover roles, this is the PROVER_ID",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "l1ConsensusHostApiKeyHeaders": {
+                    "type": "array"
+                },
+                "l1ConsensusHostApiKeys": {
+                    "type": "array"
+                },
+                "l1ConsensusUrls": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "l1ExecutionUrls": {
+                    "description": "L1 Ethereum configuration Ethereum execution layer RPC endpoint(s) - comma separated list",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "logLevel": {
+                    "description": "Log level - info, verbose, debug, trace",
+                    "type": "string"
+                },
+                "metrics": {
+                    "description": "Metrics configuration",
+                    "type": "object",
+                    "properties": {
+                        "otelCollectorEndpoint": {
+                            "type": "string"
+                        },
+                        "otelExcludeMetrics": {
+                            "type": "string"
+                        },
+                        "useGcloudLogging": {
+                            "type": "boolean"
+                        }
+                    }
+                },
+                "nodeJsOptions": {
+                    "description": "Node.js options",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "preStartScript": {
+                    "description": "Pre-start script (runs before node starts)",
+                    "type": "string"
+                },
+                "remoteUrl": {
+                    "description": "Remote service URLs",
+                    "type": "object",
+                    "properties": {
+                        "archiver": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "blobSink": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "proverBroker": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "proverCoordinationNodes": {
+                            "type": "array"
+                        }
+                    }
+                },
+                "replicas": {
+                    "description": "Number of replicas",
+                    "type": "integer"
+                },
+                "resources": {
+                    "description": "Resource requests and limits",
+                    "type": "object"
+                },
+                "sentinel": {
+                    "description": "Sentinel configuration - gathers slashing information",
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean"
+                        }
+                    }
+                },
+                "startCmd": {
+                    "description": "Start command flags Auto-generated based on role, but can be overridden for custom configurations Leave empty to use role-based defaults",
+                    "type": "array"
+                },
+                "startupProbe": {
+                    "description": "Startup probe configuration",
+                    "type": "object",
+                    "properties": {
+                        "failureThreshold": {
+                            "type": "integer"
+                        },
+                        "periodSeconds": {
+                            "type": "integer"
+                        }
+                    }
+                },
+                "storage": {
+                    "description": "Storage configuration",
+                    "type": "object",
+                    "properties": {
+                        "archiveStorageMapSize": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "dataDirectory": {
+                            "type": "string"
+                        },
+                        "dataStoreMapSize": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "p2pStorageMapSize": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "worldStateMapSize": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "persistence": {
+            "type": "object",
+            "properties": {
+                "accessModes": {
+                    "description": "AccessModes",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "annotations": {
+                    "description": "Annotations for volume claim template",
+                    "type": "object"
+                },
+                "enabled": {
+                    "description": "Uses an emptyDir when not enabled",
+                    "type": "boolean"
+                },
+                "existingClaim": {
+                    "description": "Use an existing PVC",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "selector": {
+                    "description": "Selector for volume claim template",
+                    "type": "object"
+                },
+                "size": {
+                    "description": "Requested size",
+                    "type": "string"
+                },
+                "storageClassName": {
+                    "description": "Use a specific storage class",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            }
+        },
+        "podAnnotations": {
+            "description": "Pod annotations (e.g., for Keel auto-updates)",
+            "type": "object"
+        },
+        "podManagementPolicy": {
+            "description": "Pod management policy",
+            "type": "string"
+        },
+        "prover": {
+            "type": "object",
+            "properties": {
+                "agent": {
+                    "type": "object",
+                    "properties": {
+                        "count": {
+                            "description": "Number of prover agents to run per pod",
+                            "type": "integer"
+                        },
+                        "persistence": {
+                            "description": "Persistence configuration for prover-agent Agent needs 10GB SSD per agent for CRS and temporary files",
+                            "type": "object",
+                            "properties": {
+                                "size": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "pollIntervalMs": {
+                            "description": "Agent polling interval in milliseconds",
+                            "type": "integer"
+                        },
+                        "replicas": {
+                            "description": "Number of prover agent replicas",
+                            "type": "integer"
+                        },
+                        "resources": {
+                            "description": "Resource requests/limits for prover-agent pods Recommended: 32 cores, 128GB RAM per agent",
+                            "type": "object"
+                        }
+                    }
+                },
+                "broker": {
+                    "type": "object",
+                    "properties": {
+                        "persistence": {
+                            "description": "Persistence configuration for prover-broker Broker needs 10GB SSD for job queue",
+                            "type": "object",
+                            "properties": {
+                                "size": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "resources": {
+                            "description": "Resource requests/limits for prover-broker pod",
+                            "type": "object"
+                        }
+                    }
+                },
+                "id": {
+                    "description": "Prover ID - address for receiving proof rewards Used by prover-node (usually matches publisherPrivateKey address)",
+                    "type": "string"
+                },
+                "node": {
+                    "type": "object",
+                    "properties": {
+                        "persistence": {
+                            "description": "Persistence configuration for prover-node Prover-node needs 1TB NVMe SSD for archiver data",
+                            "type": "object",
+                            "properties": {
+                                "size": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "publisherPrivateKey": {
+                            "description": "Ethereum private key for publishing proofs to L1 REQUIRED when role is 'prover'",
+                            "type": "string"
+                        },
+                        "resources": {
+                            "description": "Resource requests/limits for prover-node pod",
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "rbac": {
+            "type": "object",
+            "properties": {
+                "clusterRules": {
+                    "description": "Required ClusterRole rules",
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "apiGroups": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "resources": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "verbs": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "create": {
+                    "description": "Specifies whether RBAC resources are to be created",
+                    "type": "boolean"
+                },
+                "rules": {
+                    "description": "Required ClusterRole rules",
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "apiGroups": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "resources": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "verbs": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "role": {
+            "description": "Role determines the type of Aztec node deployment Valid roles: fullnode, sequencer, prover",
+            "type": "string"
+        },
+        "rollupVersion": {
+            "description": "Which rollup contract we want to follow from the registry",
+            "type": "string"
+        },
+        "sequencer": {
+            "type": "object",
+            "properties": {
+                "attesterPrivateKey": {
+                    "description": "Ethereum private key for attester (signs blocks and attestations) REQUIRED when role is 'sequencer' (unless using attesterPrivateKeySecretName) Use this field OR attesterPrivateKeySecretName, not both",
+                    "type": "string"
+                },
+                "attesterPrivateKeySecretName": {
+                    "description": "Name of existing Kubernetes secret containing keystore.json Use this field OR attesterPrivateKey, not both When set, the chart will use the external secret instead of creating one The secret must contain a key named \"keystore.json\" with the full keystore structure",
+                    "type": "string"
+                }
+            }
+        },
+        "service": {
+            "type": "object",
+            "properties": {
+                "admin": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean"
+                        },
+                        "port": {
+                            "type": "integer"
+                        }
+                    }
+                },
+                "headless": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean"
+                        }
+                    }
+                },
+                "httpPort": {
+                    "type": "integer"
+                },
+                "ingress": {
+                    "type": "object",
+                    "properties": {
+                        "annotations": {
+                            "type": "object"
+                        },
+                        "enabled": {
+                            "type": "boolean"
+                        },
+                        "hosts": {
+                            "type": "array"
+                        }
+                    }
+                },
+                "p2p": {
+                    "type": "object",
+                    "properties": {
+                        "announcePort": {
+                            "type": "integer"
+                        },
+                        "enabled": {
+                            "type": "boolean"
+                        },
+                        "nodePort": {
+                            "type": "integer"
+                        },
+                        "nodePortEnabled": {
+                            "type": "boolean"
+                        },
+                        "port": {
+                            "type": "integer"
+                        }
+                    }
+                }
+            }
+        },
+        "serviceAccount": {
+            "type": "object",
+            "properties": {
+                "annotations": {
+                    "description": "Annotations for the service account",
+                    "type": "object"
+                },
+                "create": {
+                    "description": "Create a service account",
+                    "type": "boolean"
+                },
+                "name": {
+                    "description": "Name of the service account - if not set, the fullname will be used",
+                    "type": "string"
+                }
+            }
+        },
+        "updateStrategy": {
+            "description": "Update strategy for the statefulset",
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

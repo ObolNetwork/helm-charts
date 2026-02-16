@@ -1,377 +1,914 @@
 {
-  "$schema": "https://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "required": ["image", "service", "secrets"],
-  "properties": {
-    "replicaCount": {
-      "type": "integer",
-      "minimum": 1,
-      "maximum": 1,
-      "description": "Must be 1 — OpenClaw uses SQLite and cannot scale horizontally"
-    },
-    "image": {
-      "type": "object",
-      "required": ["repository"],
-      "properties": {
-        "repository": {
-          "type": "string"
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "affinity": {
+            "type": "object"
         },
-        "tag": {
-          "type": "string"
+        "channels": {
+            "description": "Chat channel integrations Tokens are stored in the chart Secret and injected as env vars.",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "discord": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "botToken": {
+                            "description": "Discord bot token",
+                            "type": "string"
+                        },
+                        "dmPolicy": {
+                            "description": "DM policy: \"open\" | \"paired\" | \"closed\"",
+                            "type": "string"
+                        },
+                        "enabled": {
+                            "type": "boolean"
+                        }
+                    }
+                },
+                "slack": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "appToken": {
+                            "description": "Slack App-Level Token (xapp-...)",
+                            "type": "string"
+                        },
+                        "botToken": {
+                            "description": "Slack Bot User OAuth Token (xoxb-...)",
+                            "type": "string"
+                        },
+                        "enabled": {
+                            "type": "boolean"
+                        }
+                    }
+                },
+                "telegram": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "botToken": {
+                            "description": "Telegram Bot API token (from @BotFather)",
+                            "type": "string"
+                        },
+                        "dmPolicy": {
+                            "description": "DM policy: \"open\" | \"paired\" | \"closed\"",
+                            "type": "string"
+                        },
+                        "enabled": {
+                            "type": "boolean"
+                        }
+                    }
+                }
+            }
         },
-        "pullPolicy": {
-          "type": "string",
-          "enum": ["Always", "IfNotPresent", "Never"]
+        "config": {
+            "description": "Configuration for the OpenClaw config file (openclaw.json)",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "content": {
+                    "description": "Optional raw JSON5 configuration (overrides generated config when set)",
+                    "type": "string"
+                },
+                "existingConfigMap": {
+                    "description": "Use an existing ConfigMap instead of creating one",
+                    "type": "string"
+                },
+                "key": {
+                    "description": "ConfigMap key / filename",
+                    "type": "string"
+                }
+            }
         },
-        "command": {
-          "type": "array",
-          "items": { "type": "string" }
+        "containerSecurityContext": {
+            "description": "Container security context",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "allowPrivilegeEscalation": {
+                    "type": "boolean"
+                },
+                "capabilities": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "drop": {
+                            "type": [
+                                "array",
+                                "null"
+                            ],
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "runAsGroup": {
+                    "type": "integer"
+                },
+                "runAsNonRoot": {
+                    "type": "boolean"
+                },
+                "runAsUser": {
+                    "type": "integer"
+                },
+                "seccompProfile": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "type": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         },
-        "args": {
-          "type": "array",
-          "items": { "type": "string" }
+        "erpc": {
+            "description": "eRPC integration (exposed as ERPC_URL env var)",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "url": {
+                    "type": "string"
+                }
+            }
         },
-        "env": {
-          "type": "array"
-        }
-      }
-    },
-    "imagePullSecrets": {
-      "type": "array"
-    },
-    "nameOverride": {
-      "type": "string"
-    },
-    "fullnameOverride": {
-      "type": "string"
-    },
-    "serviceAccount": {
-      "type": "object",
-      "properties": {
-        "create": { "type": "boolean" },
-        "automount": { "type": "boolean" },
-        "annotations": { "type": "object" },
-        "name": { "type": "string" }
-      }
-    },
-    "rbac": {
-      "type": "object",
-      "properties": {
-        "create": { "type": "boolean" },
-        "extraRules": { "type": "array" }
-      }
-    },
-    "initJob": {
-      "type": "object",
-      "properties": {
-        "enabled": { "type": "boolean" },
+        "extraEnv": {
+            "description": "Additional environment variables",
+            "type": "array"
+        },
+        "extraVolumeMounts": {
+            "description": "Additional volume mounts",
+            "type": "array"
+        },
+        "extraVolumes": {
+            "description": "Additional volumes",
+            "type": "array"
+        },
+        "fullnameOverride": {
+            "description": "Override the full resource name",
+            "type": "string"
+        },
+        "httpRoute": {
+            "description": "Gateway API HTTPRoute (recommended for Obol Stack / Traefik Gateway API)",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "annotations": {
+                    "type": "object"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "hostnames": {
+                    "description": "Hostnames for routing (required when enabled)",
+                    "type": "array"
+                },
+                "parentRefs": {
+                    "type": [
+                        "array",
+                        "null"
+                    ],
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "namespace": {
+                                "type": "string"
+                            },
+                            "sectionName": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "pathPrefix": {
+                    "type": "string"
+                }
+            }
+        },
         "image": {
-          "type": "object",
-          "properties": {
-            "repository": { "type": "string" },
-            "tag": { "type": "string" },
-            "pullPolicy": {
-              "type": "string",
-              "enum": ["Always", "IfNotPresent", "Never"]
-            }
-          }
-        },
-        "command": {
-          "type": "array",
-          "items": { "type": "string" }
-        },
-        "args": {
-          "type": "array",
-          "items": { "type": "string" }
-        },
-        "env": { "type": "array" },
-        "resources": { "type": "object" }
-      }
-    },
-    "podAnnotations": { "type": "object" },
-    "podLabels": { "type": "object" },
-    "podSecurityContext": { "type": "object" },
-    "containerSecurityContext": { "type": "object" },
-    "service": {
-      "type": "object",
-      "required": ["port"],
-      "properties": {
-        "type": {
-          "type": "string",
-          "enum": ["ClusterIP", "NodePort", "LoadBalancer"]
-        },
-        "port": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 65535
-        }
-      }
-    },
-    "ingress": {
-      "type": "object",
-      "properties": {
-        "enabled": { "type": "boolean" },
-        "className": { "type": "string" },
-        "annotations": { "type": "object" },
-        "hosts": { "type": "array" },
-        "tls": { "type": "array" }
-      }
-    },
-    "httpRoute": {
-      "type": "object",
-      "properties": {
-        "enabled": { "type": "boolean" },
-        "annotations": { "type": "object" },
-        "hostnames": {
-          "type": "array",
-          "items": { "type": "string" }
-        },
-        "parentRefs": { "type": "array" },
-        "pathPrefix": { "type": "string" }
-      }
-    },
-    "persistence": {
-      "type": "object",
-      "properties": {
-        "enabled": { "type": "boolean" },
-        "existingClaim": { "type": "string" },
-        "storageClass": { "type": "string" },
-        "accessModes": {
-          "type": "array",
-          "items": { "type": "string" }
-        },
-        "size": { "type": "string" },
-        "mountPath": { "type": "string" }
-      }
-    },
-    "config": {
-      "type": "object",
-      "properties": {
-        "existingConfigMap": { "type": "string" },
-        "key": { "type": "string" },
-        "content": { "type": "string" }
-      }
-    },
-    "openclaw": {
-      "type": "object",
-      "properties": {
-        "stateDir": { "type": "string" },
-        "workspaceDir": { "type": "string" },
-        "gateway": {
-          "type": "object",
-          "properties": {
-            "mode": { "type": "string" },
-            "bind": { "type": "string" },
-            "auth": {
-              "type": "object",
-              "properties": {
-                "mode": {
-                  "type": "string",
-                  "enum": ["token", "none"]
-                }
-              }
-            },
-            "http": { "type": "object" }
-          }
-        }
-      }
-    },
-    "models": {
-      "type": "object",
-      "properties": {
-        "anthropic": {
-          "type": "object",
-          "properties": {
-            "enabled": { "type": "boolean" },
-            "baseUrl": { "type": "string", "format": "uri" },
-            "api": { "type": "string" },
-            "apiKeyEnvVar": { "type": "string" },
-            "apiKeyValue": { "type": "string" },
-            "models": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "required": ["id", "name"],
-                "properties": {
-                  "id": { "type": "string" },
-                  "name": { "type": "string" }
-                }
-              }
-            }
-          }
-        },
-        "openai": {
-          "type": "object",
-          "properties": {
-            "enabled": { "type": "boolean" },
-            "baseUrl": { "type": "string", "format": "uri" },
-            "api": { "type": "string" },
-            "apiKeyEnvVar": { "type": "string" },
-            "apiKeyValue": { "type": "string" },
-            "models": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "required": ["id", "name"],
-                "properties": {
-                  "id": { "type": "string" },
-                  "name": { "type": "string" }
-                }
-              }
-            }
-          }
-        },
-        "ollama": {
-          "type": "object",
-          "properties": {
-            "enabled": { "type": "boolean" },
-            "baseUrl": { "type": "string" },
-            "api": { "type": "string" },
-            "apiKeyEnvVar": { "type": "string" },
-            "apiKeyValue": { "type": "string" },
-            "models": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "required": ["id", "name"],
-                "properties": {
-                  "id": { "type": "string" },
-                  "name": { "type": "string" }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "channels": {
-      "type": "object",
-      "properties": {
-        "telegram": {
-          "type": "object",
-          "properties": {
-            "enabled": { "type": "boolean" },
-            "botToken": { "type": "string" },
-            "dmPolicy": {
-              "type": "string",
-              "enum": ["", "open", "paired", "closed"]
-            }
-          }
-        },
-        "discord": {
-          "type": "object",
-          "properties": {
-            "enabled": { "type": "boolean" },
-            "botToken": { "type": "string" },
-            "dmPolicy": {
-              "type": "string",
-              "enum": ["", "open", "paired", "closed"]
-            }
-          }
-        },
-        "slack": {
-          "type": "object",
-          "properties": {
-            "enabled": { "type": "boolean" },
-            "botToken": { "type": "string" },
-            "appToken": { "type": "string" }
-          }
-        }
-      }
-    },
-    "skills": {
-      "type": "object",
-      "properties": {
-        "enabled": { "type": "boolean" },
-        "createDefault": { "type": "boolean" },
-        "configMapName": { "type": "string" },
-        "archiveKey": { "type": "string" },
-        "extractDir": { "type": "string" },
-        "initContainer": {
-          "type": "object",
-          "properties": {
-            "image": {
-              "type": "object",
-              "properties": {
-                "repository": { "type": "string" },
-                "tag": { "type": "string" },
+            "description": "OpenClaw image repository, pull policy, and tag version",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "args": {
+                    "description": "Override the container args (CMD)",
+                    "type": [
+                        "array",
+                        "null"
+                    ],
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "command": {
+                    "description": "Override the container command (ENTRYPOINT)",
+                    "type": [
+                        "array",
+                        "null"
+                    ],
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "env": {
+                    "description": "Additional environment variables for the container",
+                    "type": "array"
+                },
                 "pullPolicy": {
-                  "type": "string",
-                  "enum": ["Always", "IfNotPresent", "Never"]
+                    "type": "string"
+                },
+                "repository": {
+                    "type": "string"
+                },
+                "tag": {
+                    "type": "string"
                 }
-              }
             }
-          }
-        }
-      }
-    },
-    "erpc": {
-      "type": "object",
-      "properties": {
-        "url": { "type": "string" }
-      }
-    },
-    "secrets": {
-      "type": "object",
-      "properties": {
-        "existingSecret": { "type": "string" },
-        "create": { "type": "boolean" },
-        "name": { "type": "string" },
-        "gatewayToken": {
-          "type": "object",
-          "properties": {
-            "key": { "type": "string" },
-            "value": { "type": "string" }
-          }
         },
-        "extraEnvFromSecrets": {
-          "type": "array",
-          "items": { "type": "string" }
+        "imagePullSecrets": {
+            "description": "Credentials to fetch images from private registry",
+            "type": "array"
+        },
+        "ingress": {
+            "description": "Kubernetes Ingress (optional; not used in Obol Stack which uses Gateway API)",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "annotations": {
+                    "type": "object"
+                },
+                "className": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "hosts": {
+                    "type": [
+                        "array",
+                        "null"
+                    ],
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "host": {
+                                "type": "string"
+                            },
+                            "paths": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "path": {
+                                            "type": "string"
+                                        },
+                                        "pathType": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tls": {
+                    "type": "array"
+                }
+            }
+        },
+        "initJob": {
+            "description": "One-shot init Job (runs once to bootstrap workspace/personality)",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "args": {
+                    "type": "array"
+                },
+                "command": {
+                    "type": [
+                        "array",
+                        "null"
+                    ],
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "enabled": {
+                    "description": "Enable a one-shot post-install bootstrap Job. Requires persistence.enabled=true.",
+                    "type": "boolean"
+                },
+                "env": {
+                    "description": "Extra environment variables for the init job",
+                    "type": "array"
+                },
+                "image": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "pullPolicy": {
+                            "type": "string"
+                        },
+                        "repository": {
+                            "type": "string"
+                        },
+                        "tag": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "resources": {
+                    "description": "Resource requests/limits for the init job",
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "limits": {
+                            "type": [
+                                "object",
+                                "null"
+                            ],
+                            "properties": {
+                                "memory": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "requests": {
+                            "type": [
+                                "object",
+                                "null"
+                            ],
+                            "properties": {
+                                "cpu": {
+                                    "type": "string"
+                                },
+                                "memory": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "livenessProbe": {
+            "description": "Liveness probe (tcpSocket by default to avoid auth-protected HTTP endpoints)",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "failureThreshold": {
+                    "type": "integer"
+                },
+                "initialDelaySeconds": {
+                    "type": "integer"
+                },
+                "periodSeconds": {
+                    "type": "integer"
+                },
+                "timeoutSeconds": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models": {
+            "description": "Model provider configuration Each provider is independently toggled. All providers may be disabled. API keys are stored in the chart Secret and injected as env vars.",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "anthropic": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "api": {
+                            "type": "string"
+                        },
+                        "apiKeyEnvVar": {
+                            "type": "string"
+                        },
+                        "apiKeyValue": {
+                            "description": "API key value (stored in Secret). Leave empty to provide via extraEnvFromSecrets.",
+                            "type": "string"
+                        },
+                        "baseUrl": {
+                            "type": "string"
+                        },
+                        "enabled": {
+                            "type": "boolean"
+                        },
+                        "models": {
+                            "type": [
+                                "array",
+                                "null"
+                            ],
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "ollama": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "api": {
+                            "description": "OpenClaw provider API type. Set to \"openai-completions\" because llmspy exposes an OpenAI-compatible chat/completions endpoint.",
+                            "type": "string"
+                        },
+                        "apiKeyEnvVar": {
+                            "description": "Env var used for provider API key interpolation in openclaw.json",
+                            "type": "string"
+                        },
+                        "apiKeyValue": {
+                            "description": "Value set for the apiKey env var (not a secret for Ollama)",
+                            "type": "string"
+                        },
+                        "baseUrl": {
+                            "description": "OpenAI-compatible base URL for Ollama (routed through llmspy global proxy)",
+                            "type": "string"
+                        },
+                        "enabled": {
+                            "type": "boolean"
+                        },
+                        "models": {
+                            "type": [
+                                "array",
+                                "null"
+                            ],
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "openai": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "api": {
+                            "type": "string"
+                        },
+                        "apiKeyEnvVar": {
+                            "type": "string"
+                        },
+                        "apiKeyValue": {
+                            "type": "string"
+                        },
+                        "baseUrl": {
+                            "type": "string"
+                        },
+                        "enabled": {
+                            "type": "boolean"
+                        },
+                        "models": {
+                            "type": [
+                                "array",
+                                "null"
+                            ],
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "nameOverride": {
+            "description": "Override the chart name",
+            "type": "string"
+        },
+        "nodeSelector": {
+            "type": "object"
+        },
+        "openclaw": {
+            "description": "OpenClaw state/workspace settings (paths should be inside persistence.mountPath)",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "agentModel": {
+                    "description": "Default agent model (e.g. \"anthropic/claude-sonnet-4-5-20250929\"). Empty = use provider default.",
+                    "type": "string"
+                },
+                "gateway": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "auth": {
+                            "type": [
+                                "object",
+                                "null"
+                            ],
+                            "properties": {
+                                "mode": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "bind": {
+                            "type": "string"
+                        },
+                        "http": {
+                            "type": [
+                                "object",
+                                "null"
+                            ],
+                            "properties": {
+                                "endpoints": {
+                                    "type": [
+                                        "object",
+                                        "null"
+                                    ],
+                                    "properties": {
+                                        "chatCompletions": {
+                                            "type": [
+                                                "object",
+                                                "null"
+                                            ],
+                                            "properties": {
+                                                "enabled": {
+                                                    "type": "boolean"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "mode": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "stateDir": {
+                    "type": "string"
+                },
+                "workspaceDir": {
+                    "type": "string"
+                }
+            }
+        },
+        "persistence": {
+            "description": "Persistence settings for OpenClaw state directory (contains runtime state + secrets)",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "accessModes": {
+                    "type": [
+                        "array",
+                        "null"
+                    ],
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "existingClaim": {
+                    "type": "string"
+                },
+                "mountPath": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "string"
+                },
+                "storageClass": {
+                    "type": "string"
+                }
+            }
+        },
+        "podAnnotations": {
+            "description": "Pod annotations",
+            "type": "object"
+        },
+        "podLabels": {
+            "description": "Pod labels",
+            "type": "object"
+        },
+        "podSecurityContext": {
+            "description": "Pod security context",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "fsGroup": {
+                    "type": "integer"
+                }
+            }
+        },
+        "priorityClassName": {
+            "type": "string"
+        },
+        "rbac": {
+            "description": "RBAC for the ServiceAccount (read-only access to namespace resources)",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "create": {
+                    "type": "boolean"
+                },
+                "extraRules": {
+                    "description": "Extra rules to append to the generated Role (list of PolicyRule objects)",
+                    "type": "array"
+                }
+            }
+        },
+        "readinessProbe": {
+            "description": "Readiness probe (tcpSocket by default to avoid auth-protected HTTP endpoints)",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "failureThreshold": {
+                    "type": "integer"
+                },
+                "initialDelaySeconds": {
+                    "type": "integer"
+                },
+                "periodSeconds": {
+                    "type": "integer"
+                },
+                "timeoutSeconds": {
+                    "type": "integer"
+                }
+            }
+        },
+        "replicaCount": {
+            "description": "Number of replicas (OpenClaw should run as a single instance)",
+            "type": "integer"
+        },
+        "resources": {
+            "description": "Resource requests and limits",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "limits": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "memory": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "requests": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "cpu": {
+                            "type": "string"
+                        },
+                        "memory": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "secrets": {
+            "description": "OpenClaw secrets (one Secret per instance)",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "create": {
+                    "description": "Create the secret when existingSecret is not set",
+                    "type": "boolean"
+                },
+                "existingSecret": {
+                    "description": "Use an existing secret instead of creating one",
+                    "type": "string"
+                },
+                "extraEnvFromSecrets": {
+                    "description": "Extra Secret names to load via envFrom (for provider/channel keys, etc.)",
+                    "type": "array"
+                },
+                "gatewayToken": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "key": {
+                            "description": "Secret key name + env var name for the gateway API authentication token. This token is required to access OpenClaw's HTTP gateway (chat/completions endpoint and dashboard).",
+                            "type": "string"
+                        },
+                        "value": {
+                            "description": "Explicit token value. Required for token auth unless using secrets.existingSecret.",
+                            "type": "string"
+                        }
+                    }
+                },
+                "name": {
+                    "description": "Override the created Secret name (defaults to <release>-openclaw-secrets)",
+                    "type": "string"
+                }
+            }
+        },
+        "service": {
+            "description": "Service configuration",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "port": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "serviceAccount": {
+            "description": "Create a ServiceAccount for OpenClaw",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "annotations": {
+                    "type": "object"
+                },
+                "automount": {
+                    "description": "Automatically mount a ServiceAccount's API credentials? Set to true when rbac.create is true so the agent can access the K8s API.",
+                    "type": "boolean"
+                },
+                "create": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "description": "ServiceAccount name. Required when serviceAccount.create=false and rbac.create=true.",
+                    "type": "string"
+                }
+            }
+        },
+        "skills": {
+            "description": "Skills injection from a ConfigMap archive (created by an external tool; e.g. `obol openclaw skills sync`). The archive is extracted to `extractDir` by a busybox init container and wired into OpenClaw via `skills.load.extraDirs` in _helpers.tpl. Note: ConfigMap total size is limited to ~1 MB by Kubernetes.",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "archiveKey": {
+                    "type": "string"
+                },
+                "configMapName": {
+                    "description": "Name of the ConfigMap containing the skills archive (overrides createDefault)",
+                    "type": "string"
+                },
+                "createDefault": {
+                    "description": "Create a default empty skills ConfigMap when configMapName is not set. This allows the chart to deploy without requiring an external ConfigMap. Use `obol openclaw skills sync` to populate it later.",
+                    "type": "boolean"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "extractDir": {
+                    "type": "string"
+                },
+                "initContainer": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "image": {
+                            "type": [
+                                "object",
+                                "null"
+                            ],
+                            "properties": {
+                                "pullPolicy": {
+                                    "type": "string"
+                                },
+                                "repository": {
+                                    "type": "string"
+                                },
+                                "tag": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "startupProbe": {
+            "description": "Startup probe (tcpSocket; allows generous boot time before liveness kicks in)",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "failureThreshold": {
+                    "type": "integer"
+                },
+                "periodSeconds": {
+                    "type": "integer"
+                },
+                "timeoutSeconds": {
+                    "type": "integer"
+                }
+            }
+        },
+        "tolerations": {
+            "type": "array"
         }
-      }
-    },
-    "resources": {
-      "type": "object",
-      "properties": {
-        "limits": { "type": "object" },
-        "requests": { "type": "object" }
-      }
-    },
-    "startupProbe": {
-      "type": "object",
-      "properties": {
-        "enabled": { "type": "boolean" },
-        "periodSeconds": { "type": "integer", "minimum": 1 },
-        "failureThreshold": { "type": "integer", "minimum": 1 },
-        "timeoutSeconds": { "type": "integer", "minimum": 1 }
-      }
-    },
-    "livenessProbe": {
-      "type": "object",
-      "properties": {
-        "enabled": { "type": "boolean" },
-        "initialDelaySeconds": { "type": "integer", "minimum": 0 },
-        "periodSeconds": { "type": "integer", "minimum": 1 },
-        "timeoutSeconds": { "type": "integer", "minimum": 1 },
-        "failureThreshold": { "type": "integer", "minimum": 1 }
-      }
-    },
-    "readinessProbe": {
-      "type": "object",
-      "properties": {
-        "enabled": { "type": "boolean" },
-        "initialDelaySeconds": { "type": "integer", "minimum": 0 },
-        "periodSeconds": { "type": "integer", "minimum": 1 },
-        "timeoutSeconds": { "type": "integer", "minimum": 1 },
-        "failureThreshold": { "type": "integer", "minimum": 1 }
-      }
-    },
-    "extraVolumes": { "type": "array" },
-    "extraVolumeMounts": { "type": "array" },
-    "extraEnv": { "type": "array" },
-    "nodeSelector": { "type": "object" },
-    "tolerations": { "type": "array" },
-    "affinity": { "type": "object" },
-    "priorityClassName": { "type": "string" }
-  }
+    }
 }

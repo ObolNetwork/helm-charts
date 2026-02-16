@@ -1,0 +1,1231 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "affinity": {
+            "description": "Affinity for pod assignment # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity # # Example: # affinity: #   podAntiAffinity: #     requiredDuringSchedulingIgnoredDuringExecution: #     - labelSelector: #         matchExpressions: #         - key: app.kubernetes.io/name #           operator: In #           values: #           - charon #       topologyKey: kubernetes.io/hostname #",
+            "type": "object"
+        },
+        "centralMonitoring": {
+            "description": "Central Monitoring",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "enabled": {
+                    "description": "Specifies whether central monitoring should be enabled",
+                    "type": "boolean"
+                },
+                "promEndpoint": {
+                    "description": "https endpoint to obol central prometheus ",
+                    "type": "string"
+                },
+                "token": {
+                    "description": "The authentication token to the central prometheus",
+                    "type": "string"
+                }
+            }
+        },
+        "charon": {
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "beaconNodeEndpoints": {
+                    "description": "Beacon node endpoints The default is the Obol Stack full node address. Change this to your own consensus client beacon API(s). All beacon nodes specified here will be called for every charon request, if you want to leverage fallback behaviour place secondary beacon nodes in charon.fallbackBeaconNodeEndpoints[]",
+                    "type": [
+                        "array",
+                        "null"
+                    ],
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "beaconNodeHeaders": {
+                    "description": "Beacon node authentication headers WARNING: These headers will be sent to ALL beacon nodes, which could leak credentials Format: \"Authorization=Basic <base64_encoded_credentials>\" To generate: echo -n \"username:password\" | base64 Example: \"Authorization=Basic am9objpkb2U=\"",
+                    "type": "string"
+                },
+                "beaconNodeHeadersSecretKey": {
+                    "description": "Optional: Key within the charon.beaconNodeHeaders secret to read from",
+                    "type": "string"
+                },
+                "beaconNodeHeadersSecretName": {
+                    "description": "Optional: Name of the secret containing beacon node headers Use this for secure credential storage instead of beaconNodeHeaders The secret should contain a key specified by charon.beaconNodeHeadersSecretKey",
+                    "type": "string"
+                },
+                "builderApi": {
+                    "description": "Enables the builder api (MEV) for validator proposals. The Builder API must also be enabled on your beacon node client(s). The Beacon node must either be connected to a mev sidecar or a mev relay to access the builder network. More documentation about MEV can be found [here](https://docs.obol.org/advanced-and-troubleshooting/advanced/enable-mev).",
+                    "type": "string"
+                },
+                "directConnectionEnabled": {
+                    "description": "If enabled, it will set p2pExternalHostname value to the pod name and enable direct connection between cluster nodes. This is useful for deployments where pods can directly communicate with each other.",
+                    "type": "string"
+                },
+                "dkgSidecar": {
+                    "description": "Configuration for the DKG Sidecar init container This init container orchestrates the Distributed Key Generation (DKG) process for Charon clusters.  The sidecar has three operating modes: 1. If cluster-lock.json exists: Exits immediately (cluster already initialized) 2. If cluster-definition.json exists: Attempts DKG with the existing definition 3. If neither exists: Polls the Obol API for cluster invites and runs DKG when ready  To provide a pre-existing cluster-lock and skip DKG: 2. Change the `confiMaps.clusterLock: cluster-lock in your values.yaml file, 3. The sidecar will detect the mounted lock file and exit, allowing Charon to start immediately  To provide a cluster-definition without running DKG through the API: 1. Mount your cluster-definition.json in /charon-data/ 2. The sidecar will run 'charon dkg' to generate the cluster-lock.json  Note: When providing a pre-existing cluster-lock.json, you must also ensure the associated validator keys are available in the charon-data volume.",
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "apiEndpoint": {
+                            "description": "API endpoint for the Obol network to fetch cluster definitions",
+                            "type": "string"
+                        },
+                        "enabled": {
+                            "type": "boolean"
+                        },
+                        "image": {
+                            "type": [
+                                "object",
+                                "null"
+                            ],
+                            "properties": {
+                                "pullPolicy": {
+                                    "type": "string"
+                                },
+                                "repository": {
+                                    "description": "Image repository for the DKG sidecar",
+                                    "type": "string"
+                                },
+                                "tag": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "initialRetryDelaySeconds": {
+                            "description": "Initial delay in seconds before the first retry of a polling cycle.",
+                            "type": "integer"
+                        },
+                        "maxRetryDelaySeconds": {
+                            "description": "Maximum delay in seconds for exponential backoff between polling cycles.",
+                            "type": "integer"
+                        },
+                        "pageLimit": {
+                            "description": "Page limit for API calls when fetching cluster definitions",
+                            "type": "integer"
+                        },
+                        "resources": {
+                            "description": "Resources for the cluster poller init container",
+                            "type": [
+                                "object",
+                                "null"
+                            ],
+                            "properties": {
+                                "limits": {
+                                    "type": [
+                                        "object",
+                                        "null"
+                                    ],
+                                    "properties": {
+                                        "cpu": {
+                                            "type": "string"
+                                        },
+                                        "memory": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "requests": {
+                                    "type": [
+                                        "object",
+                                        "null"
+                                    ],
+                                    "properties": {
+                                        "cpu": {
+                                            "type": "string"
+                                        },
+                                        "memory": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "retryDelayFactor": {
+                            "description": "Factor by which the retry delay increases after each polling cycle (e.g., 2 for doubling).",
+                            "type": "integer"
+                        },
+                        "retryDelaySeconds": {
+                            "description": "Delay in seconds between polling retries",
+                            "type": "integer"
+                        },
+                        "serviceAccount": {
+                            "description": "Service account settings for test pods",
+                            "type": [
+                                "object",
+                                "null"
+                            ],
+                            "properties": {
+                                "create": {
+                                    "type": "boolean"
+                                }
+                            }
+                        },
+                        "targetConfigHash": {
+                            "description": "Target cluster definition config hash for the DKG sidecar to partake in (optional). Must be a valid 32-byte hex hash with 0x prefix (66 characters total). Example: \"0x7f0fd29abb11674b4e61000de26bff3600237aab0402427bd1409756665c2115\"",
+                            "type": "string"
+                        }
+                    }
+                },
+                "enr": {
+                    "description": "- Configuration for ENR management ---",
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "existingSecret": {
+                            "description": "Point to an existing Kubernetes secret that holds the ENR private key. If 'privateKey' above is not set and this 'existingSecret.name' is provided, 'generate' is ignored. NOTE: If not set, the chart will automatically check for a secret named 'charon-enr-private-key' (configurable via secrets.defaultEnrPrivateKey) and use it if it exists.",
+                            "type": [
+                                "object",
+                                "null"
+                            ],
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "privateKeyDataKey": {
+                                    "description": "Key in the secret's 'data' field holding the private key hex string",
+                                    "type": "string"
+                                },
+                                "publicKeyDataKey": {
+                                    "description": "Key in the secret's 'data' field holding the public ENR string",
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "generate": {
+                            "description": "Enable automatic generation of an ENR private key. Only used if 'privateKey' and 'existingSecret.name' are not provided. The generated key will be stored in a secret with data keys 'charon-enr-private-key' and 'enr'.",
+                            "type": [
+                                "object",
+                                "null"
+                            ],
+                            "properties": {
+                                "annotations": {
+                                    "description": "Annotations to add to the ENR generation job",
+                                    "type": "object"
+                                },
+                                "enabled": {
+                                    "type": "boolean"
+                                },
+                                "image": {
+                                    "type": [
+                                        "object",
+                                        "null"
+                                    ],
+                                    "properties": {
+                                        "pullPolicy": {
+                                            "type": "string"
+                                        },
+                                        "repository": {
+                                            "type": "string"
+                                        },
+                                        "tag": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "kubectlImage": {
+                                    "description": "Image to use for kubectl operations within the ENR generation job This image must contain a compatible kubectl binary.",
+                                    "type": [
+                                        "object",
+                                        "null"
+                                    ],
+                                    "properties": {
+                                        "pullPolicy": {
+                                            "type": "string"
+                                        },
+                                        "repository": {
+                                            "type": "string"
+                                        },
+                                        "tag": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "nodeSelector": {
+                                    "description": "Node selector for the ENR generation job",
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "privateKey": {
+                            "description": "Provide the ENR private key directly (hex format, e.g., 0x...).  If set, 'generate' and 'existingSecret' are ignored.",
+                            "type": "string"
+                        }
+                    }
+                },
+                "enrJob": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "enabled": {
+                            "description": "Enable or disable the Kubernetes Job that generates/manages the ENR. Note: This is typically not needed as the job automatically detects existing secrets. The job will check if the ENR secret already exists and skip generation if found. Only set to false for advanced use cases where you need to completely disable the job.",
+                            "type": "boolean"
+                        }
+                    }
+                },
+                "executionClientRpcEndpoint": {
+                    "description": "Optional: Execution client RPC endpoint URL (e.g., your Ethereum execution client) Note: Charon currently only supports a single execution endpoint This is only needed if an operator in the cluster uses a smart contract wallet for an operator signature. If that does not apply to this cluster, this field can be left unset.",
+                    "type": "string"
+                },
+                "fallbackBeaconNodeEndpoints": {
+                    "description": "Fallback beacon node endpoints (optional) These will be used if the primary beaconNodeEndpoints are unavailable",
+                    "type": [
+                        "array",
+                        "null"
+                    ],
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "featureSet": {
+                    "description": "Minimum feature set to enable by default: alpha, beta, or stable. Warning: modify at own risk. (default \"stable\")",
+                    "type": "string"
+                },
+                "featureSetDisable": {
+                    "description": "Comma-separated list of features to disable, overriding the default minimum feature set.",
+                    "type": "string"
+                },
+                "featureSetEnable": {
+                    "description": "Comma-separated list of features to enable, overriding the default minimum feature set.",
+                    "type": "string"
+                },
+                "lockFile": {
+                    "description": "The path on the pod to the cluster lock file that definesthe distributed validator cluster. (default \"/charon-data/cluster-lock.json\")",
+                    "type": "string"
+                },
+                "lockHash": {
+                    "description": "Cluster lock hash for large cluster-lock files (>1MB) When provided, the DKG sidecar will fetch the full cluster-lock from Obol API using this hash Extract the hash from a cluster-lock.json using: `jq -r '.lock_hash' cluster-lock.json` Alternative to providing the full cluster-lock.json file via the configMaps.clusterLock value",
+                    "type": "string"
+                },
+                "logFormat": {
+                    "description": "Log format; console, logfmt or json (default \"json\")",
+                    "type": "string"
+                },
+                "logLevel": {
+                    "description": "Log level; debug, info, warn or error (default \"info\")",
+                    "type": "string"
+                },
+                "lokiAddresses": {
+                    "description": "Enables sending of logfmt structured logs to these Loki log aggregation server addresses. This is in addition to normal stderr logs.",
+                    "type": "string"
+                },
+                "lokiService": {
+                    "description": "Service label sent with logs to Loki.",
+                    "type": "string"
+                },
+                "monitoringAddress": {
+                    "description": "Listening address (ip and port) for the monitoring API (prometheus, pprof). (default \"127.0.0.1:3620\")",
+                    "type": "string"
+                },
+                "nickname": {
+                    "description": "The nickname this Charon appears as in monitoring and its peer's logs. Maximum 32 characters.",
+                    "type": "string"
+                },
+                "noVerify": {
+                    "description": "Disables cluster definition and lock file verification.",
+                    "type": "boolean"
+                },
+                "operatorAddress": {
+                    "description": "The Ethereum address of this operator. This MUST be provided by the user to use the auto-dkg functionality.",
+                    "type": "string"
+                },
+                "p2pAllowlist": {
+                    "description": "Comma-separated list of CIDR subnets for allowing only certain peer connections. Example: 192.168.0.0/16 would permit connections to peers on your local network only. The default is to accept all connections.",
+                    "type": "string"
+                },
+                "p2pDenylist": {
+                    "description": "Comma-separated list of CIDR subnets for disallowing certain peer connections. Example: 192.168.0.0/16 would disallow connections to peers on your local network. The default is to accept all connections.",
+                    "type": "string"
+                },
+                "p2pDisableReuseport": {
+                    "description": "Disables TCP port reuse for outgoing libp2p connections.",
+                    "type": "string"
+                },
+                "p2pExternalHostname": {
+                    "description": "The DNS hostname advertised by libp2p. This may be used to advertise an external DNS.",
+                    "type": "string"
+                },
+                "p2pExternalIp": {
+                    "description": "The IP address advertised by libp2p. This may be used to advertise an external IP.",
+                    "type": "string"
+                },
+                "p2pRelays": {
+                    "description": "Comma-separated list of libp2p relay URLs or multiaddrs. Default list is provided by libp2p and may change over time",
+                    "type": "string"
+                },
+                "p2pTcpAddress": {
+                    "description": "Comma-separated list of listening TCP addresses (ip and port) for libP2P traffic. Empty default doesn't bind to local port therefore only supports outgoing connections.",
+                    "type": "string"
+                },
+                "privateKeyFile": {
+                    "description": "Path within the Charon container where the ENR private key file will be mounted.",
+                    "type": "string"
+                },
+                "validatorApiAddress": {
+                    "description": "Listening address (ip and port) for validator-facing traffic proxying the beacon-node API. (default \"127.0.0.1:3600\")",
+                    "type": "string"
+                }
+            }
+        },
+        "clusterThreshold": {
+            "description": "Maximum number of pods that can be unavailable for cluster threshold Used in pod disruption budget when minAvailable is not specified",
+            "type": "string"
+        },
+        "configMaps": {
+            "description": "Kubernetes configMaps names for non-sensitive configuration data.",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "clusterLock": {
+                    "description": "Name of the ConfigMap containing the cluster-lock.json file Set this to the name of an existing ConfigMap to skip the DKG process. Then set: clusterLock: \"cluster-lock\" If not set or if the ConfigMap doesn't exist, the DKG process will run. NOTE: For large cluster-lock files (>1MB), use charon.lockHash instead clusterLock: \"cluster-lock\"",
+                    "type": "string"
+                }
+            }
+        },
+        "containerSecurityContext": {
+            "description": "The security context for containers",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "allowPrivilegeEscalation": {
+                    "type": "boolean"
+                },
+                "capabilities": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "drop": {
+                            "type": [
+                                "array",
+                                "null"
+                            ],
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "readOnlyRootFilesystem": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "fullnameOverride": {
+            "description": "Provide a name to substitute for the full names of resources",
+            "type": "string"
+        },
+        "global": {
+            "description": "Global configuration that can be referenced across the chart Used for test configurations and shared settings",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "annotations": {
+                    "description": "Global annotations applied to resources",
+                    "type": "object"
+                }
+            }
+        },
+        "image": {
+            "description": "Charon image repository, pull policy, and tag version",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "pullPolicy": {
+                    "type": "string"
+                },
+                "repository": {
+                    "type": "string"
+                },
+                "tag": {
+                    "type": "string"
+                }
+            }
+        },
+        "imagePullSecrets": {
+            "description": "Credentials to fetch images from private registry # ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/",
+            "type": "array"
+        },
+        "livenessProbe": {
+            "description": "Configure liveness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "httpGet": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "path": {
+                            "type": "string"
+                        },
+                        "port": {
+                            "description": "Port for liveness probe HTTP checks",
+                            "type": "integer"
+                        }
+                    }
+                },
+                "initialDelaySeconds": {
+                    "type": "integer"
+                },
+                "periodSeconds": {
+                    "type": "integer"
+                }
+            }
+        },
+        "nameOverride": {
+            "description": "Provide a name in place of charon for `app:` labels",
+            "type": "string"
+        },
+        "network": {
+            "description": "Network name for the Ethereum network Supported values: mainnet, sepolia, hoodi The chainId is automatically derived from the network name",
+            "type": "string"
+        },
+        "networkPolicy": {
+            "description": "NetworkPolicy configuration for pod network isolation",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "beaconNodes": {
+                    "description": "Beacon node configuration",
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "enabled": {
+                            "description": "Enable egress to beacon nodes",
+                            "type": "boolean"
+                        },
+                        "ipBlock": {
+                            "description": "IP block for external beacon nodes",
+                            "type": "object"
+                        },
+                        "namespaceSelector": {
+                            "description": "Namespace selector for beacon nodes",
+                            "type": "object"
+                        },
+                        "podSelector": {
+                            "description": "Pod selector for beacon nodes",
+                            "type": "object"
+                        },
+                        "port": {
+                            "description": "Port for beacon node connections (leave empty for any port)",
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    }
+                },
+                "customEgress": {
+                    "description": "Custom egress rules to add",
+                    "type": "array"
+                },
+                "customIngress": {
+                    "description": "Custom ingress rules to add",
+                    "type": "array"
+                },
+                "enabled": {
+                    "description": "Enable NetworkPolicy to restrict network traffic",
+                    "type": "boolean"
+                },
+                "monitoring": {
+                    "description": "Monitoring configuration",
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "enabled": {
+                            "description": "Enable access from monitoring tools",
+                            "type": "boolean"
+                        },
+                        "namespaceSelector": {
+                            "description": "Namespace selector for monitoring namespace",
+                            "type": "object"
+                        },
+                        "podSelector": {
+                            "description": "Pod selector for monitoring tools (e.g., Prometheus)",
+                            "type": "object"
+                        }
+                    }
+                },
+                "obolApi": {
+                    "description": "Obol API configuration",
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "cidr": {
+                            "description": "CIDR block for Obol API access",
+                            "type": "string"
+                        },
+                        "enabled": {
+                            "description": "Enable egress to Obol API for DKG",
+                            "type": "boolean"
+                        },
+                        "except": {
+                            "description": "IP ranges to exclude",
+                            "type": "array"
+                        }
+                    }
+                },
+                "validatorClientNamespaceSelector": {
+                    "description": "Namespace selector for validator client access",
+                    "type": "object"
+                },
+                "validatorClientSelector": {
+                    "description": "Selector for validator client pods that can access the validator API",
+                    "type": "object"
+                }
+            }
+        },
+        "nodeSelector": {
+            "description": "Node labels for pod assignment # ref: https://kubernetes.io/docs/user-guide/node-selection/",
+            "type": "object"
+        },
+        "persistence": {
+            "description": "Persistence configuration for DKG artifacts and charon data",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "accessModes": {
+                    "description": "Storage class for the PVC. If undefined or null, the default storage class will be used. storageClassName: \"\" # e.g., \"standard\", \"gp2\"",
+                    "type": [
+                        "array",
+                        "null"
+                    ],
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "annotations": {
+                    "description": "Annotations for the PVC Example: annotations: {\"volume.beta.kubernetes.io/storage-class\": \"fast\"}",
+                    "type": "object"
+                },
+                "enabled": {
+                    "description": "Enable persistence using a PersistentVolumeClaim.",
+                    "type": "boolean"
+                },
+                "size": {
+                    "description": "Size of the PVC for charon-data.",
+                    "type": "string"
+                },
+                "validatorDataSize": {
+                    "description": "Size of the PVC for validator-data. Validator data includes slashing protection DB and other validator state. NOTE: Validator data ALWAYS uses persistent storage to prevent slashing, even if persistence.enabled is false for charon-data.",
+                    "type": "string"
+                }
+            }
+        },
+        "podAnnotations": {
+            "description": "Pod annotations",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "pod-security.kubernetes.io/audit": {
+                    "type": "string"
+                },
+                "pod-security.kubernetes.io/audit-version": {
+                    "type": "string"
+                },
+                "pod-security.kubernetes.io/enforce": {
+                    "type": "string"
+                },
+                "pod-security.kubernetes.io/enforce-version": {
+                    "type": "string"
+                },
+                "pod-security.kubernetes.io/warn": {
+                    "type": "string"
+                },
+                "pod-security.kubernetes.io/warn-version": {
+                    "type": "string"
+                }
+            }
+        },
+        "podDisruptionBudget": {
+            "description": "Enable pod disruption budget # ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "minAvailable": {
+                    "type": "string"
+                }
+            }
+        },
+        "priorityClassName": {
+            "description": "Used to assign priority to pods # ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/",
+            "type": "string"
+        },
+        "rbac": {
+            "description": "RBAC configuration. # ref: https://kubernetes.io/docs/reference/access-authn-authz/rbac/",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "clusterRules": {
+                    "description": "Required ClusterRole rules",
+                    "type": [
+                        "array",
+                        "null"
+                    ],
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "apiGroups": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "resources": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "verbs": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "enabled": {
+                    "description": "Specifies whether RBAC resources are to be created",
+                    "type": "boolean"
+                },
+                "name": {
+                    "description": "The name of the cluster role to use. If not set and create is true, a name is generated using the fullname template",
+                    "type": "string"
+                },
+                "rules": {
+                    "description": "Required Role rules",
+                    "type": [
+                        "array",
+                        "null"
+                    ],
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "apiGroups": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "resources": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "verbs": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "readinessProbe": {
+            "description": "Configure readiness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "httpGet": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "path": {
+                            "type": "string"
+                        },
+                        "port": {
+                            "description": "Port for readiness probe HTTP checks",
+                            "type": "integer"
+                        }
+                    }
+                },
+                "initialDelaySeconds": {
+                    "type": "integer"
+                },
+                "periodSeconds": {
+                    "type": "integer"
+                }
+            }
+        },
+        "resources": {
+            "description": "Pod resources limits and requests",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "limits": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "cpu": {
+                            "type": "string"
+                        },
+                        "memory": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "requests": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "cpu": {
+                            "type": "string"
+                        },
+                        "memory": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "secrets": {
+            "description": "Kubernetes secrets names For the ENR, the secret name is either defined in 'charon.enr.existingSecret.name' or generated by the ENR job (e.g., {{ .Release.Name }}-dv-pod-enr-key).",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "defaultEnrPrivateKey": {
+                    "description": "Default ENR private key secret name to check for auto-detection IMPORTANT: This secret MUST exist in the same namespace as the Helm release If this secret exists in the release namespace, it will be used automatically unless explicitly overridden by charon.enr.existingSecret.name The ENR job will NOT check other namespaces to prevent unexpected behavior",
+                    "type": "string"
+                }
+            }
+        },
+        "securityContext": {
+            "description": "The security context for pods Note: This must be set to null or omit runAsNonRoot to allow the prepare-validator-data init container to run as root for setting file permissions",
+            "type": "object"
+        },
+        "service": {
+            "description": "Charon service ports",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "clusterIP": {
+                    "description": "Headless service to create DNS for each statefulset instance",
+                    "type": "string"
+                },
+                "ports": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "monitoring": {
+                            "type": [
+                                "object",
+                                "null"
+                            ],
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "port": {
+                                    "type": "integer"
+                                },
+                                "protocol": {
+                                    "type": "string"
+                                },
+                                "targetPort": {
+                                    "type": "integer"
+                                }
+                            }
+                        },
+                        "p2pTcp": {
+                            "type": [
+                                "object",
+                                "null"
+                            ],
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "port": {
+                                    "type": "integer"
+                                },
+                                "protocol": {
+                                    "type": "string"
+                                },
+                                "targetPort": {
+                                    "type": "integer"
+                                }
+                            }
+                        },
+                        "validatorApi": {
+                            "type": [
+                                "object",
+                                "null"
+                            ],
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "port": {
+                                    "type": "integer"
+                                },
+                                "protocol": {
+                                    "type": "string"
+                                },
+                                "targetPort": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "serviceAccount": {
+            "description": "Service account # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "annotations": {
+                    "description": "Annotations to add to the service account",
+                    "type": "object"
+                },
+                "enabled": {
+                    "description": "Specifies whether a service account should be created",
+                    "type": "boolean"
+                },
+                "name": {
+                    "description": "The name of the service account to use. If not set, a name is generated using the default template",
+                    "type": "string"
+                },
+                "nameTest": {
+                    "description": "The name of the service account to use for test pods. If not set, uses the main service account",
+                    "type": "string"
+                }
+            }
+        },
+        "serviceMonitor": {
+            "description": "Prometheus Service Monitor # ref: https://github.com/coreos/prometheus-operator",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "annotations": {
+                    "description": "Additional ServiceMonitor annotations",
+                    "type": "object"
+                },
+                "enabled": {
+                    "description": "If true, a ServiceMonitor CRD is created for a prometheus operator. https://github.com/coreos/prometheus-operator TODO: SWITCH BACK TO ON FOR PRODUCTION",
+                    "type": "boolean"
+                },
+                "interval": {
+                    "description": "ServiceMonitor scrape interval",
+                    "type": "string"
+                },
+                "labels": {
+                    "description": "Additional ServiceMonitor labels",
+                    "type": "object"
+                },
+                "namespace": {
+                    "description": "Alternative namespace for ServiceMonitor",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "path": {
+                    "description": "Path to scrape",
+                    "type": "string"
+                },
+                "relabelings": {
+                    "description": "ServiceMonitor relabelings",
+                    "type": "array"
+                },
+                "scheme": {
+                    "description": "ServiceMonitor scheme",
+                    "type": "string"
+                },
+                "scrapeTimeout": {
+                    "description": "ServiceMonitor scrape timeout",
+                    "type": "string"
+                },
+                "tlsConfig": {
+                    "description": "ServiceMonitor TLS configuration",
+                    "type": "object"
+                }
+            }
+        },
+        "tests": {
+            "description": "Configuration for running Helm tests. These values are typically only used when `helm test` is run.",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "dkgSidecar": {
+                    "description": "The operator address to use for DKG sidecar tests. This should be a valid Ethereum address (0x...).",
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean"
+                        },
+                        "hostNetwork": {
+                            "description": "Host network setting for dkgSidecar test pods",
+                            "type": "boolean"
+                        },
+                        "mockApi": {
+                            "type": [
+                                "object",
+                                "null"
+                            ],
+                            "properties": {
+                                "image": {
+                                    "type": [
+                                        "object",
+                                        "null"
+                                    ],
+                                    "properties": {
+                                        "pullPolicy": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "port": {
+                                    "type": "integer"
+                                }
+                            }
+                        },
+                        "operatorAddress": {
+                            "type": "string"
+                        },
+                        "serviceAccount": {
+                            "description": "Service account settings for test pods",
+                            "type": [
+                                "object",
+                                "null"
+                            ],
+                            "properties": {
+                                "create": {
+                                    "type": "boolean"
+                                }
+                            }
+                        },
+                        "targetConfigHash": {
+                            "description": "Target config hash for testing (optional) When set, enables test-target-config-hash-set.yaml test and passes hash to DKG sidecar tests",
+                            "type": "string"
+                        }
+                    }
+                },
+                "validatorKeystore": {
+                    "description": "Validator keystore configuration test",
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "enabled": {
+                            "description": "Enable validator keystore configuration tests",
+                            "type": "boolean"
+                        },
+                        "mockKeystoreCount": {
+                            "description": "Number of mock keystores to generate for testing",
+                            "type": "integer"
+                        },
+                        "validatorClientType": {
+                            "description": "Validator client type to test (lodestar, lighthouse, teku, prysm, nimbus) Currently lodestar, prysm, and nimbus are implemented",
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "tolerations": {
+            "description": "Tolerations for pod assignment # ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/",
+            "type": "object"
+        },
+        "updateStrategy": {
+            "description": "allows you to configure and disable automated rolling updates for containers, labels, resource request/limits, and annotations for the Pods in a StatefulSet.",
+            "type": "string"
+        },
+        "validatorClient": {
+            "description": "Validator client configuration",
+            "type": [
+                "object",
+                "null"
+            ],
+            "properties": {
+                "config": {
+                    "description": "Validator client specific configuration",
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "extraArgs": {
+                            "description": "Additional CLI arguments passed to the validator client (regardless of type) (the minimum required mev flags are automatically included when you set .Values.charon.builderApi to true)",
+                            "type": "array"
+                        },
+                        "graffiti": {
+                            "description": "Graffiti to include in proposed blocks Leaving it unset will result in charon defaults.",
+                            "type": "string"
+                        },
+                        "network": {
+                            "description": "Network configuration for validator client (e.g., mainnet, sepolia) Used by some validator clients like Teku for network-specific configuration",
+                            "type": "string"
+                        },
+                        "prysm": {
+                            "description": "Configuration for the prysm validator client specifically Used to pass Prysm VC specific configuration NOTE: By using Prysm, you automatically accept the Terms of Service: https://github.com/prysmaticlabs/prysm/blob/develop/TERMS_OF_SERVICE.md",
+                            "type": [
+                                "object",
+                                "null"
+                            ],
+                            "properties": {
+                                "extraArgs": {
+                                    "description": "Additional CLI arguments passed to the Prysm validator client only",
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    }
+                },
+                "enabled": {
+                    "description": "Enable the validator client container If you want to use an externally managed validator client. Set this to false, and set your external validator to communicate with the 'validator-api' service created by this chart as if it were a beacon node API.",
+                    "type": "boolean"
+                },
+                "image": {
+                    "description": "Image configuration for validator client Repository and tag will be auto-selected based on validator client type if not specified",
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "pullPolicy": {
+                            "type": "string"
+                        },
+                        "repository": {
+                            "type": "string"
+                        },
+                        "tag": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "keystores": {
+                    "description": "Validator keystores configuration",
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "secretName": {
+                            "description": "Name of the Secret containing validator keystores If provided, skip keystore generation and use existing keys The secret should contain keystore-*.json and keystore-*.txt files secretName: \"validator-keys\"",
+                            "type": "string"
+                        }
+                    }
+                },
+                "resources": {
+                    "description": "Resource limits and requests for validator client",
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "limits": {
+                            "type": [
+                                "object",
+                                "null"
+                            ],
+                            "properties": {
+                                "cpu": {
+                                    "type": "string"
+                                },
+                                "memory": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "requests": {
+                            "type": [
+                                "object",
+                                "null"
+                            ],
+                            "properties": {
+                                "cpu": {
+                                    "type": "string"
+                                },
+                                "memory": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "type": {
+                    "description": "Type of validator client to use Options: lighthouse, teku, prysm, nimbus, lodestar",
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

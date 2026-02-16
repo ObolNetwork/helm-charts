@@ -99,6 +99,7 @@ image:
 # -- Pod management policy
 podManagementPolicy: Parallel
 
+# @schema type: ["string", "null"]
 # -- Network name - this is a predefined network - testnet, devnet
 network:
 
@@ -109,9 +110,13 @@ networkName: staging-public
 # -- Custom network - (not recommended) - Only for custom testnet usecases
 # Must have deployed your own protocol contracts first
 customNetwork:
+  # @schema type: ["string", "null"]
   l1ChainId:
+  # @schema type: ["string", "null"]
   registryContractAddress:
+  # @schema type: ["string", "null"]
   slashFactoryAddress:
+  # @schema type: ["string", "null"]
   feeAssetHandlerContractAddress:
 
 # -- Which rollup contract we want to follow from the registry
@@ -157,11 +162,15 @@ node:
 
   # -- Remote service URLs
   remoteUrl:
+    # @schema type: ["string", "null"]
     archiver:
+    # @schema type: ["string", "null"]
     proverBroker:
     proverCoordinationNodes: []
+    # @schema type: ["string", "null"]
     blobSink:
 
+  # @schema type: ["string", "null"]
   # -- Address that will receive block or proof rewards
   # For prover roles, this is the PROVER_ID
   coinbase:
@@ -185,13 +194,17 @@ node:
     dataDirectory: /data
     # Data store map size in kB (per database)
     # Leave empty to use Aztec's built-in default (128 GB)
+    # @schema type: ["string", "null"]
     dataStoreMapSize:
     # World state map size in kB (per merkle tree)
     # Leave empty to use Aztec's built-in default (falls back to dataStoreMapSize)
+    # @schema type: ["string", "null"]
     worldStateMapSize:
     # P2P storage map size (kB)
+    # @schema type: ["string", "null"]
     p2pStorageMapSize:
     # Archive storage map size (kB)
+    # @schema type: ["string", "null"]
     archiveStorageMapSize:
 
   # -- Node.js options
@@ -216,6 +229,7 @@ node:
 persistence:
   # -- Uses an emptyDir when not enabled
   enabled: false
+  # @schema type: ["string", "null"]
   # -- Use an existing PVC
   existingClaim: null
   # -- AccessModes
@@ -223,6 +237,7 @@ persistence:
   - ReadWriteOnce
   # -- Requested size
   size: 100Gi
+  # @schema type: ["string", "null"]
   # -- Use a specific storage class
   storageClassName: null
   # -- Annotations for volume claim template
