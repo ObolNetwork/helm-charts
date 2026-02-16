@@ -1,0 +1,44 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/signKey: |
+    fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+    url: https://obolnetwork.github.io/helm-charts/pubkey.asc
+apiVersion: v2
+appVersion: 0.9.0
+description: A Helm chart for Helios - a trustless, efficient, and portable Ethereum
+  light client
+keywords:
+- - ethereum
+- - light-client
+- - blockchain
+maintainers:
+- - name: DV Labs
+  url: https://dvlabs.tech
+name: helios
+type: application
+version: 0.1.4
+
+...
+files:
+  helios-0.1.4.tgz: sha256:d37d624bc2ba86fb6b0fc5d0b975e0b298a608af8c883c87a84651401bfd024e
+
+-----BEGIN PGP SIGNATURE-----
+
+wsG5BAEBCgBtBYJpkxZFCRCQx5MnNNeGRkUUAAAAAAAcACBzYWx0QG5vdGF0aW9u
+cy5vcGVucGdwanMub3JnG0mKQmjoP6RIMME32OsHdruPVg2MO4SNtLbtvLO8PPkW
+IQRwEFNOl0vedEYIptmQx5MnNNeGRgAAqDwP/RMPrsTo2qxGz4Xsr99MxwBdjvVe
+44vdrFRF9mOOdxEVPKhljr2ctQWv3cnBjmTREhBsz1eOH/RL/L5TaYZP0YhjRNNC
+tUzxMFnj6cDiE4oQsgxF0bT84w+2jabNqy0m96GQAg8FcDx0h7aFymJs7yq7jc9c
+egpVCFC7wMIjMgGHgxmuJlas8EXmQp1m8Nj5BfT+uKXZFHm8vTSqUoj1dDlK/vLS
+VIZRObXeCT+nO7CtPVh3d+gX8JUdBuBngaAzb+kZfptYJ/bM27OW13aJrQskCFcd
+vEhTB6/O8xmt+7tIVy06uWfbsIDKL8Z1tfjaDp1Cx0Thb4rnzzqKxX8oiHviRgSm
+hCvMBfx1V9gLUJaQ5EfZVt1i3lEJFjN+CBiUP8fA7nxy5HI5OmH2WOLd7Q8xXyAW
+DlLc7adRhdl32FNRzE0bGe4EoCQQKQ5Q1SjrdaaqNm4LTJME1rM//tkFkfDzY2ru
+W2qCsNZsDzF3+L1CRt8T0OQAntSfoq2j1mv9QcW7tVEzcTk+17jbTKXJiLcFLh13
+VxO0vnZNjdUKqA1GhmxKdYevezONaMurlfly9qpn8Qh81IsVNe25OA8SmSFMqFPZ
+gi0wUbMluZEqUnUVw9i3HITZQf0PmTaMMp7KmjQDCv58vhRphuD24AWmOhuqkOcZ
+zICUdiDjZ4votLqU
+-----END PGP SIGNATURE-----

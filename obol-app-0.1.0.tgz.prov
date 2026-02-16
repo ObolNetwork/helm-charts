@@ -1,0 +1,49 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/signKey: |
+    fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+    url: https://obolnetwork.github.io/helm-charts/pubkey.asc
+apiVersion: v2
+appVersion: latest
+description: A chart for running any Docker image within the Obol Stack.
+home: https://obol.org/
+icon: https://avatars.githubusercontent.com/u/85748921?s=128&v=4
+keywords:
+- - ethereum
+- - blockchain
+- - obol
+- - docker
+- - application
+maintainers:
+- - email: platform@obol.tech
+  name: Obol Platform Team
+name: obol-app
+sources:
+- - https://github.com/ObolNetwork/helm-charts
+type: application
+version: 0.1.0
+
+...
+files:
+  obol-app-0.1.0.tgz: sha256:6167dc92ae56e821362e29afbabd99c151a3135d2ef71795f8c6afef35c10c9a
+
+-----BEGIN PGP SIGNATURE-----
+
+wsG5BAEBCgBtBYJpkxZFCRCQx5MnNNeGRkUUAAAAAAAcACBzYWx0QG5vdGF0aW9u
+cy5vcGVucGdwanMub3JncjMSjlpNtcRpUZbU83QKitb4xehSJpGOsl37lwQ/IFYW
+IQRwEFNOl0vedEYIptmQx5MnNNeGRgAAoIMQAK9oN+uWTuRV9npR/AJAYqSDnsHp
+Bf00WVG+qPbWDcdqANMWD6+qelosJNS7rSzuXSZkZobXI68ffq3oNopr5QKrLC4o
+tXV7MPOaOwoh8n5yXJzNWMRONf1h3Ktp3FRj+0Bzplc9ptfhDRamM+YkMUKhTpDJ
+9P693+cMxnR+LzOsjCTvgZcgVUDHzf9WRTjwzQsO3vMcr2ns2Y9FdWoHiVWUxm8A
+a5aGo8u0d4s3TSo8BgeqTNgQ16W0y1PNc51U28hjERns1ntjX908A59vKIeF1ptq
+mS6BYJc3ZcGQpAuKwGir8tawPqQkFCUyQr3TsSrijKcl9mJEe+F+l3i88QyaMf+l
+Uyw2fpJI+KU5dQCmrGkKMz5CyW1JFDUv8xgy4MB3MzOlqNKZfbdnERBBcusWhSQV
+lD29WoUj/X0Iuv4vD6uGgmV+P15GP521igp8r0XoijyJkNgWxcdAkMBMcc8mDIgU
+wWTH6nQyI7q7Anzpt8WGlEhqvpKnQ8BU48xzJsRXSSiU4U+2CUOPh9PGGhXGD/yg
+/EsFhh3IwUzNFwO/dJRhIfsLalbQMT8R0qupP8DOaVPLaUtH9jd58QDQ4xDo/bkE
+lrzyX+386+v5HiKwfIWBkvK85X1DAwW8gij5mg+ExvMubp+QGdVNAr1UFcKQIHkN
+rdxcpD/yDhYf0/hw
+-----END PGP SIGNATURE-----
