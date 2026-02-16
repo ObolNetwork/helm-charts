@@ -68,6 +68,23 @@ jobs:
           ref: gh-pages
           path: gh-pages
 
+      - name: Attach provenance files to GitHub releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for prov in .gpg-provenance/*.tgz.prov; do
+            [ -f "$prov" ] || continue
+            tgz_name=$(basename "$prov" .prov)
+            chart_tag="${tgz_name%.tgz}"
+            # Only upload if the release exists
+            if gh release view "$chart_tag" &>/dev/null; then
+              gh release upload "$chart_tag" "$prov" --clobber
+              echo "Uploaded $prov to release $chart_tag"
+            else
+              echo "Skipping $prov — release $chart_tag not found"
+            fi
+          done
+
       - name: Copy provenance and metadata to gh-pages
         run: |
           cp .gpg-provenance/*.tgz.prov gh-pages/ 2>/dev/null || true
@@ -80,3 +97,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./gh-pages
           keep_files: true
+          enable_jekyll: true
