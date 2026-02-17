@@ -8,10 +8,7 @@
         },
         "centralMonitoring": {
             "description": "Central Monitoring",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "enabled": {
                     "description": "Specifies whether central monitoring should be enabled",
@@ -32,10 +29,7 @@
             "type": "integer"
         },
         "config": {
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "autoP2pKey": {
                     "description": "Automatically create a p2pkey (secp256k1 private key used for p2p authentication and ENR) if none found in data directory. (default true)",
@@ -100,10 +94,7 @@
         },
         "containerSecurityContext": {
             "description": "The security context for containers",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "runAsUser": {
                     "type": "integer"
@@ -116,10 +107,7 @@
         },
         "image": {
             "description": "Charon image ropsitory, pull policy, and tag version",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "pullPolicy": {
                     "type": "string"
@@ -142,19 +130,13 @@
         },
         "livenessProbe": {
             "description": "Configure liveness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "enabled": {
                     "type": "boolean"
                 },
                 "httpGet": {
-                    "type": [
-                        "object",
-                        "null"
-                    ],
+                    "type": "object",
                     "properties": {
                         "path": {
                             "type": "string"
@@ -183,10 +165,7 @@
         },
         "podDisruptionBudget": {
             "description": "Enable pod disruption budget # ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "enabled": {
                     "type": "boolean"
@@ -205,17 +184,11 @@
         },
         "rbac": {
             "description": "RBAC configuration. # ref: https://kubernetes.io/docs/reference/access-authn-authz/rbac/",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "clusterRules": {
                     "description": "Required ClusterRole rules",
-                    "type": [
-                        "array",
-                        "null"
-                    ],
+                    "type": "array",
                     "items": {
                         "type": "object",
                         "properties": {
@@ -250,10 +223,7 @@
                 },
                 "rules": {
                     "description": "Required Role rules",
-                    "type": [
-                        "array",
-                        "null"
-                    ],
+                    "type": "array",
                     "items": {
                         "type": "object",
                         "properties": {
@@ -282,19 +252,13 @@
         },
         "readinessProbe": {
             "description": "Configure readiness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "enabled": {
                     "type": "boolean"
                 },
                 "httpGet": {
-                    "type": [
-                        "object",
-                        "null"
-                    ],
+                    "type": "object",
                     "properties": {
                         "path": {
                             "type": "string"
@@ -319,22 +283,13 @@
         },
         "service": {
             "description": "Charon service ports",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "ports": {
-                    "type": [
-                        "object",
-                        "null"
-                    ],
+                    "type": "object",
                     "properties": {
                         "http": {
-                            "type": [
-                                "object",
-                                "null"
-                            ],
+                            "type": "object",
                             "properties": {
                                 "name": {
                                     "type": "string"
@@ -351,10 +306,7 @@
                             }
                         },
                         "monitoring": {
-                            "type": [
-                                "object",
-                                "null"
-                            ],
+                            "type": "object",
                             "properties": {
                                 "name": {
                                     "type": "string"
@@ -371,10 +323,7 @@
                             }
                         },
                         "p2pTcp": {
-                            "type": [
-                                "object",
-                                "null"
-                            ],
+                            "type": "object",
                             "properties": {
                                 "name": {
                                     "type": "string"
@@ -399,10 +348,7 @@
         },
         "serviceAccount": {
             "description": "Service account # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "annotations": {
                     "description": "Annotations to add to the service account",
@@ -420,10 +366,7 @@
         },
         "serviceMonitor": {
             "description": "Prometheus Service Monitor # ref: https://github.com/coreos/prometheus-operator",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "annotations": {
                     "description": "Additional ServiceMonitor annotations",
@@ -443,10 +386,7 @@
                 },
                 "namespace": {
                     "description": "Alternative namespace for ServiceMonitor",
-                    "type": [
-                        "string",
-                        "null"
-                    ]
+                    "type": "string"
                 },
                 "path": {
                     "description": "Path to scrape",
