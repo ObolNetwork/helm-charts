@@ -228,8 +228,10 @@ helm upgrade --install openclaw obol/openclaw \
 | models.ollama.baseUrl | string | `"http://llmspy.llm.svc.cluster.local:8000/v1"` | OpenAI-compatible base URL for Ollama (routed through llmspy global proxy) |
 | nameOverride | string | `""` | Override the chart name |
 | nodeSelector | object | `{}` |  |
-| openclaw | object | `{"agentModel":"","gateway":{"auth":{"mode":"token"},"bind":"lan","http":{"endpoints":{"chatCompletions":{"enabled":true}}},"mode":"local"},"stateDir":"/data/.openclaw","workspaceDir":"/data/.openclaw/workspace"}` | OpenClaw state/workspace settings (paths should be inside persistence.mountPath) |
+| openclaw | object | `{"agentModel":"","gateway":{"auth":{"mode":"token"},"bind":"lan","controlUi":{},"http":{"endpoints":{"chatCompletions":{"enabled":true}}},"mode":"local","trustedProxies":[]},"stateDir":"/data/.openclaw","workspaceDir":"/data/.openclaw/workspace"}` | OpenClaw state/workspace settings (paths should be inside persistence.mountPath) |
 | openclaw.agentModel | string | `""` | Default agent model (e.g. "anthropic/claude-sonnet-4-5-20250929"). Empty = use provider default. |
+| openclaw.gateway.controlUi | object | `{}` | Control UI settings for browser-based access. |
+| openclaw.gateway.trustedProxies | list | `[]` | IP addresses / CIDRs whose proxy headers (X-Forwarded-For etc.) are trusted. Required when OpenClaw sits behind a reverse proxy (e.g. Traefik in k3d). |
 | persistence | object | `{"accessModes":["ReadWriteOnce"],"enabled":true,"existingClaim":"","mountPath":"/data","size":"1Gi","storageClass":""}` | Persistence settings for OpenClaw state directory (contains runtime state + secrets) |
 | podAnnotations | object | `{}` | Pod annotations |
 | podLabels | object | `{}` | Pod labels |

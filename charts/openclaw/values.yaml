@@ -155,6 +155,11 @@ openclaw:
     bind: lan
     auth:
       mode: token
+    # -- IP addresses / CIDRs whose proxy headers (X-Forwarded-For etc.) are trusted.
+    # Required when OpenClaw sits behind a reverse proxy (e.g. Traefik in k3d).
+    trustedProxies: []
+    # -- Control UI settings for browser-based access.
+    controlUi: {}
 
     http:
       endpoints:
