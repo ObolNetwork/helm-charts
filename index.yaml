@@ -2203,6 +2203,34 @@ entries:
         url: https://obolnetwork.github.io/helm-charts/pubkey.asc
     apiVersion: v2
     appVersion: 2026.2.9
+    created: "2026-02-17T12:46:54.166999369Z"
+    description: OpenClaw gateway deployment (agent runtime) for Kubernetes.
+    digest: 351d255e792a96cf69a673df872c4c95203255e9c21acbd38bba35d9fc78cb94
+    home: https://docs.openclaw.ai
+    keywords:
+    - openclaw
+    - agent
+    - ai
+    - gateway
+    - obol
+    kubeVersion: '>=1.26.0-0'
+    maintainers:
+    - email: platform@obol.tech
+      name: Obol Platform Team
+    name: openclaw
+    sources:
+    - https://docs.openclaw.ai
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/openclaw-0.1.2/openclaw-0.1.2.tgz
+    version: 0.1.2
+  - annotations:
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/signKey: |
+        fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+        url: https://obolnetwork.github.io/helm-charts/pubkey.asc
+    apiVersion: v2
+    appVersion: 2026.2.9
     created: "2026-02-16T15:17:31.543082642Z"
     description: OpenClaw gateway deployment (agent runtime) for Kubernetes.
     digest: ba7ca9f045a7aebce82c8cb047d1b9ba2472b5248bdc560cf87046014f0faf37
@@ -2247,4 +2275,4 @@ entries:
     urls:
     - https://github.com/ObolNetwork/helm-charts/releases/download/openclaw-0.1.0/openclaw-0.1.0.tgz
     version: 0.1.0
-generated: "2026-02-16T15:17:31.544117146Z"
+generated: "2026-02-17T12:46:54.167165322Z"
