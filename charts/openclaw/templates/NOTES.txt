@@ -34,13 +34,13 @@ Port-forward for local access:
 
 Next steps:
 {{- if and .Values.models.ollama.enabled (not .Values.models.anthropic.enabled) (not .Values.models.openai.enabled) }}
-  You are using the default Ollama provider. To configure a cloud LLM provider:
-    obol llm configure --provider=anthropic --api-key=<your-key>
+  You are using the Obol model gateway. To configure a cloud AI model provider for your gateway, run:
+    obol model configure
     obol openclaw setup {{ .Release.Name }}
 {{- end }}
 {{- if not (or .Values.models.ollama.enabled .Values.models.anthropic.enabled .Values.models.openai.enabled) }}
-  WARNING: No model providers are enabled. Configure at least one provider:
-    obol llm configure --provider=anthropic --api-key=<your-key>
+  WARNING: No AI model providers are enabled. Configure at least one provider in the Obol model gateway:
+    obol model configure
     obol openclaw setup {{ .Release.Name }}
 {{- end }}
   Dashboard:  open the URL above and enter your gateway token
