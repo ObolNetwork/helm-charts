@@ -37,8 +37,25 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if .Values.skills.enabled }}
+      {{- if or .Values.persistence.enabled .Values.skills.enabled }}
       initContainers:
+        {{- if .Values.persistence.enabled }}
+        - name: fix-permissions
+          image: "{{ .Values.skills.initContainer.image.repository }}:{{ .Values.skills.initContainer.image.tag }}"
+          imagePullPolicy: {{ .Values.skills.initContainer.image.pullPolicy }}
+          securityContext:
+            runAsUser: 0
+            runAsNonRoot: false
+          command:
+            - sh
+            - -c
+            - |
+              chown {{ .Values.containerSecurityContext.runAsUser }}:{{ .Values.containerSecurityContext.runAsGroup }} {{ .Values.persistence.mountPath }}
+          volumeMounts:
+            - name: data
+              mountPath: {{ .Values.persistence.mountPath }}
+        {{- end }}
+        {{- if .Values.skills.enabled }}
         - name: extract-skills
           image: "{{ .Values.skills.initContainer.image.repository }}:{{ .Values.skills.initContainer.image.tag }}"
           imagePullPolicy: {{ .Values.skills.initContainer.image.pullPolicy }}
@@ -65,6 +82,7 @@ spec:
             - name: skills-archive
               mountPath: /skills
               readOnly: true
+        {{- end }}
       {{- end }}
       containers:
         - name: openclaw
