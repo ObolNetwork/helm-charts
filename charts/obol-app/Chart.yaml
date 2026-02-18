@@ -9,10 +9,12 @@ maintainers:
   - name: Obol Platform Team
     email: platform@obol.tech
 keywords:
-  - ethereum
-  - blockchain
-  - obol
   - docker
+  - node.js
+  - python
+  - container
+  - image
+  - obol
   - application
 
 # A chart can be either an 'application' or a 'library' chart.

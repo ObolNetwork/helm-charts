@@ -40,7 +40,7 @@ Next steps:
 {{- end }}
 {{- if not (or .Values.models.ollama.enabled .Values.models.anthropic.enabled .Values.models.openai.enabled) }}
   WARNING: No AI model providers are enabled. Configure at least one provider in the Obol model gateway:
-    obol model configure
+    obol model setup
     obol openclaw setup {{ .Release.Name }}
 {{- end }}
   Dashboard:  open the URL above and enter your gateway token
