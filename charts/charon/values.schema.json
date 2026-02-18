@@ -8,10 +8,7 @@
         },
         "centralMonitoring": {
             "description": "Central Monitoring",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "enabled": {
                     "description": "Specifies whether central monitoring should be enabled",
@@ -28,10 +25,7 @@
             }
         },
         "config": {
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "LockFile": {
                     "description": "The path to the cluster lock file defining distributed validator cluster. (default \".charon/cluster-lock.json\")",
@@ -177,10 +171,7 @@
         },
         "image": {
             "description": "Charon image repository, pull policy, and tag version",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "pullPolicy": {
                     "type": "string"
@@ -207,16 +198,10 @@
         },
         "livenessProbe": {
             "description": "Configure liveness probes",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "httpGet": {
-                    "type": [
-                        "object",
-                        "null"
-                    ],
+                    "type": "object",
                     "properties": {
                         "path": {
                             "type": "string"
@@ -256,10 +241,7 @@
         },
         "podDisruptionBudget": {
             "description": "Enable and configure pod disruption budget # ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "enabled": {
                     "type": "boolean"
@@ -275,17 +257,11 @@
         },
         "rbac": {
             "description": "RBAC configuration. # ref: https://kubernetes.io/docs/reference/access-authn-authz/rbac/",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "clusterRules": {
                     "description": "Required ClusterRole rules",
-                    "type": [
-                        "array",
-                        "null"
-                    ],
+                    "type": "array",
                     "items": {
                         "type": "object",
                         "properties": {
@@ -320,10 +296,7 @@
                 },
                 "rules": {
                     "description": "Required Role rules",
-                    "type": [
-                        "array",
-                        "null"
-                    ],
+                    "type": "array",
                     "items": {
                         "type": "object",
                         "properties": {
@@ -352,16 +325,10 @@
         },
         "readinessProbe": {
             "description": "Configure readiness probes",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "httpGet": {
-                    "type": [
-                        "object",
-                        "null"
-                    ],
+                    "type": "object",
                     "properties": {
                         "path": {
                             "type": "string"
@@ -385,10 +352,7 @@
         },
         "secrets": {
             "description": "Kubernetes secrets names",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "clusterlock": {
                     "description": "charon cluster lock",
@@ -409,10 +373,7 @@
             "type": "object"
         },
         "service": {
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "type": {
                     "description": "Service type",
@@ -422,10 +383,7 @@
         },
         "serviceAccount": {
             "description": "Service account # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "annotations": {
                     "description": "Annotations to add to the service account",
@@ -443,10 +401,7 @@
         },
         "serviceMonitor": {
             "description": "Prometheus Service Monitor # ref: https://github.com/coreos/prometheus-operator",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "annotations": {
                     "description": "Additional ServiceMonitor annotations",
@@ -466,10 +421,7 @@
                 },
                 "namespace": {
                     "description": "Alternative namespace for ServiceMonitor",
-                    "type": [
-                        "string",
-                        "null"
-                    ]
+                    "type": "string"
                 },
                 "path": {
                     "description": "Path to scrape",

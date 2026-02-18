@@ -438,7 +438,7 @@ spec:
         # Follows Obol reference: https://github.com/ObolNetwork/charon-distributed-validator-node/blob/main/nimbus/run.sh
         {{- if and .Values.validatorClient.enabled (eq .Values.validatorClient.type "nimbus") }}
         - name: nimbus-import
-          image: {{ .Values.validatorClient.image.repository | default "statusim/nimbus-eth2" }}:{{ .Values.validatorClient.image.tag | default "multiarch-v26.2.0" }}
+          image: {{ .Values.validatorClient.image.repository | default "statusim/nimbus-eth2" }}:{{ .Values.validatorClient.image.tag | default "multiarch-v26.2.1" }}
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -727,7 +727,7 @@ spec:
             - {{ . }}
             {{- end }}
           {{- else if eq .Values.validatorClient.type "nimbus" }}
-          image: {{ .Values.validatorClient.image.repository | default "statusim/nimbus-validator-client" }}:{{ .Values.validatorClient.image.tag | default "multiarch-v26.2.0" }}
+          image: {{ .Values.validatorClient.image.repository | default "statusim/nimbus-validator-client" }}:{{ .Values.validatorClient.image.tag | default "multiarch-v26.2.1" }}
           command:
             - /home/user/nimbus_validator_client
             - --beacon-node=http://localhost:3600

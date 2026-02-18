@@ -7,16 +7,10 @@
         },
         "channels": {
             "description": "Chat channel integrations Tokens are stored in the chart Secret and injected as env vars.",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "discord": {
-                    "type": [
-                        "object",
-                        "null"
-                    ],
+                    "type": "object",
                     "properties": {
                         "botToken": {
                             "description": "Discord bot token",
@@ -32,10 +26,7 @@
                     }
                 },
                 "slack": {
-                    "type": [
-                        "object",
-                        "null"
-                    ],
+                    "type": "object",
                     "properties": {
                         "appToken": {
                             "description": "Slack App-Level Token (xapp-...)",
@@ -51,10 +42,7 @@
                     }
                 },
                 "telegram": {
-                    "type": [
-                        "object",
-                        "null"
-                    ],
+                    "type": "object",
                     "properties": {
                         "botToken": {
                             "description": "Telegram Bot API token (from @BotFather)",
@@ -73,10 +61,7 @@
         },
         "config": {
             "description": "Configuration for the OpenClaw config file (openclaw.json)",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "content": {
                     "description": "Optional raw JSON5 configuration (overrides generated config when set)",
@@ -94,25 +79,16 @@
         },
         "containerSecurityContext": {
             "description": "Container security context",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "allowPrivilegeEscalation": {
                     "type": "boolean"
                 },
                 "capabilities": {
-                    "type": [
-                        "object",
-                        "null"
-                    ],
+                    "type": "object",
                     "properties": {
                         "drop": {
-                            "type": [
-                                "array",
-                                "null"
-                            ],
+                            "type": "array",
                             "items": {
                                 "type": "string"
                             }
@@ -129,10 +105,7 @@
                     "type": "integer"
                 },
                 "seccompProfile": {
-                    "type": [
-                        "object",
-                        "null"
-                    ],
+                    "type": "object",
                     "properties": {
                         "type": {
                             "type": "string"
@@ -143,10 +116,7 @@
         },
         "erpc": {
             "description": "eRPC integration (exposed as ERPC_URL env var)",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "url": {
                     "type": "string"
@@ -171,10 +141,7 @@
         },
         "httpRoute": {
             "description": "Gateway API HTTPRoute (recommended for Obol Stack / Traefik Gateway API)",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "annotations": {
                     "type": "object"
@@ -187,10 +154,7 @@
                     "type": "array"
                 },
                 "parentRefs": {
-                    "type": [
-                        "array",
-                        "null"
-                    ],
+                    "type": "array",
                     "items": {
                         "type": "object",
                         "properties": {
@@ -213,27 +177,18 @@
         },
         "image": {
             "description": "OpenClaw image repository, pull policy, and tag version",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "args": {
                     "description": "Override the container args (CMD)",
-                    "type": [
-                        "array",
-                        "null"
-                    ],
+                    "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "command": {
                     "description": "Override the container command (ENTRYPOINT)",
-                    "type": [
-                        "array",
-                        "null"
-                    ],
+                    "type": "array",
                     "items": {
                         "type": "string"
                     }
@@ -259,10 +214,7 @@
         },
         "ingress": {
             "description": "Kubernetes Ingress (optional; not used in Obol Stack which uses Gateway API)",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "annotations": {
                     "type": "object"
@@ -274,10 +226,7 @@
                     "type": "boolean"
                 },
                 "hosts": {
-                    "type": [
-                        "array",
-                        "null"
-                    ],
+                    "type": "array",
                     "items": {
                         "type": "object",
                         "properties": {
@@ -308,19 +257,13 @@
         },
         "initJob": {
             "description": "One-shot init Job (runs once to bootstrap workspace/personality)",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "args": {
                     "type": "array"
                 },
                 "command": {
-                    "type": [
-                        "array",
-                        "null"
-                    ],
+                    "type": "array",
                     "items": {
                         "type": "string"
                     }
@@ -334,10 +277,7 @@
                     "type": "array"
                 },
                 "image": {
-                    "type": [
-                        "object",
-                        "null"
-                    ],
+                    "type": "object",
                     "properties": {
                         "pullPolicy": {
                             "type": "string"
@@ -352,16 +292,10 @@
                 },
                 "resources": {
                     "description": "Resource requests/limits for the init job",
-                    "type": [
-                        "object",
-                        "null"
-                    ],
+                    "type": "object",
                     "properties": {
                         "limits": {
-                            "type": [
-                                "object",
-                                "null"
-                            ],
+                            "type": "object",
                             "properties": {
                                 "memory": {
                                     "type": "string"
@@ -369,10 +303,7 @@
                             }
                         },
                         "requests": {
-                            "type": [
-                                "object",
-                                "null"
-                            ],
+                            "type": "object",
                             "properties": {
                                 "cpu": {
                                     "type": "string"
@@ -388,10 +319,7 @@
         },
         "livenessProbe": {
             "description": "Liveness probe (tcpSocket by default to avoid auth-protected HTTP endpoints)",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "enabled": {
                     "type": "boolean"
@@ -412,16 +340,10 @@
         },
         "models": {
             "description": "Model provider configuration Each provider is independently toggled. All providers may be disabled. API keys are stored in the chart Secret and injected as env vars.",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "anthropic": {
-                    "type": [
-                        "object",
-                        "null"
-                    ],
+                    "type": "object",
                     "properties": {
                         "api": {
                             "type": "string"
@@ -440,10 +362,7 @@
                             "type": "boolean"
                         },
                         "models": {
-                            "type": [
-                                "array",
-                                "null"
-                            ],
+                            "type": "array",
                             "items": {
                                 "type": "object",
                                 "properties": {
@@ -459,10 +378,7 @@
                     }
                 },
                 "ollama": {
-                    "type": [
-                        "object",
-                        "null"
-                    ],
+                    "type": "object",
                     "properties": {
                         "api": {
                             "description": "OpenClaw provider API type. Set to \"openai-completions\" because llmspy exposes an OpenAI-compatible chat/completions endpoint.",
@@ -484,10 +400,7 @@
                             "type": "boolean"
                         },
                         "models": {
-                            "type": [
-                                "array",
-                                "null"
-                            ],
+                            "type": "array",
                             "items": {
                                 "type": "object",
                                 "properties": {
@@ -503,10 +416,7 @@
                     }
                 },
                 "openai": {
-                    "type": [
-                        "object",
-                        "null"
-                    ],
+                    "type": "object",
                     "properties": {
                         "api": {
                             "type": "string"
@@ -524,10 +434,7 @@
                             "type": "boolean"
                         },
                         "models": {
-                            "type": [
-                                "array",
-                                "null"
-                            ],
+                            "type": "array",
                             "items": {
                                 "type": "object",
                                 "properties": {
@@ -553,26 +460,17 @@
         },
         "openclaw": {
             "description": "OpenClaw state/workspace settings (paths should be inside persistence.mountPath)",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "agentModel": {
                     "description": "Default agent model (e.g. \"anthropic/claude-sonnet-4-5-20250929\"). Empty = use provider default.",
                     "type": "string"
                 },
                 "gateway": {
-                    "type": [
-                        "object",
-                        "null"
-                    ],
+                    "type": "object",
                     "properties": {
                         "auth": {
-                            "type": [
-                                "object",
-                                "null"
-                            ],
+                            "type": "object",
                             "properties": {
                                 "mode": {
                                     "type": "string"
@@ -582,23 +480,18 @@
                         "bind": {
                             "type": "string"
                         },
+                        "controlUi": {
+                            "description": "Control UI settings for browser-based access.",
+                            "type": "object"
+                        },
                         "http": {
-                            "type": [
-                                "object",
-                                "null"
-                            ],
+                            "type": "object",
                             "properties": {
                                 "endpoints": {
-                                    "type": [
-                                        "object",
-                                        "null"
-                                    ],
+                                    "type": "object",
                                     "properties": {
                                         "chatCompletions": {
-                                            "type": [
-                                                "object",
-                                                "null"
-                                            ],
+                                            "type": "object",
                                             "properties": {
                                                 "enabled": {
                                                     "type": "boolean"
@@ -611,6 +504,10 @@
                         },
                         "mode": {
                             "type": "string"
+                        },
+                        "trustedProxies": {
+                            "description": "IP addresses / CIDRs whose proxy headers (X-Forwarded-For etc.) are trusted. Required when OpenClaw sits behind a reverse proxy (e.g. Traefik in k3d).",
+                            "type": "array"
                         }
                     }
                 },
@@ -624,16 +521,10 @@
         },
         "persistence": {
             "description": "Persistence settings for OpenClaw state directory (contains runtime state + secrets)",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "accessModes": {
-                    "type": [
-                        "array",
-                        "null"
-                    ],
+                    "type": "array",
                     "items": {
                         "type": "string"
                     }
@@ -665,10 +556,7 @@
         },
         "podSecurityContext": {
             "description": "Pod security context",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "fsGroup": {
                     "type": "integer"
@@ -680,10 +568,7 @@
         },
         "rbac": {
             "description": "RBAC for the ServiceAccount (read-only access to namespace resources)",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "create": {
                     "type": "boolean"
@@ -696,10 +581,7 @@
         },
         "readinessProbe": {
             "description": "Readiness probe (tcpSocket by default to avoid auth-protected HTTP endpoints)",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "enabled": {
                     "type": "boolean"
@@ -724,16 +606,10 @@
         },
         "resources": {
             "description": "Resource requests and limits",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "limits": {
-                    "type": [
-                        "object",
-                        "null"
-                    ],
+                    "type": "object",
                     "properties": {
                         "memory": {
                             "type": "string"
@@ -741,10 +617,7 @@
                     }
                 },
                 "requests": {
-                    "type": [
-                        "object",
-                        "null"
-                    ],
+                    "type": "object",
                     "properties": {
                         "cpu": {
                             "type": "string"
@@ -758,10 +631,7 @@
         },
         "secrets": {
             "description": "OpenClaw secrets (one Secret per instance)",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "create": {
                     "description": "Create the secret when existingSecret is not set",
@@ -776,10 +646,7 @@
                     "type": "array"
                 },
                 "gatewayToken": {
-                    "type": [
-                        "object",
-                        "null"
-                    ],
+                    "type": "object",
                     "properties": {
                         "key": {
                             "description": "Secret key name + env var name for the gateway API authentication token. This token is required to access OpenClaw's HTTP gateway (chat/completions endpoint and dashboard).",
@@ -792,17 +659,14 @@
                     }
                 },
                 "name": {
-                    "description": "Override the created Secret name (defaults to <release>-openclaw-secrets)",
+                    "description": "Override the created Secret name (defaults to \u003crelease\u003e-openclaw-secrets)",
                     "type": "string"
                 }
             }
         },
         "service": {
             "description": "Service configuration",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "port": {
                     "type": "integer"
@@ -814,10 +678,7 @@
         },
         "serviceAccount": {
             "description": "Create a ServiceAccount for OpenClaw",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "annotations": {
                     "type": "object"
@@ -837,10 +698,7 @@
         },
         "skills": {
             "description": "Skills injection from a ConfigMap archive (created by an external tool; e.g. `obol openclaw skills sync`). The archive is extracted to `extractDir` by a busybox init container and wired into OpenClaw via `skills.load.extraDirs` in _helpers.tpl. Note: ConfigMap total size is limited to ~1 MB by Kubernetes.",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "archiveKey": {
                     "type": "string"
@@ -860,16 +718,10 @@
                     "type": "string"
                 },
                 "initContainer": {
-                    "type": [
-                        "object",
-                        "null"
-                    ],
+                    "type": "object",
                     "properties": {
                         "image": {
-                            "type": [
-                                "object",
-                                "null"
-                            ],
+                            "type": "object",
                             "properties": {
                                 "pullPolicy": {
                                     "type": "string"
@@ -888,10 +740,7 @@
         },
         "startupProbe": {
             "description": "Startup probe (tcpSocket; allows generous boot time before liveness kicks in)",
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "enabled": {
                     "type": "boolean"

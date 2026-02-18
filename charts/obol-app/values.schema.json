@@ -6,10 +6,7 @@
             "type": "object"
         },
         "autoscaling": {
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "enabled": {
                     "type": "boolean"
@@ -29,19 +26,13 @@
             "type": "string"
         },
         "image": {
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "args": {
                     "type": "array"
                 },
                 "auth": {
-                    "type": [
-                        "object",
-                        "null"
-                    ],
+                    "type": "object",
                     "properties": {
                         "enabled": {
                             "type": "boolean"
@@ -78,10 +69,7 @@
             "type": "array"
         },
         "ingress": {
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "annotations": {
                     "type": "object"
@@ -93,10 +81,7 @@
                     "type": "boolean"
                 },
                 "hosts": {
-                    "type": [
-                        "array",
-                        "null"
-                    ],
+                    "type": "array",
                     "items": {
                         "type": "object",
                         "properties": {
@@ -135,16 +120,10 @@
             "type": "object"
         },
         "obol": {
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "stack": {
-                    "type": [
-                        "object",
-                        "null"
-                    ],
+                    "type": "object",
                     "properties": {
                         "enabled": {
                             "type": "boolean"
@@ -178,10 +157,7 @@
             "type": "object"
         },
         "service": {
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "port": {
                     "type": "integer"
@@ -192,10 +168,7 @@
             }
         },
         "serviceAccount": {
-            "type": [
-                "object",
-                "null"
-            ],
+            "type": "object",
             "properties": {
                 "annotations": {
                     "type": "object"
