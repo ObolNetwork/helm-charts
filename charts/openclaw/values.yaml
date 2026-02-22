@@ -246,6 +246,18 @@ skills:
       tag: 1.36.1
       pullPolicy: IfNotPresent
 
+# -- Foundry CLI tools (cast) injected via init container.
+# When enabled, an init container copies /usr/local/bin/cast from the Foundry
+# image into an emptyDir volume mounted at toolsDir. The main container's PATH
+# is prepended so skills can call `cast` by name.
+foundry:
+  enabled: true
+  image:
+    repository: ghcr.io/foundry-rs/foundry
+    tag: stable
+    pullPolicy: IfNotPresent
+  toolsDir: /tools
+
 # -- eRPC integration (exposed as ERPC_URL env var)
 erpc:
   url: http://erpc.erpc.svc.cluster.local:4000/rpc
