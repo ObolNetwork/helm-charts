@@ -1,7 +1,7 @@
 OpenClaw
 ===========
 
-![Version: 0.1.4](https://img.shields.io/badge/Version-0.1.4-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2026.2.15](https://img.shields.io/badge/AppVersion-2026.2.15-informational?style=flat-square)
+![Version: 0.1.5](https://img.shields.io/badge/Version-0.1.5-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2026.02.23](https://img.shields.io/badge/AppVersion-2026.02.23-informational?style=flat-square)
 
 OpenClaw gateway deployment (agent runtime) for Kubernetes.
 
