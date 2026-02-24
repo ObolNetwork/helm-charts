@@ -214,7 +214,7 @@ serviceMonitor:
   # -- Path to scrape
   path: /metrics
   # -- Alternative namespace for ServiceMonitor
-  namespace: null
+  namespace: ""
   # -- Additional ServiceMonitor labels
   labels: {}
   # -- Additional ServiceMonitor annotations
