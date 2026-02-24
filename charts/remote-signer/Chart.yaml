@@ -17,7 +17,7 @@ keywords:
   - keystore
 type: application
 version: 0.1.0
-appVersion: "0.1.0"
+appVersion: "v0.1.0"
 annotations:
   artifacthub.io/license: Apache-2.0
   artifacthub.io/signKey: |
