@@ -16,6 +16,7 @@ This repo contains Helm Charts for deploying Obol Distributed Validator [middlew
 - [`obol-app`](charts/obol-app) - A chart for running arbitrary docker images in the [Obol Stack](https://obol.org/stack).
 - [`aztec-node`](charts/aztec-node) - Aztec network node deployment (Full Node, Sequencer, or Prover)
 - [`openclaw`](charts/openclaw) - OpenClaw gateway deployment (agent runtime)
+- [`remote-signer`](charts/remote-signer) - A lightweight Ethereum remote signing service for EVM networks
 
 ## Before you begin
 

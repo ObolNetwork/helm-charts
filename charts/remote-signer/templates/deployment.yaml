@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "remote-signer.fullname" . }}
+  labels:
+    {{- include "remote-signer.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "remote-signer.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+      {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "remote-signer.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "remote-signer.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ include "remote-signer.image" . }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: SIGNER__SERVER__HOST
+              value: {{ .Values.config.host | quote }}
+            - name: SIGNER__SERVER__PORT
+              value: {{ .Values.config.port | quote }}
+            - name: SIGNER__KEYSTORE__DIR
+              value: {{ .Values.config.keystoreDir | quote }}
+            - name: SIGNER__LOGGING__FORMAT
+              value: {{ .Values.config.logFormat | quote }}
+            - name: SIGNER__LOGGING__LEVEL
+              value: {{ .Values.config.logLevel | quote }}
+            - name: SIGNER__KEYSTORE__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "remote-signer.keystorePasswordSecretName" . }}
+                  key: {{ .Values.keystorePassword.existingSecretKey | default "password" }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.config.port }}
+              protocol: TCP
+          {{- if and .Values.livenessProbe (not (empty .Values.livenessProbe)) }}
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if and .Values.readinessProbe (not (empty .Values.readinessProbe)) }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: keystores
+              mountPath: {{ .Values.config.keystoreDir }}
+              readOnly: true
+            {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: keystores
+          persistentVolumeClaim:
+            claimName: {{ include "remote-signer.pvcName" . }}
+        {{- with .Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
