@@ -6,7 +6,7 @@
 image:
   repository: obolnetwork/charon
   pullPolicy: IfNotPresent
-  tag: v1.8.2
+  tag: v1.9.0
 
 # Workaround for it being too difficult to get a modern
 # charon version ready in this current helm ci test.
