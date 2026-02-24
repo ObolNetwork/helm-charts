@@ -37,7 +37,7 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if or .Values.persistence.enabled .Values.skills.enabled .Values.foundry.enabled }}
+      {{- if or .Values.persistence.enabled .Values.skills.enabled }}
       initContainers:
         {{- if .Values.persistence.enabled }}
         - name: fix-permissions
@@ -83,25 +83,6 @@ spec:
               mountPath: /skills
               readOnly: true
         {{- end }}
-        {{- if .Values.foundry.enabled }}
-        - name: install-foundry
-          image: "{{ .Values.foundry.image.repository }}:{{ .Values.foundry.image.tag }}"
-          imagePullPolicy: {{ .Values.foundry.image.pullPolicy }}
-          {{- with .Values.containerSecurityContext }}
-          securityContext:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-          command:
-            - sh
-            - -c
-            - |
-              set -eu
-              cp /usr/local/bin/cast {{ .Values.foundry.toolsDir }}/cast
-              echo "Foundry cast installed to {{ .Values.foundry.toolsDir }}"
-          volumeMounts:
-            - name: tools
-              mountPath: {{ .Values.foundry.toolsDir }}
-        {{- end }}
       {{- end }}
       containers:
         - name: openclaw
@@ -132,10 +113,6 @@ spec:
               value: {{ .Values.openclaw.stateDir | quote }}
             - name: ERPC_URL
               value: {{ .Values.erpc.url | quote }}
-            {{- if .Values.foundry.enabled }}
-            - name: PATH
-              value: "{{ .Values.foundry.toolsDir }}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-            {{- end }}
             {{- /* Inject non-secret provider API key values (e.g. Ollama placeholder) */ -}}
             {{- range $name := list "anthropic" "openai" "ollama" }}
             {{- $p := index $.Values.models $name }}
@@ -193,11 +170,6 @@ spec:
               readOnly: true
             - name: data
               mountPath: {{ .Values.persistence.mountPath }}
-            {{- if .Values.foundry.enabled }}
-            - name: tools
-              mountPath: {{ .Values.foundry.toolsDir }}
-              readOnly: true
-            {{- end }}
             {{- with .Values.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -217,10 +189,6 @@ spec:
           configMap:
             name: {{ include "openclaw.skillsConfigMapName" . }}
             optional: true
-        {{- end }}
-        {{- if .Values.foundry.enabled }}
-        - name: tools
-          emptyDir: {}
         {{- end }}
         {{- with .Values.extraVolumes }}
         {{- toYaml . | nindent 8 }}

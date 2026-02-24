@@ -206,7 +206,6 @@ helm upgrade --install openclaw obol/openclaw \
 | extraEnv | list | `[]` | Additional environment variables |
 | extraVolumeMounts | list | `[]` | Additional volume mounts |
 | extraVolumes | list | `[]` | Additional volumes |
-| foundry | object | `{"enabled":true,"image":{"pullPolicy":"IfNotPresent","repository":"ghcr.io/foundry-rs/foundry","tag":"stable"},"toolsDir":"/tools"}` | Foundry CLI tools (cast) injected via init container. When enabled, an init container copies /usr/local/bin/cast from the Foundry image into an emptyDir volume mounted at toolsDir. The main container's PATH is prepended so skills can call `cast` by name. |
 | fullnameOverride | string | `""` | Override the full resource name |
 | httpRoute | object | `{"annotations":{},"enabled":false,"hostnames":[],"parentRefs":[{"name":"traefik-gateway","namespace":"traefik","sectionName":"web"}],"pathPrefix":"/"}` | Gateway API HTTPRoute (recommended for Obol Stack / Traefik Gateway API) |
 | httpRoute.hostnames | list | `[]` | Hostnames for routing (required when enabled) |
