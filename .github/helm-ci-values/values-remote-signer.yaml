@@ -1,0 +1,15 @@
+# CI test values for remote-signer
+keystorePassword:
+  value: "test-password"
+
+persistence:
+  enabled: true
+  size: 50Mi
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi

@@ -382,13 +382,13 @@ The command removes all the Kubernetes components associated with the chart and 
 | livenessProbe.httpGet.port | int | `3620` | Port for liveness probe HTTP checks |
 | nameOverride | string | `""` | Provide a name in place of charon for `app:` labels |
 | network | string | `"mainnet"` | Network name for the Ethereum network Supported values: mainnet, sepolia, hoodi The chainId is automatically derived from the network name |
-| networkPolicy | object | `{"beaconNodes":{"enabled":true,"ipBlock":{},"namespaceSelector":{},"podSelector":{},"port":null},"customEgress":[],"customIngress":[],"enabled":false,"monitoring":{"enabled":true,"namespaceSelector":{},"podSelector":{}},"obolApi":{"cidr":"0.0.0.0/0","enabled":true,"except":[]},"validatorClientNamespaceSelector":{},"validatorClientSelector":{}}` | NetworkPolicy configuration for pod network isolation |
-| networkPolicy.beaconNodes | object | `{"enabled":true,"ipBlock":{},"namespaceSelector":{},"podSelector":{},"port":null}` | Beacon node configuration |
+| networkPolicy | object | `{"beaconNodes":{"enabled":true,"ipBlock":{},"namespaceSelector":{},"podSelector":{},"port":""},"customEgress":[],"customIngress":[],"enabled":false,"monitoring":{"enabled":true,"namespaceSelector":{},"podSelector":{}},"obolApi":{"cidr":"0.0.0.0/0","enabled":true,"except":[]},"validatorClientNamespaceSelector":{},"validatorClientSelector":{}}` | NetworkPolicy configuration for pod network isolation |
+| networkPolicy.beaconNodes | object | `{"enabled":true,"ipBlock":{},"namespaceSelector":{},"podSelector":{},"port":""}` | Beacon node configuration |
 | networkPolicy.beaconNodes.enabled | bool | `true` | Enable egress to beacon nodes |
 | networkPolicy.beaconNodes.ipBlock | object | `{}` | IP block for external beacon nodes |
 | networkPolicy.beaconNodes.namespaceSelector | object | `{}` | Namespace selector for beacon nodes |
 | networkPolicy.beaconNodes.podSelector | object | `{}` | Pod selector for beacon nodes |
-| networkPolicy.beaconNodes.port | string | `nil` | Port for beacon node connections (leave empty for any port) |
+| networkPolicy.beaconNodes.port | string | `""` | Port for beacon node connections (leave empty for any port) |
 | networkPolicy.customEgress | list | `[]` | Custom egress rules to add |
 | networkPolicy.customIngress | list | `[]` | Custom ingress rules to add |
 | networkPolicy.enabled | bool | `false` | Enable NetworkPolicy to restrict network traffic |
@@ -432,12 +432,12 @@ The command removes all the Kubernetes components associated with the chart and 
 | serviceAccount.enabled | bool | `true` | Specifies whether a service account should be created |
 | serviceAccount.name | string | `""` | The name of the service account to use. If not set, a name is generated using the default template |
 | serviceAccount.nameTest | string | `""` | The name of the service account to use for test pods. If not set, uses the main service account |
-| serviceMonitor | object | `{"annotations":{},"enabled":false,"interval":"1m","labels":{},"namespace":null,"path":"/metrics","relabelings":[],"scheme":"http","scrapeTimeout":"30s","tlsConfig":{}}` | Prometheus Service Monitor # ref: https://github.com/coreos/prometheus-operator |
+| serviceMonitor | object | `{"annotations":{},"enabled":false,"interval":"1m","labels":{},"namespace":"","path":"/metrics","relabelings":[],"scheme":"http","scrapeTimeout":"30s","tlsConfig":{}}` | Prometheus Service Monitor # ref: https://github.com/coreos/prometheus-operator |
 | serviceMonitor.annotations | object | `{}` | Additional ServiceMonitor annotations |
 | serviceMonitor.enabled | bool | `false` | If true, a ServiceMonitor CRD is created for a prometheus operator. https://github.com/coreos/prometheus-operator TODO: SWITCH BACK TO ON FOR PRODUCTION |
 | serviceMonitor.interval | string | `"1m"` | ServiceMonitor scrape interval |
 | serviceMonitor.labels | object | `{}` | Additional ServiceMonitor labels |
-| serviceMonitor.namespace | string | `nil` | Alternative namespace for ServiceMonitor |
+| serviceMonitor.namespace | string | `""` | Alternative namespace for ServiceMonitor |
 | serviceMonitor.path | string | `"/metrics"` | Path to scrape |
 | serviceMonitor.relabelings | list | `[]` | ServiceMonitor relabelings |
 | serviceMonitor.scheme | string | `"http"` | ServiceMonitor scheme |

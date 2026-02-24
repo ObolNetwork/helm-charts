@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "remote-signer.fullname" . }}
+  labels:
+    {{- include "remote-signer.labels" . | nindent 4 }}
+data:
+  config.toml: |
+    [server]
+    host = {{ .Values.config.host | quote }}
+    port = {{ .Values.config.port }}
+
+    [keystore]
+    dir = {{ .Values.config.keystoreDir | quote }}
+
+    [logging]
+    format = {{ .Values.config.logFormat | quote }}
+    level = {{ .Values.config.logLevel | quote }}

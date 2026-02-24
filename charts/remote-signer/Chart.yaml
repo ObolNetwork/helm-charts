@@ -1,0 +1,25 @@
+apiVersion: v2
+name: remote-signer
+description: A lightweight Ethereum remote signing service for EVM networks. Multi-chain native with per-request chain_id.
+icon: https://avatars.githubusercontent.com/u/85748921?s=128&v=4
+home: https://obol.org/
+sources:
+  - https://github.com/ObolNetwork/remote-signer
+maintainers:
+  - name: Obol Platform Team
+    email: platform@obol.tech
+keywords:
+  - ethereum
+  - signing
+  - wallet
+  - evm
+  - obol
+  - keystore
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/signKey: |
+    fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+    url: https://obolnetwork.github.io/helm-charts/pubkey.asc

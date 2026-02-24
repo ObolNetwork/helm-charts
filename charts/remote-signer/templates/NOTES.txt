@@ -1,0 +1,20 @@
+remote-signer has been deployed!
+
+Service: {{ include "remote-signer.fullname" . }}
+Port: {{ .Values.service.port }}
+
+To check the service health:
+  kubectl port-forward svc/{{ include "remote-signer.fullname" . }} {{ .Values.service.port }}:{{ .Values.service.port }}
+  curl http://localhost:{{ .Values.service.port }}/healthz
+
+To list signing addresses:
+  curl http://localhost:{{ .Values.service.port }}/api/v1/keys
+
+API Endpoints:
+  GET  /healthz                              - Health check
+  GET  /api/v1/keys                          - List signing addresses
+  POST /api/v1/sign/{address}/transaction    - Sign EIP-1559 transaction
+  POST /api/v1/sign/{address}/message        - Sign message (EIP-191)
+  POST /api/v1/sign/{address}/typed-data     - Sign typed data (EIP-712)
+  POST /api/v1/sign/{address}/hash           - Sign raw hash
+  POST /api/v1/keystores/reload              - Reload keystores from disk

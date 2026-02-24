@@ -509,7 +509,7 @@ serviceMonitor:
   # -- Path to scrape
   path: /metrics
   # -- Alternative namespace for ServiceMonitor
-  namespace: null
+  namespace: ""
   # -- Additional ServiceMonitor labels
   labels: {}
   # -- Additional ServiceMonitor annotations
@@ -615,7 +615,7 @@ networkPolicy:
       # except:
       #   - 169.254.169.254/32
     # -- Port for beacon node connections (leave empty for any port)
-    port: null
+    port: ""
   # -- Obol API configuration
   obolApi:
     # -- Enable egress to Obol API for DKG
