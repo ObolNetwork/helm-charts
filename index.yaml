@@ -2234,6 +2234,34 @@ entries:
         fingerprint: 7010534E974BDE744608A6D990C7932734D78646
         url: https://obolnetwork.github.io/helm-charts/pubkey.asc
     apiVersion: v2
+    appVersion: 2026.02.23
+    created: "2026-02-24T12:38:22.711879554Z"
+    description: OpenClaw gateway deployment (agent runtime) for Kubernetes.
+    digest: 362c6c8d0ac38b27a28ffd79b25746e0540ea234a8b2a023117d673ef4b8c432
+    home: https://docs.openclaw.ai
+    keywords:
+    - openclaw
+    - agent
+    - ai
+    - gateway
+    - obol
+    kubeVersion: '>=1.26.0-0'
+    maintainers:
+    - email: platform@obol.tech
+      name: Obol Platform Team
+    name: openclaw
+    sources:
+    - https://docs.openclaw.ai
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/openclaw-0.1.5/openclaw-0.1.5.tgz
+    version: 0.1.5
+  - annotations:
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/signKey: |
+        fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+        url: https://obolnetwork.github.io/helm-charts/pubkey.asc
+    apiVersion: v2
     appVersion: 2026.2.15
     created: "2026-02-23T19:13:23.179054536Z"
     description: OpenClaw gateway deployment (agent runtime) for Kubernetes.
@@ -2394,4 +2422,4 @@ entries:
     urls:
     - https://github.com/ObolNetwork/helm-charts/releases/download/remote-signer-0.1.0/remote-signer-0.1.0.tgz
     version: 0.1.0
-generated: "2026-02-24T12:21:45.403074725Z"
+generated: "2026-02-24T12:38:22.712094073Z"
