@@ -1,0 +1,53 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/signKey: |
+    fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+    url: https://obolnetwork.github.io/helm-charts/pubkey.asc
+apiVersion: v2
+appVersion: 1.9.0
+description: A Helm chart for deploying a single distributed validator pod consisting
+  of a Charon middleware client and validator client.
+home: https://docs.obol.org/
+icon: https://raw.githubusercontent.com/ObolNetwork/charon/main/docs/images/charonlogo.svg
+keywords:
+- - ethereum
+- - blockchain
+- - obol
+- - charon
+- - dvt
+- - distributed-validator
+- - validator-client
+- - dv-pod
+maintainers:
+- - email: devops@obol.tech
+  name: DV Labs
+name: dv-pod
+sources:
+- - https://github.com/ObolNetwork/charon
+type: application
+version: 0.10.0
+
+...
+files:
+  dv-pod-0.10.0.tgz: sha256:b948b2abe291df884399cb8a29dda195167dfeafdd0ddedd5e13236838662c19
+
+-----BEGIN PGP SIGNATURE-----
+
+wsG5BAEBCgBtBYJpnr6FCRCQx5MnNNeGRkUUAAAAAAAcACBzYWx0QG5vdGF0aW9u
+cy5vcGVucGdwanMub3JngDvp/hXmI/fMYtllvpS8z+5X0gzoayZOIEvasyQ1YkAW
+IQRwEFNOl0vedEYIptmQx5MnNNeGRgAABocP/i1FjkllbqcZhH1U5iEXOAfoe/D9
+/DhDWSnv97vE22EMoC6cTL72mabVwgdipVNzPeKptrZCd/phc7Thb/8DvnmuEcUA
+O9VVjEIh2PERywtSI1lcfQ6nS516uV/hDMriysOQLwMmNaa3ip6uj6mcZ5f1s9wA
+uV479FGfGwMjf9Qo0hquDVUU3PbljIk62nZTvu6qVZC36DNPd/KDcuD3OLKuZbwV
+9Z+MjYr0kBmTz1hODS4/tIq3zyZUhiToki7gOx8VW9B+jVN9lvAUPuA4nxilVs9t
+v6dGDCMl+kIFoXJHFLZ55ChaxNbPdWknyI9RphQE5dYe3JxUYPLzz97IzTdxLsOx
+Hpkw3hBqoQ3hGZz2kZtDQ8nkEle9kbvW6RGztYzxODqt1SBxP/fyEiVpYgvD4xxI
+G22qchMmnAmIi16AsfkjB0k+NnM9NxCkj5Gb76ztu9mUWJGVu5tqel5ytL/b2yQl
+sQntTdZ6MDxQ8B7zHfn5OftWzYEEL4yq1+Olr8HNtflZAOtb+hWqs8TXiz6T2F+M
+68vBrPrnUVlB42yCZuNqy6JDfX6jCTyGrlNmcBb5msY+WhEKtiOQveuTKWn5efDF
+OfoVhCQq+YhjLAQoWJ2kZFb30P2zlxzY0I2wv2r+CjNIyTSqveG0bTjyvjbR5/GX
+gxVMYGtOUEO70tOU
+-----END PGP SIGNATURE-----
