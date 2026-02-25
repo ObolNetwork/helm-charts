@@ -1,0 +1,24 @@
+{{- if .Values.service.udp.enabled }}
+{{- range $i := until (int .Values.clusterSize) }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "release.name" $ }}-{{ $i }}-udp
+  namespace: {{ $.Release.Namespace }}
+spec:
+  type: {{ $.Values.service.type }}
+  externalTrafficPolicy: Local
+  sessionAffinity: None
+  {{- if and $.Values.externalIPs (gt (len $.Values.externalIPs) $i) }}
+  loadBalancerIP: {{ index $.Values.externalIPs $i }}
+  {{- end }}
+  ports:
+    - name: p2p-udp
+      protocol: UDP
+      port: {{ $.Values.service.udp.port }}
+      targetPort: {{ $.Values.service.udp.targetPort }}
+  selector:
+    name: {{ include "release.name" $ }}-{{ $i }}
+{{- end }}
+{{- end }}

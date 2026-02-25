@@ -2,7 +2,7 @@
 Charon Relay
 ===========
 
-![Version: 0.3.0](https://img.shields.io/badge/Version-0.3.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.9.0](https://img.shields.io/badge/AppVersion-1.9.0-informational?style=flat-square)
+![Version: 0.3.1](https://img.shields.io/badge/Version-0.3.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.9.0](https://img.shields.io/badge/AppVersion-1.9.0-informational?style=flat-square)
 
 Charon is an open-source Ethereum Distributed validator middleware written in golang. This chart deploys a libp2p relay server.
 
@@ -38,8 +38,10 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | config.p2pRelays | string | `""` | Comma-separated list of libp2p relay URLs or multiaddrs. (default [https://0.relay.obol.tech/enr]) |
 | config.p2pTcpAddress | string | `"0.0.0.0:3610"` | Comma-separated list of listening TCP addresses (ip and port) for libP2P traffic. Empty default doesn't bind to local port therefore only supports outgoing connections. |
 | containerSecurityContext | object | See `values.yaml` | The security context for containers |
+| externalHostnames | list | `[]` | List of external hostnames for each relay node (one per node, AWS LB hostnames) Used instead of externalIPs on AWS where LBs have hostnames, not IPs. When set, uses --p2p-external-hostname instead of --p2p-external-ip. |
+| externalIPs | list | `[]` | List of external IPs to assign to each relay node's LoadBalancer service (one per node, GCP static IPs) If empty, the LoadBalancer will get a dynamic IP and the init container will fetch it. Length must match clusterSize if set. |
 | fullnameOverride | string | `""` | Provide a name to substitute for the full names of resources |
-| image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.9.0"}` | Charon image ropsitory, pull policy, and tag version |
+| image | object | `{"pullPolicy":"IfNotPresent","repository":"ghcr.io/obolnetwork/charon","tag":"v1.9.0"}` | Charon image ropsitory, pull policy, and tag version |
 | imagePullSecrets | list | `[]` | Credentials to fetch images from private registry # ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ |
 | initContainerImage | string | `"bitnami/kubectl:latest"` | Init container image |
 | livenessProbe | object | `{"enabled":true,"httpGet":{"path":"/livez"},"initialDelaySeconds":10,"periodSeconds":5}` | Configure liveness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ |
@@ -58,7 +60,8 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | readinessProbe | object | `{"enabled":true,"httpGet":{"path":"/readyz"},"initialDelaySeconds":5,"periodSeconds":3}` | Configure readiness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ |
 | resources | object | `{}` | Pod resources limits and requests |
 | securityContext | object | See `values.yaml` | The security context for pods |
-| service | object | `{"ports":{"http":{"name":"relay-http","port":3640,"protocol":"TCP","targetPort":3640},"monitoring":{"name":"monitoring","port":3620,"protocol":"TCP","targetPort":3620},"p2pTcp":{"name":"p2p-tcp","port":3610,"protocol":"TCP","targetPort":3610}},"type":"LoadBalancer"}` | Charon service ports |
+| service | object | `{"ports":{"http":{"name":"relay-http","port":3640,"protocol":"TCP","targetPort":3640},"monitoring":{"name":"monitoring","port":3620,"protocol":"TCP","targetPort":3620},"p2pTcp":{"name":"p2p-tcp","port":3610,"protocol":"TCP","targetPort":3610}},"type":"LoadBalancer","udp":{"enabled":false,"port":3630,"targetPort":3630}}` | Charon service ports |
+| service.udp | object | `{"enabled":false,"port":3630,"targetPort":3630}` | Optional UDP service for P2P UDP traffic |
 | serviceAccount | object | `{"annotations":{},"enabled":true,"name":""}` | Service account # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/ |
 | serviceAccount.annotations | object | `{}` | Annotations to add to the service account |
 | serviceAccount.enabled | bool | `true` | Specifies whether a service account should be created |

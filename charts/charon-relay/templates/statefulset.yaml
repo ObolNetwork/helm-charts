@@ -50,6 +50,7 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if and (not $.Values.externalIPs) (not $.Values.externalHostnames) }}
       initContainers:
         - name: loadbalancer-ip-fetcher
           image: {{ $.Values.initContainerImage }}
@@ -65,6 +66,12 @@ spec:
                   echo "$LB_IP" > /shared/load_balancer_ip;
                   break;
                 else
+                  LB_HOST=$(kubectl get svc {{ include "release.name" $ }}-{{ $i }} -n {{ $.Release.Namespace }} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}');
+                  if [ ! -z "$LB_HOST" ]; then
+                    echo "Load balancer hostname: $LB_HOST";
+                    echo "$LB_HOST" > /shared/load_balancer_hostname;
+                    break;
+                  fi;
                   echo "Load balancer ip not available yet, retrying in 5 seconds...";
                   sleep 5;
                 fi;
@@ -72,13 +79,25 @@ spec:
           volumeMounts:
             - name: shared
               mountPath: /shared
+      {{- end }}
       containers:
         - command:
             - sh
             - -ac
             - >
-              export LOAD_BALANCER_IP=$(cat /shared/load_balancer_ip);
-              exec /usr/local/bin/charon relay --p2p-external-ip="${LOAD_BALANCER_IP}"
+              {{- if and $.Values.externalIPs (gt (len $.Values.externalIPs) $i) }}
+              exec /usr/local/bin/charon relay --p2p-external-ip="{{ index $.Values.externalIPs $i }}"
+              {{- else if and $.Values.externalHostnames (gt (len $.Values.externalHostnames) $i) }}
+              exec /usr/local/bin/charon relay --p2p-external-hostname="{{ index $.Values.externalHostnames $i }}"
+              {{- else }}
+              P2P_FLAG="";
+              if [ -f /shared/load_balancer_ip ]; then
+                P2P_FLAG="--p2p-external-ip=$(cat /shared/load_balancer_ip)";
+              elif [ -f /shared/load_balancer_hostname ]; then
+                P2P_FLAG="--p2p-external-hostname=$(cat /shared/load_balancer_hostname)";
+              fi;
+              exec /usr/local/bin/charon relay $P2P_FLAG
+              {{- end }}
               {{- if $.Values.config.autoP2pKey }}
               --auto-p2pkey={{ $.Values.config.autoP2pKey }}
               {{- end }}
