@@ -1874,6 +1874,38 @@ entries:
         fingerprint: 7010534E974BDE744608A6D990C7932734D78646
         url: https://obolnetwork.github.io/helm-charts/pubkey.asc
     apiVersion: v2
+    appVersion: 1.9.0
+    created: "2026-02-25T09:18:49.948500508Z"
+    description: A Helm chart for deploying a single distributed validator pod consisting
+      of a Charon middleware client and validator client.
+    digest: b1aac3d58df0a6695186795e0202a6bc63d4c45e77466fa89703319ab5db9c6f
+    home: https://docs.obol.org/
+    icon: https://raw.githubusercontent.com/ObolNetwork/charon/main/docs/images/charonlogo.svg
+    keywords:
+    - ethereum
+    - blockchain
+    - obol
+    - charon
+    - dvt
+    - distributed-validator
+    - validator-client
+    - dv-pod
+    maintainers:
+    - email: devops@obol.tech
+      name: DV Labs
+    name: dv-pod
+    sources:
+    - https://github.com/ObolNetwork/charon
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/dv-pod-0.10.0/dv-pod-0.10.0.tgz
+    version: 0.10.0
+  - annotations:
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/signKey: |
+        fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+        url: https://obolnetwork.github.io/helm-charts/pubkey.asc
+    apiVersion: v2
     appVersion: 1.8.2
     created: "2026-02-23T08:22:26.512751019Z"
     description: A Helm chart for deploying a single distributed validator pod consisting
@@ -2512,4 +2544,4 @@ entries:
     urls:
     - https://github.com/ObolNetwork/helm-charts/releases/download/remote-signer-0.1.0/remote-signer-0.1.0.tgz
     version: 0.1.0
-generated: "2026-02-25T09:18:06.35111378Z"
+generated: "2026-02-25T09:18:49.948709338Z"
