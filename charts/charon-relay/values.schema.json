@@ -28,6 +28,20 @@
             "description": "The number of nodes in the relay cluster",
             "type": "integer"
         },
+        "externalIPs": {
+            "description": "List of external IPs to assign to each relay node's LoadBalancer service (one per node, GCP static IPs)",
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "externalHostnames": {
+            "description": "List of external hostnames for each relay node (one per node, AWS LB hostnames). Uses --p2p-external-hostname instead of --p2p-external-ip.",
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
         "config": {
             "type": "object",
             "properties": {
@@ -343,6 +357,21 @@
                 },
                 "type": {
                     "type": "string"
+                },
+                "udp": {
+                    "description": "Optional UDP service for P2P UDP traffic",
+                    "type": ["object", "null"],
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean"
+                        },
+                        "port": {
+                            "type": "integer"
+                        },
+                        "targetPort": {
+                            "type": "integer"
+                        }
+                    }
                 }
             }
         },

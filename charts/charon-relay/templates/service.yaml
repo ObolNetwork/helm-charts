@@ -9,6 +9,9 @@ spec:
   type: {{ $.Values.service.type }}
   externalTrafficPolicy: Local
   sessionAffinity: None
+  {{- if and $.Values.externalIPs (gt (len $.Values.externalIPs) $i) }}
+  loadBalancerIP: {{ index $.Values.externalIPs $i }}
+  {{- end }}
   ports:
     - name: {{ $.Values.service.ports.http.name }}
       protocol: {{ $.Values.service.ports.http.protocol }}
