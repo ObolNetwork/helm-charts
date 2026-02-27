@@ -2,7 +2,7 @@
 Aztec Node
 ===========
 
-![Version: 1.0.1](https://img.shields.io/badge/Version-1.0.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 3.0.3](https://img.shields.io/badge/AppVersion-3.0.3-informational?style=flat-square)
+![Version: 2.0.0](https://img.shields.io/badge/Version-2.0.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 4.0.1](https://img.shields.io/badge/AppVersion-4.0.1-informational?style=flat-square)
 
 A Helm chart for deploying an Aztec node
 
@@ -15,10 +15,10 @@ A Helm chart for deploying an Aztec node
 | customNetwork | object | `{"feeAssetHandlerContractAddress":null,"l1ChainId":null,"registryContractAddress":null,"slashFactoryAddress":null}` | Custom network - (not recommended) - Only for custom testnet usecases Must have deployed your own protocol contracts first |
 | fullnameOverride | string | `""` | Overrides the chart computed fullname |
 | hostNetwork | bool | `true` | Use host network - provides best P2P performance by binding directly to node's network This is the recommended configuration for Aztec nodes |
-| image | object | `{"pullPolicy":"IfNotPresent","repository":"aztecprotocol/aztec","tag":"3.0.3"}` | Image to use for the container |
+| image | object | `{"pullPolicy":"IfNotPresent","repository":"aztecprotocol/aztec","tag":"4.0.1"}` | Image to use for the container |
 | image.pullPolicy | string | `"IfNotPresent"` | Container pull policy |
 | image.repository | string | `"aztecprotocol/aztec"` | Image repository |
-| image.tag | string | `"3.0.3"` | Image tag |
+| image.tag | string | `"4.0.1"` | Image tag |
 | initContainers | list | `[]` | Additional init containers |
 | nameOverride | string | `""` | Overrides the chart name |
 | network | string | `nil` | Network name - this is a predefined network - testnet, devnet |
