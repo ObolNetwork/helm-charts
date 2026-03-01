@@ -2459,6 +2459,36 @@ entries:
         url: https://obolnetwork.github.io/helm-charts/pubkey.asc
     apiVersion: v2
     appVersion: v0.1.0
+    created: "2026-03-01T22:27:18.504128845Z"
+    description: A lightweight Ethereum remote signing service for EVM networks. Multi-chain
+      native with per-request chain_id.
+    digest: 0f97dabbd25d30b99f98218140b87050712bd9f3dd87e84daa0136bdb5b07784
+    home: https://obol.org/
+    icon: https://avatars.githubusercontent.com/u/85748921?s=128&v=4
+    keywords:
+    - ethereum
+    - signing
+    - wallet
+    - evm
+    - obol
+    - keystore
+    maintainers:
+    - email: platform@obol.tech
+      name: Obol Platform Team
+    name: remote-signer
+    sources:
+    - https://github.com/ObolNetwork/remote-signer
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/remote-signer-0.3.0/remote-signer-0.3.0.tgz
+    version: 0.3.0
+  - annotations:
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/signKey: |
+        fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+        url: https://obolnetwork.github.io/helm-charts/pubkey.asc
+    apiVersion: v2
+    appVersion: v0.1.0
     created: "2026-02-24T13:57:41.037315498Z"
     description: A lightweight Ethereum remote signing service for EVM networks. Multi-chain
       native with per-request chain_id.
@@ -2512,4 +2542,4 @@ entries:
     urls:
     - https://github.com/ObolNetwork/helm-charts/releases/download/remote-signer-0.1.0/remote-signer-0.1.0.tgz
     version: 0.1.0
-generated: "2026-02-25T09:18:06.35111378Z"
+generated: "2026-03-01T22:27:18.50459179Z"
