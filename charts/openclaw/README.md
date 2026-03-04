@@ -1,7 +1,7 @@
 OpenClaw
 ===========
 
-![Version: 0.1.6](https://img.shields.io/badge/Version-0.1.6-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2026.3.1](https://img.shields.io/badge/AppVersion-2026.3.1-informational?style=flat-square)
+![Version: 0.1.7](https://img.shields.io/badge/Version-0.1.7-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2026.3.2](https://img.shields.io/badge/AppVersion-2026.3.2-informational?style=flat-square)
 
 OpenClaw gateway deployment (agent runtime) for Kubernetes.
 
@@ -32,7 +32,6 @@ helm upgrade --install openclaw obol/openclaw \
   --set-string secrets.gatewayToken.value=replace-with-long-random-token \
   --set models.anthropic.enabled=true \
   --set models.anthropic.apiKeyValue=sk-ant-api03-XXXX \
-  --set models.ollama.enabled=false \
   --set openclaw.agentModel=anthropic/claude-opus-4-6
 ```
 
@@ -44,23 +43,25 @@ helm upgrade --install openclaw obol/openclaw \
   --set-string secrets.gatewayToken.value=replace-with-long-random-token \
   --set models.openai.enabled=true \
   --set models.openai.apiKeyValue=sk-XXXX \
-  --set models.ollama.enabled=false \
   --set openclaw.agentModel=openai/gpt-5.2
 ```
 
 ### Ollama (local models)
 
-The default values assume an [Obol Stack](https://github.com/ObolNetwork/obol-stack) environment
-where Ollama traffic is routed through the llmspy proxy. For a standalone Ollama deployment, override
-the base URL:
+Ollama is disabled by default. To use a local Ollama instance directly:
 
 ```sh
 helm upgrade --install openclaw obol/openclaw \
   --namespace openclaw --create-namespace \
   --set-string secrets.gatewayToken.value=replace-with-long-random-token \
+  --set models.ollama.enabled=true \
   --set models.ollama.baseUrl=http://ollama.ollama.svc.cluster.local:11434/v1 \
-  --set models.ollama.api=""
+  --set "models.ollama.models[0].id=llama3.2:3b" \
+  --set "models.ollama.models[0].name=Llama 3.2 3B"
 ```
+
+In [Obol Stack](https://github.com/ObolNetwork/obol-stack), Ollama routes through the LiteLLM gateway
+and is configured automatically via `obol model setup`.
 
 ## Access
 
@@ -87,7 +88,7 @@ API keys are stored in a Kubernetes Secret and injected as environment variables
 |----------|------------------------|---------------|-------|
 | Anthropic | `models.anthropic.enabled=true` | `models.anthropic.apiKeyValue` | Direct API access |
 | OpenAI | `models.openai.enabled=true` | `models.openai.apiKeyValue` | Direct API access |
-| Ollama | `models.ollama.enabled=true` (default) | N/A | Default routes through llmspy in Obol Stack |
+| Ollama | `models.ollama.enabled=true` | N/A | Disabled by default; enable for direct Ollama access |
 
 Set the default agent model with `openclaw.agentModel` (e.g. `anthropic/claude-opus-4-6`).
 
@@ -209,7 +210,7 @@ helm upgrade --install openclaw obol/openclaw \
 | fullnameOverride | string | `""` | Override the full resource name |
 | httpRoute | object | `{"annotations":{},"enabled":false,"hostnames":[],"parentRefs":[{"name":"traefik-gateway","namespace":"traefik","sectionName":"web"}],"pathPrefix":"/"}` | Gateway API HTTPRoute (recommended for Obol Stack / Traefik Gateway API) |
 | httpRoute.hostnames | list | `[]` | Hostnames for routing (required when enabled) |
-| image | object | `{"args":["openclaw.mjs","gateway","--allow-unconfigured"],"command":["node"],"env":[],"pullPolicy":"IfNotPresent","repository":"ghcr.io/obolnetwork/openclaw","tag":"2026.3.1"}` | OpenClaw image repository, pull policy, and tag version |
+| image | object | `{"args":["openclaw.mjs","gateway","--allow-unconfigured"],"command":["node"],"env":[],"pullPolicy":"IfNotPresent","repository":"ghcr.io/obolnetwork/openclaw","tag":"2026.3.2"}` | OpenClaw image repository, pull policy, and tag version |
 | image.args | list | `["openclaw.mjs","gateway","--allow-unconfigured"]` | Override the container args (CMD) |
 | image.command | list | `["node"]` | Override the container command (ENTRYPOINT) |
 | image.env | list | `[]` | Additional environment variables for the container |
@@ -220,12 +221,12 @@ helm upgrade --install openclaw obol/openclaw \
 | initJob.env | list | `[]` | Extra environment variables for the init job |
 | initJob.resources | object | `{"limits":{"memory":"512Mi"},"requests":{"cpu":"100m","memory":"128Mi"}}` | Resource requests/limits for the init job |
 | livenessProbe | object | `{"enabled":true,"failureThreshold":3,"initialDelaySeconds":10,"periodSeconds":10,"timeoutSeconds":5}` | Liveness probe (tcpSocket by default to avoid auth-protected HTTP endpoints) |
-| models | object | `{"anthropic":{"api":"","apiKeyEnvVar":"ANTHROPIC_API_KEY","apiKeyValue":"","baseUrl":"https://api.anthropic.com/v1","enabled":false,"models":[{"id":"claude-sonnet-4-5-20250929","name":"Claude Sonnet 4.5"},{"id":"claude-opus-4-6","name":"Claude Opus 4.6"}]},"ollama":{"api":"openai-completions","apiKeyEnvVar":"OLLAMA_API_KEY","apiKeyValue":"ollama-local","baseUrl":"http://llmspy.llm.svc.cluster.local:8000/v1","enabled":true,"models":[{"id":"glm-4.7-flash","name":"glm-4.7-flash"}]},"openai":{"api":"","apiKeyEnvVar":"OPENAI_API_KEY","apiKeyValue":"","baseUrl":"https://api.openai.com/v1","enabled":false,"models":[{"id":"gpt-5.2","name":"GPT-5.2"}]}}` | Model provider configuration Each provider is independently toggled. All providers may be disabled. API keys are stored in the chart Secret and injected as env vars. |
+| models | object | `{"anthropic":{"api":"","apiKeyEnvVar":"ANTHROPIC_API_KEY","apiKeyValue":"","baseUrl":"https://api.anthropic.com/v1","enabled":false,"models":[{"id":"claude-sonnet-4-5-20250929","name":"Claude Sonnet 4.5"},{"id":"claude-opus-4-6","name":"Claude Opus 4.6"}]},"ollama":{"api":"","apiKeyEnvVar":"OLLAMA_API_KEY","apiKeyValue":"","baseUrl":"","enabled":false,"models":[]},"openai":{"api":"","apiKeyEnvVar":"OPENAI_API_KEY","apiKeyValue":"","baseUrl":"https://api.openai.com/v1","enabled":false,"models":[{"id":"gpt-5.2","name":"GPT-5.2"}]}}` | Model provider configuration Each provider is independently toggled. All providers may be disabled. API keys are stored in the chart Secret and injected as env vars. |
 | models.anthropic.apiKeyValue | string | `""` | API key value (stored in Secret). Leave empty to provide via extraEnvFromSecrets. |
-| models.ollama.api | string | `"openai-completions"` | OpenClaw provider API type. Set to "openai-completions" because llmspy exposes an OpenAI-compatible chat/completions endpoint. |
+| models.ollama.api | string | `""` | OpenClaw provider API type |
 | models.ollama.apiKeyEnvVar | string | `"OLLAMA_API_KEY"` | Env var used for provider API key interpolation in openclaw.json |
-| models.ollama.apiKeyValue | string | `"ollama-local"` | Value set for the apiKey env var (not a secret for Ollama) |
-| models.ollama.baseUrl | string | `"http://llmspy.llm.svc.cluster.local:8000/v1"` | OpenAI-compatible base URL for Ollama (routed through llmspy global proxy) |
+| models.ollama.apiKeyValue | string | `""` | Value set for the apiKey env var (not a secret for Ollama) |
+| models.ollama.baseUrl | string | `""` | OpenAI-compatible base URL for Ollama. In Obol Stack, Ollama traffic routes through the LiteLLM gateway (litellm.llm.svc:4000). For standalone use, set to your Ollama endpoint (e.g. http://ollama:11434/v1). |
 | nameOverride | string | `""` | Override the chart name |
 | nodeSelector | object | `{}` |  |
 | openclaw | object | `{"agentModel":"","gateway":{"auth":{"mode":"token"},"bind":"lan","controlUi":{},"http":{"endpoints":{"chatCompletions":{"enabled":true}}},"mode":"local","trustedProxies":[]},"stateDir":"/data/.openclaw","workspaceDir":"/data/.openclaw/workspace"}` | OpenClaw state/workspace settings (paths should be inside persistence.mountPath) |
