@@ -29,7 +29,6 @@ helm upgrade --install openclaw obol/openclaw \
   --set-string secrets.gatewayToken.value=replace-with-long-random-token \
   --set models.anthropic.enabled=true \
   --set models.anthropic.apiKeyValue=sk-ant-api03-XXXX \
-  --set models.ollama.enabled=false \
   --set openclaw.agentModel=anthropic/claude-opus-4-6
 ```
 
@@ -41,23 +40,25 @@ helm upgrade --install openclaw obol/openclaw \
   --set-string secrets.gatewayToken.value=replace-with-long-random-token \
   --set models.openai.enabled=true \
   --set models.openai.apiKeyValue=sk-XXXX \
-  --set models.ollama.enabled=false \
   --set openclaw.agentModel=openai/gpt-5.2
 ```
 
 ### Ollama (local models)
 
-The default values assume an [Obol Stack](https://github.com/ObolNetwork/obol-stack) environment
-where Ollama traffic is routed through the llmspy proxy. For a standalone Ollama deployment, override
-the base URL:
+Ollama is disabled by default. To use a local Ollama instance directly:
 
 ```sh
 helm upgrade --install openclaw obol/openclaw \
   --namespace openclaw --create-namespace \
   --set-string secrets.gatewayToken.value=replace-with-long-random-token \
+  --set models.ollama.enabled=true \
   --set models.ollama.baseUrl=http://ollama.ollama.svc.cluster.local:11434/v1 \
-  --set models.ollama.api=""
+  --set "models.ollama.models[0].id=llama3.2:3b" \
+  --set "models.ollama.models[0].name=Llama 3.2 3B"
 ```
+
+In [Obol Stack](https://github.com/ObolNetwork/obol-stack), Ollama routes through the LiteLLM gateway
+and is configured automatically via `obol model setup`.
 
 ## Access
 
@@ -84,7 +85,7 @@ API keys are stored in a Kubernetes Secret and injected as environment variables
 |----------|------------------------|---------------|-------|
 | Anthropic | `models.anthropic.enabled=true` | `models.anthropic.apiKeyValue` | Direct API access |
 | OpenAI | `models.openai.enabled=true` | `models.openai.apiKeyValue` | Direct API access |
-| Ollama | `models.ollama.enabled=true` (default) | N/A | Default routes through llmspy in Obol Stack |
+| Ollama | `models.ollama.enabled=true` | N/A | Disabled by default; enable for direct Ollama access |
 
 Set the default agent model with `openclaw.agentModel` (e.g. `anthropic/claude-opus-4-6`).
 
