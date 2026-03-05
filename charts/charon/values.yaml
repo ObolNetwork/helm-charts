@@ -8,6 +8,11 @@ image:
   pullPolicy: IfNotPresent
   tag: v1.9.0
 
+initImage:
+  repository: "bitnami/kubectl"
+  tag: "1.30.3"
+  pullPolicy: IfNotPresent
+
 # -- Credentials to fetch images from private registry
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
@@ -133,11 +138,27 @@ podDisruptionBudget:
 # -- HTTP Port
 httpPort: 3600
 
-# -- Engine Port (Auth Port)
-p2pPort: 3610
-
 # -- Monitoring Port
 monitoringPort: 3620
+
+## When p2pPort.type is NodePort, your P2P port will be exposed via service type NodePort.
+## This will generate a service with a port binding via NodePort.
+## This is useful if you want to expose and announce your node to the Internet.
+##
+p2pPort:
+  ## @param p2pPort.annotations
+  ##
+  annotations: {}
+  ## @param p2pPort.type
+  ## Options: NodePort, LoadBalancer, ClusterIP
+  type: NodePort
+  ## @param p2pNodePort.nodePort The port allocation will be set to this value
+  ##
+  nodePort: 32000
+  ## @param p2pPort.port The default P2P port for charon service
+  ##
+  port: 3610
+
 
 # -- Jaeger Port
 jaegerPort: 6831
@@ -199,9 +220,6 @@ config:
   # -- The DNS hostname advertised by libp2p. This may be used to advertise an external DNS.
   p2pExternalHostname: ""
 
-  # -- The IP address advertised by libp2p. This may be used to advertise an external IP.
-  p2pExternalIp: ""
-
   # -- Comma-separated list of libp2p relay URLs or multiaddrs. (default [https://0.relay.obol.tech/enr])
   p2pRelays: "https://0.relay.obol.tech/enr"
 
@@ -228,6 +246,7 @@ config:
 
 # -- Kubernetes secrets names
 secrets:
+  enabled: true
   # -- validators keys
   validatorKeys: "validator-keys"
   # -- charon enr private key
@@ -282,6 +301,7 @@ serviceMonitor:
 
 # -- Configure liveness probes
 livenessProbe:
+  enabled: true
   initialDelaySeconds: 60
   periodSeconds: 120
   httpGet:
@@ -289,6 +309,7 @@ livenessProbe:
     port: monitoring
 # -- Configure readiness probes
 readinessProbe:
+  enabled: true
   initialDelaySeconds: 10
   periodSeconds: 10
   httpGet:
@@ -303,4 +324,3 @@ centralMonitoring:
   promEndpoint: "https://vm.monitoring.gcp.obol.tech/write"
   # -- The authentication token to the central prometheus
   token: ""
-  
