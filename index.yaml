@@ -7,6 +7,21 @@ entries:
         fingerprint: 7010534E974BDE744608A6D990C7932734D78646
         url: https://obolnetwork.github.io/helm-charts/pubkey.asc
     apiVersion: v2
+    appVersion: 4.0.1
+    created: "2026-03-06T08:53:35.978294867Z"
+    description: A Helm chart for deploying an Aztec node
+    digest: 4de1337e31913d3583fb406ba39acbc98824497e8657ba410c57912b10b75b2a
+    name: aztec-node
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/aztec-node-2.0.0/aztec-node-2.0.0.tgz
+    version: 2.0.0
+  - annotations:
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/signKey: |
+        fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+        url: https://obolnetwork.github.io/helm-charts/pubkey.asc
+    apiVersion: v2
     appVersion: 3.0.3
     created: "2026-02-16T15:17:30.015747408Z"
     description: A Helm chart for deploying an Aztec node
@@ -2598,4 +2613,4 @@ entries:
     urls:
     - https://github.com/ObolNetwork/helm-charts/releases/download/remote-signer-0.1.0/remote-signer-0.1.0.tgz
     version: 0.1.0
-generated: "2026-03-04T20:45:49.516441622Z"
+generated: "2026-03-06T08:53:35.978501764Z"
