@@ -142,6 +142,25 @@ spec:
               value: {{ .Values.node.storage.dataStoreMapSize | quote }}
             - name: WS_DB_MAP_SIZE_KB
               value: {{ .Values.node.storage.worldStateMapSize | quote }}
+            {{- if or (eq (include "chart.monitoringEnabled" .) "true") .Values.node.metrics.otelCollectorEndpoint }}
+            - name: OTEL_EXCLUDE_METRICS
+              value: {{ .Values.node.metrics.otelExcludeMetrics | quote }}
+            {{- if eq (include "chart.monitoringEnabled" .) "true" }}
+            - name: OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
+              value: "http://{{ include "chart.resourceName" . }}-otel-collector:4318/v1/metrics"
+            - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+              value: "http://{{ include "chart.resourceName" . }}-otel-collector:4318/v1/traces"
+            - name: OTEL_EXPORTER_OTLP_LOGS_ENDPOINT
+              value: "http://{{ include "chart.resourceName" . }}-otel-collector:4318/v1/logs"
+            {{- else }}
+            - name: OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
+              value: "{{ .Values.node.metrics.otelCollectorEndpoint }}/v1/metrics"
+            - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+              value: "{{ .Values.node.metrics.otelCollectorEndpoint }}/v1/traces"
+            - name: OTEL_EXPORTER_OTLP_LOGS_ENDPOINT
+              value: "{{ .Values.node.metrics.otelCollectorEndpoint }}/v1/logs"
+            {{- end }}
+            {{- end }}
           ports:
             - containerPort: {{ .Values.service.httpPort }}
               name: http-rpc
