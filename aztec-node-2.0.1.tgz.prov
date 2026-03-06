@@ -1,0 +1,36 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/signKey: |
+    fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+    url: https://obolnetwork.github.io/helm-charts/pubkey.asc
+apiVersion: v2
+appVersion: 4.0.4
+description: A Helm chart for deploying an Aztec node
+name: aztec-node
+type: application
+version: 2.0.1
+
+...
+files:
+  aztec-node-2.0.1.tgz: sha256:98f88820595b3e4be842fa3dda6e8231e055d28a36d36eb1d9ca746dc4f24549
+
+-----BEGIN PGP SIGNATURE-----
+
+wsG5BAEBCgBtBYJpqpZ8CRCQx5MnNNeGRkUUAAAAAAAcACBzYWx0QG5vdGF0aW9u
+cy5vcGVucGdwanMub3JnJV6iRhb9cBa8z3HW4PqLL/Oguy/F3nBWcXwP5swuT+sW
+IQRwEFNOl0vedEYIptmQx5MnNNeGRgAAOzMP/RoSlhkkF6W6ExsXlt6hMt8HIRHn
+3AFaUeKkRzXGjATHvx8Ypl1+5bXf3AXrRnVR8zf46q/xwbSEAWDk2V9Ec7KCo/I3
+BQFz7r4zsveDY4iCg5Q9+23UJdm1uVl0UkHTs585q+zWUQnKanCYAxdk60D/8gQr
+fxx1FfaRA8dGefGwlhGWx0weZpmRZaPFXVuP8GkQ5ElIXFTakCRirqsjRWfwCc31
+4sEX3/aWRU0tX26WZ1c/nZdBMudERN/KNWOW4NhWYfQb9LBfRbBoB7VHCV9OBi3q
+6MRMFsoO3FXvtW+WW7WSpG8566BgRbuzh3YBDEBCoqNnquYYeiyQeadSJLl/KWp+
+YgB0TEx0slYPbJhEnjvtHZnA7kyfCVc/6DYKVVb46uM2R40ffO2WYx3WguNgqicf
+p/059/Gb7rr8Q8HeyazMGoajXujtjl+nuaFPF+3vBvIGmr8SXEFV8aU/RZuU6brX
+rpwYH7xCUJQnkXlNS4K/4sIWXRFrCsleF5/pf8Helq3n8fxqV1sOyDZW/mlchKQ+
+2K8ZJl3sic+58eslMuRBNXH7VywDXjBvtS1KqJYP58meno4+UF4DN/Um/PEX0G1E
+LgQS9hWf+0n28fLgB/RV0Huhemw5du16L07AaaDGAOSEa5KUVzBxY58WMhf/x0W5
+u9GZnKM+l2nTiUF+
+-----END PGP SIGNATURE-----
