@@ -381,7 +381,7 @@
                     "type": "object",
                     "properties": {
                         "api": {
-                            "description": "OpenClaw provider API type. Set to \"openai-completions\" because llmspy exposes an OpenAI-compatible chat/completions endpoint.",
+                            "description": "OpenClaw provider API type",
                             "type": "string"
                         },
                         "apiKeyEnvVar": {
@@ -393,25 +393,14 @@
                             "type": "string"
                         },
                         "baseUrl": {
-                            "description": "OpenAI-compatible base URL for Ollama (routed through llmspy global proxy)",
+                            "description": "OpenAI-compatible base URL for Ollama. In Obol Stack, Ollama traffic routes through the LiteLLM gateway (litellm.llm.svc:4000). For standalone use, set to your Ollama endpoint (e.g. http://ollama:11434/v1).",
                             "type": "string"
                         },
                         "enabled": {
                             "type": "boolean"
                         },
                         "models": {
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "id": {
-                                        "type": "string"
-                                    },
-                                    "name": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
+                            "type": "array"
                         }
                     }
                 },
