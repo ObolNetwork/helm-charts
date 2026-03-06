@@ -438,7 +438,7 @@ spec:
         # Follows Obol reference: https://github.com/ObolNetwork/charon-distributed-validator-node/blob/main/nimbus/run.sh
         {{- if and .Values.validatorClient.enabled (eq .Values.validatorClient.type "nimbus") }}
         - name: nimbus-import
-          image: {{ .Values.validatorClient.image.repository | default "statusim/nimbus-eth2" }}:{{ .Values.validatorClient.image.tag | default "multiarch-v26.2.1" }}
+          image: {{ .Values.validatorClient.image.repository | default "statusim/nimbus-eth2" }}:{{ .Values.validatorClient.image.tag | default "multiarch-v26.3.0" }}
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -650,7 +650,7 @@ spec:
         # Validator Client Container
         - name: validator-client
           {{- if eq .Values.validatorClient.type "lighthouse" }}
-          image: {{ .Values.validatorClient.image.repository | default "sigp/lighthouse" }}:{{ .Values.validatorClient.image.tag | default "v8.1.0" }}
+          image: {{ .Values.validatorClient.image.repository | default "sigp/lighthouse" }}:{{ .Values.validatorClient.image.tag | default "v8.1.1" }}
           command:
             - lighthouse
             - validator_client
@@ -671,7 +671,7 @@ spec:
             - {{ . }}
             {{- end }}
           {{- else if eq .Values.validatorClient.type "teku" }}
-          image: {{ .Values.validatorClient.image.repository | default "consensys/teku" }}:{{ .Values.validatorClient.image.tag | default "26.2.0" }}
+          image: {{ .Values.validatorClient.image.repository | default "consensys/teku" }}:{{ .Values.validatorClient.image.tag | default "26.3.0" }}
           command:
             - /opt/teku/bin/teku
             - validator-client
@@ -727,7 +727,7 @@ spec:
             - {{ . }}
             {{- end }}
           {{- else if eq .Values.validatorClient.type "nimbus" }}
-          image: {{ .Values.validatorClient.image.repository | default "statusim/nimbus-validator-client" }}:{{ .Values.validatorClient.image.tag | default "multiarch-v26.2.1" }}
+          image: {{ .Values.validatorClient.image.repository | default "statusim/nimbus-validator-client" }}:{{ .Values.validatorClient.image.tag | default "multiarch-v26.3.0" }}
           command:
             - /home/user/nimbus_validator_client
             - --beacon-node=http://localhost:3600
