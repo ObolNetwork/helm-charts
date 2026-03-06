@@ -7,7 +7,7 @@ clusterSize: 3
 
 # -- Charon image ropsitory, pull policy, and tag version
 image:
-  repository: obolnetwork/charon
+  repository: ghcr.io/obolnetwork/charon
   pullPolicy: IfNotPresent
   tag: v1.9.0
 
@@ -83,9 +83,24 @@ rbac:
       - "list"
       - "watch"
 
+# -- List of external IPs to assign to each relay node's LoadBalancer service (one per node, GCP static IPs)
+# If empty, the LoadBalancer will get a dynamic IP and the init container will fetch it.
+# Length must match clusterSize if set.
+externalIPs: []
+
+# -- List of external hostnames for each relay node (one per node, AWS LB hostnames)
+# Used instead of externalIPs on AWS where LBs have hostnames, not IPs.
+# When set, uses --p2p-external-hostname instead of --p2p-external-ip.
+externalHostnames: []
+
 # -- Charon service ports
 service:
   type: LoadBalancer
+  # -- Optional UDP service for P2P UDP traffic
+  udp:
+    enabled: false
+    port: 3630
+    targetPort: 3630
   ports:
     http:
       name: relay-http
