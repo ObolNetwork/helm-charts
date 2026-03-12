@@ -185,15 +185,24 @@ spec:
             {{- end }}
             - name: USE_GCLOUD_LOGGING
               value: {{ .Values.node.metrics.useGcloudLogging | quote }}
-            {{- if .Values.node.metrics.otelCollectorEndpoint }}
+            {{- if or (eq (include "chart.monitoringEnabled" .) "true") .Values.node.metrics.otelCollectorEndpoint }}
             - name: OTEL_EXCLUDE_METRICS
               value: {{ .Values.node.metrics.otelExcludeMetrics | quote }}
+            {{- if eq (include "chart.monitoringEnabled" .) "true" }}
+            - name: OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
+              value: "http://{{ include "chart.resourceName" . }}-otel-collector:4318/v1/metrics"
+            - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+              value: "http://{{ include "chart.resourceName" . }}-otel-collector:4318/v1/traces"
+            - name: OTEL_EXPORTER_OTLP_LOGS_ENDPOINT
+              value: "http://{{ include "chart.resourceName" . }}-otel-collector:4318/v1/logs"
+            {{- else }}
             - name: OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
               value: "{{ .Values.node.metrics.otelCollectorEndpoint }}/v1/metrics"
             - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
               value: "{{ .Values.node.metrics.otelCollectorEndpoint }}/v1/traces"
             - name: OTEL_EXPORTER_OTLP_LOGS_ENDPOINT
               value: "{{ .Values.node.metrics.otelCollectorEndpoint }}/v1/logs"
+            {{- end }}
             {{- end }}
             {{- if .Values.node.coinbase }}
             - name: COINBASE
