@@ -1,0 +1,51 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/signKey: |
+    fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+    url: https://obolnetwork.github.io/helm-charts/pubkey.asc
+apiVersion: v2
+appVersion: 1.9.2
+description: Charon is an open-source Ethereum Distributed validator middleware written
+  in golang.
+home: https://obol.tech/
+icon: https://raw.githubusercontent.com/ObolNetwork/charon/main/docs/images/charonlogo.svg
+keywords:
+- - ethereum
+- - blockchain
+- - obol
+- - charon
+- - dvt
+- - node
+maintainers:
+- - email: devops@obol.tech
+  name: Eth2DevOps
+name: charon
+sources:
+- - https://github.com/ObolNetwork/charon
+type: application
+version: 0.5.2
+
+...
+files:
+  charon-0.5.2.tgz: sha256:e2e3a24226a277cde360ac885fb41f6c1242bce3ea77edc7cc64a5ee2fb702ed
+
+-----BEGIN PGP SIGNATURE-----
+
+wsG5BAEBCgBtBYJpuuP9CRCQx5MnNNeGRkUUAAAAAAAcACBzYWx0QG5vdGF0aW9u
+cy5vcGVucGdwanMub3Jn6ORyoDglWEg36kmNSKl/uHDZTBFi8eoLAsTa+F+wp9QW
+IQRwEFNOl0vedEYIptmQx5MnNNeGRgAA+asP/165wvgzC0yrBEdgFXehUyN+vVND
+vHCa3mgoPiqTCpfcoXQADxpHOtjsbGJcAJoWG5MG+ATg753pnvDGViU7+4TOw2TT
+PtCIFctpw5+wMRZ5SadRX5GgVsVWBoi7nHSDpSymEu1yeFiZb1UA5hMqheq6Xca/
+NNPGpR/PZ48Al4+u5cUB3RlxQQXGsI9HM4Un6TGSDE/AcGBHxPeC9GrcKlz6xUyk
+kbfjwLlrnM6yehEXZQGnyI6jn7XTUwjuDCsaArT8p6jpWm1M+9tEyUJtvqIEzkIj
+QxXCj74Phi4IS0478Hq5R9YT8fkSymXlE4JfraY3Cpseur6UFyRoLtZ25FMAydFw
+nvsmHUl4yhwvCnI+7Zv6GVrt6AVP+pvzdRRAO/5qVtsuyPdJkU0Zbk39HO3l59Ik
+PrxgV8U/QMkdMLuATTYGxMQnTzMjjW7l6czoW2dcIY8VLIaFbV1hhkuH66SvBZFj
+rQybAtoaxoWBDruxzrSSU3imjdZe57THhV61u4dTTVElwHYYJHVVfrNibHIO7Rrh
+Dz71jjcM65xYu1eX+LgFhmnKVyJBgsQRkbWFV3cw3frAdlNlcf/ZG8hhK3VZDtay
+OOOhspQ06BA91DSHn8ZsOvSmB2LrJ/4b0iVeMoHVYSOaA7a2NHdCt2TDMJX5VZF2
+NHkWSl4nOoHGlOBV
+-----END PGP SIGNATURE-----
