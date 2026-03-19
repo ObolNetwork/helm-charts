@@ -36,6 +36,9 @@
       "labels": [
         "renovate/obol-core"
       ],
+      "schedule": [
+        "* * * * *"
+      ],
       "matchPackageNames": [
         "/^obolnetwork/charon/"
       ]
@@ -51,6 +54,9 @@
       ],
       "labels": [
         "renovate/charon"
+      ],
+      "schedule": [
+        "* * * * *"
       ],
       "groupName": "Charon chart updates",
       "matchPackageNames": [
@@ -69,6 +75,9 @@
       "labels": [
         "renovate/charon-cluster"
       ],
+      "schedule": [
+        "* * * * *"
+      ],
       "groupName": "Charon-cluster chart updates",
       "matchPackageNames": [
         "/^obolnetwork/charon/"
@@ -84,6 +93,9 @@
       ],
       "labels": [
         "renovate/dv-pod"
+      ],
+      "schedule": [
+        "* * * * *"
       ],
       "groupName": "DV-pod chart updates",
       "matchPackageNames": [
@@ -101,6 +113,9 @@
       "labels": [
         "renovate/dv-pod"
       ],
+      "schedule": [
+        "* * * * *"
+      ],
       "groupName": "DV-pod dependency updates",
       "matchPackageNames": [
         "!/^obolnetwork/charon/"
@@ -117,6 +132,9 @@
       "labels": [
         "renovate/charon-relay"
       ],
+      "schedule": [
+        "* * * * *"
+      ],
       "groupName": "Charon-relay chart updates"
     },
     {
@@ -131,6 +149,9 @@
       "labels": [
         "renovate/aztec-node"
       ],
+      "schedule": [
+        "* * * * *"
+      ],
       "groupName": "Aztec-node chart updates"
     },
     {
@@ -144,6 +165,9 @@
       ],
       "labels": [
         "renovate/openclaw"
+      ],
+      "schedule": [
+        "* * * * *"
       ],
       "groupName": "OpenClaw chart updates"
     }
