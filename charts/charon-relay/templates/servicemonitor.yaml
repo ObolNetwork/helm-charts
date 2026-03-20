@@ -32,7 +32,7 @@ spec:
     relabelings:
     {{- toYaml $.Values.serviceMonitor.relabelings | nindent 4 }}
     {{- end }}
-  jobLabel: "{{ $.Release.Name }}"-{{ $i }}
+  jobLabel: "{{ $.Release.Name }}-{{ $i }}"
   selector:
     matchLabels:
       name: {{ include "release.name" $ }}-{{ $i }}

@@ -57,17 +57,24 @@ spec:
             - "/bin/sh"
             - "-c"
             - |
-              echo "Fetching load balancer ip ...";
+              echo "Fetching load balancer address ...";
               while true; do
                 LB_IP=$(kubectl get svc {{ include "release.name" $ }}-{{ $i }} -n {{ $.Release.Namespace }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}');
                 if [ ! -z "$LB_IP" ]; then
                   echo "Load balancer ip: $LB_IP";
                   echo "$LB_IP" > /shared/load_balancer_ip;
+                  echo "ip" > /shared/load_balancer_type;
                   break;
-                else
-                  echo "Load balancer ip not available yet, retrying in 5 seconds...";
-                  sleep 5;
                 fi;
+                LB_HOSTNAME=$(kubectl get svc {{ include "release.name" $ }}-{{ $i }} -n {{ $.Release.Namespace }} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}');
+                if [ ! -z "$LB_HOSTNAME" ]; then
+                  echo "Load balancer hostname: $LB_HOSTNAME";
+                  echo "$LB_HOSTNAME" > /shared/load_balancer_ip;
+                  echo "hostname" > /shared/load_balancer_type;
+                  break;
+                fi;
+                echo "Load balancer address not available yet, retrying in 5 seconds...";
+                sleep 5;
               done;
           volumeMounts:
             - name: shared
@@ -77,8 +84,14 @@ spec:
             - sh
             - -ac
             - >
-              export LOAD_BALANCER_IP=$(cat /shared/load_balancer_ip);
-              exec /usr/local/bin/charon relay --p2p-external-ip="${LOAD_BALANCER_IP}"
+              export LOAD_BALANCER_ADDR=$(cat /shared/load_balancer_ip);
+              export LOAD_BALANCER_TYPE=$(cat /shared/load_balancer_type);
+              if [ "$LOAD_BALANCER_TYPE" = "hostname" ]; then
+                LB_FLAG="--p2p-external-hostname=${LOAD_BALANCER_ADDR}";
+              else
+                LB_FLAG="--p2p-external-ip=${LOAD_BALANCER_ADDR}";
+              fi;
+              exec /usr/local/bin/charon relay ${LB_FLAG}
               {{- if $.Values.config.autoP2pKey }}
               --auto-p2pkey={{ $.Values.config.autoP2pKey }}
               {{- end }}

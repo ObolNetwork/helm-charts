@@ -3,7 +3,7 @@
 {{- end }}
 
 {{- if .Values.centralMonitoring.enabled }}
-{{- if not .Values.centralMonitoring.token }}
-{{- fail ".Values.centralMonitoring.token is required" }}
+{{- if and (not .Values.centralMonitoring.token) (not .Values.centralMonitoring.existingSecret.name) }}
+{{- fail ".Values.centralMonitoring.token or .Values.centralMonitoring.existingSecret.name is required when centralMonitoring is enabled" }}
 {{- end }}
 {{- end }}

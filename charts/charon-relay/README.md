@@ -2,7 +2,7 @@
 Charon Relay
 ===========
 
-![Version: 0.3.2](https://img.shields.io/badge/Version-0.3.2-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.9.2](https://img.shields.io/badge/AppVersion-1.9.2-informational?style=flat-square)
+![Version: 0.4.0](https://img.shields.io/badge/Version-0.4.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.9.2](https://img.shields.io/badge/AppVersion-1.9.2-informational?style=flat-square)
 
 Charon is an open-source Ethereum Distributed validator middleware written in golang. This chart deploys a libp2p relay server.
 
@@ -17,10 +17,14 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | affinity | object | `{}` | Affinity for pod assignment # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity # # Example: # affinity: #   podAntiAffinity: #     requiredDuringSchedulingIgnoredDuringExecution: #     - labelSelector: #         matchExpressions: #         - key: app.kubernetes.io/name #           operator: In #           values: #           - charon #       topologyKey: kubernetes.io/hostname # |
-| centralMonitoring | object | `{"enabled":false,"promEndpoint":"https://vm.monitoring.gcp.obol.tech/write","token":""}` | Central Monitoring |
+| centralMonitoring | object | `{"enabled":false,"existingSecret":{"key":"token","name":""},"image":"prom/prometheus:v2.55.1","promEndpoint":"https://vm.monitoring.gcp.obol.tech/write","token":""}` | Central Monitoring |
 | centralMonitoring.enabled | bool | `false` | Specifies whether central monitoring should be enabled |
-| centralMonitoring.promEndpoint | string | `"https://vm.monitoring.gcp.obol.tech/write"` | https endpoint to obol central prometheus  |
-| centralMonitoring.token | string | `""` | The authentication token to the central prometheus |
+| centralMonitoring.existingSecret | object | `{"key":"token","name":""}` | Use an existing Kubernetes Secret for the monitoring token instead of a plain value |
+| centralMonitoring.existingSecret.key | string | `"token"` | Key in the secret containing the token |
+| centralMonitoring.existingSecret.name | string | `""` | Name of the existing secret |
+| centralMonitoring.image | string | `"prom/prometheus:v2.55.1"` | Prometheus image (used in agent mode for scraping and remote write) |
+| centralMonitoring.promEndpoint | string | `"https://vm.monitoring.gcp.obol.tech/write"` | https endpoint to obol central prometheus |
+| centralMonitoring.token | string | `""` | The authentication token to the central prometheus (ignored if existingSecret is set) |
 | clusterSize | int | `3` | The number of nodes in the relay cluster |
 | config.autoP2pKey | string | `"true"` | Automatically create a p2pkey (secp256k1 private key used for p2p authentication and ENR) if none found in data directory. (default true) |
 | config.httpAddress | string | `"0.0.0.0:3640"` | Listening address (ip and port) for the relay http server serving runtime ENR. (default "127.0.0.1:3640") |
@@ -39,9 +43,17 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | config.p2pTcpAddress | string | `"0.0.0.0:3610"` | Comma-separated list of listening TCP addresses (ip and port) for libP2P traffic. Empty default doesn't bind to local port therefore only supports outgoing connections. |
 | containerSecurityContext | object | See `values.yaml` | The security context for containers |
 | fullnameOverride | string | `""` | Provide a name to substitute for the full names of resources |
+| httpRoute.annotations | object | `{}` |  |
+| httpRoute.backendRef.name | string | `"haproxy"` |  |
+| httpRoute.backendRef.port | int | `80` |  |
+| httpRoute.enabled | bool | `false` |  |
+| httpRoute.filters | list | `[]` |  |
+| httpRoute.hostnames | list | `[]` |  |
+| httpRoute.matches | list | `[]` |  |
+| httpRoute.parentRefs | list | `[]` |  |
 | image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.9.2"}` | Charon image ropsitory, pull policy, and tag version |
 | imagePullSecrets | list | `[]` | Credentials to fetch images from private registry # ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ |
-| initContainerImage | string | `"bitnami/kubectl:latest"` | Init container image |
+| initContainerImage | string | `"alpine/kubectl:1.35.2"` | Init container image |
 | livenessProbe | object | `{"enabled":true,"httpGet":{"path":"/livez"},"initialDelaySeconds":10,"periodSeconds":5}` | Configure liveness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ |
 | nameOverride | string | `""` | Provide a name in place of lighthouse for `app:` labels |
 | nodeSelector | object | `{}` | Node labels for pod assignment # ref: https://kubernetes.io/docs/user-guide/node-selection/ |

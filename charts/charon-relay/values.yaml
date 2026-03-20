@@ -16,7 +16,7 @@ image:
 imagePullSecrets: []
 
 # -- Init container image
-initContainerImage: "bitnami/kubectl:latest"
+initContainerImage: "alpine/kubectl:1.35.2"
 
 # -- Provide a name in place of lighthouse for `app:` labels
 nameOverride: ""
@@ -252,7 +252,27 @@ readinessProbe:
 centralMonitoring:
   # -- Specifies whether central monitoring should be enabled
   enabled: false
-  # -- https endpoint to obol central prometheus 
+  # -- https endpoint to obol central prometheus
   promEndpoint: "https://vm.monitoring.gcp.obol.tech/write"
-  # -- The authentication token to the central prometheus
+  # -- The authentication token to the central prometheus (ignored if existingSecret is set)
   token: ""
+  # -- Use an existing Kubernetes Secret for the monitoring token instead of a plain value
+  existingSecret:
+    # -- Name of the existing secret
+    name: ""
+    # -- Key in the secret containing the token
+    key: "token"
+
+  # -- Prometheus image (used in agent mode for scraping and remote write)
+  image: "prom/prometheus:v2.55.1"
+
+httpRoute:
+  enabled: false
+  annotations: {}
+  parentRefs: []
+  hostnames: []
+  backendRef:
+    name: haproxy
+    port: 80
+  matches: []
+  filters: []

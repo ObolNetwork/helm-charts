@@ -1,22 +1,32 @@
-{{- if .Values.centralMonitoring.enabled -}}
+{{- if .Values.centralMonitoring.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: prometheus
-  namespace: {{ $.Release.Namespace }}
+  name: {{ include "release.name" . }}-prometheus
+  namespace: {{ .Release.Namespace }}
 data:
   prometheus.yaml: |
     global:
       scrape_interval: 12s
       evaluation_interval: 12s
     remote_write:
-      - url: {{ $.Values.centralMonitoring.promEndpoint }}
+      - url: {{ .Values.centralMonitoring.promEndpoint }}
+{{- if .Values.centralMonitoring.existingSecret.name }}
         authorization:
-          credentials: {{ $.Values.centralMonitoring.token }}
+          credentials_file: /etc/secrets/monitoring-token/{{ .Values.centralMonitoring.existingSecret.key | default "token" }}
+{{- else if .Values.centralMonitoring.token }}
+        authorization:
+          credentials: {{ .Values.centralMonitoring.token }}
+{{- end }}
     scrape_configs:
     {{- range $i := until (int .Values.clusterSize) }}
-      - job_name: '{{ $.Release.Namespace }}-{{ $i }}'
+      - job_name: '{{ include "release.name" $ }}-{{ $i }}'
         static_configs:
-          - targets: ['{{ $.Release.Namespace }}-{{ $i }}:3620']
+          - targets: ['{{ include "release.name" $ }}-{{ $i }}:3620']
+        relabel_configs:
+          - target_label: relay_cluster_name
+            replacement: obol-{{ $.Release.Namespace }}-{{ $i }}
+          - target_label: service_owner
+            replacement: obol-platform
     {{- end }}
 {{- end }}
