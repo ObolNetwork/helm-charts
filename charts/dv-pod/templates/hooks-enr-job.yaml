@@ -10,7 +10,7 @@ metadata:
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/hook-weight": "-5" # After RBAC, before main statefulset
-    "helm.sh/hook-delete-policy": "before-hook-creation"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded"
 {{- if .Values.charon.enr.generate.annotations }}
     {{- toYaml .Values.charon.enr.generate.annotations | nindent 4 }}
 {{- end }}
@@ -239,5 +239,6 @@ spec:
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+  ttlSecondsAfterFinished: 300
   backoffLimit: 3 # Number of retries before considering the job failed
 {{- end }}
