@@ -1,0 +1,49 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/signKey: |
+    fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+    url: https://obolnetwork.github.io/helm-charts/pubkey.asc
+apiVersion: v2
+appVersion: 2026.3.2
+description: OpenClaw gateway deployment (agent runtime) for Kubernetes.
+home: https://docs.openclaw.ai
+keywords:
+- - openclaw
+- - agent
+- - ai
+- - gateway
+- - obol
+kubeVersion: '>=1.26.0-0'
+maintainers:
+- - email: platform@obol.tech
+  name: Obol Platform Team
+name: openclaw
+sources:
+- - https://docs.openclaw.ai
+type: application
+version: 0.2.0
+
+...
+files:
+  openclaw-0.2.0.tgz: sha256:7e39c9c5ef3589016a0ee24259538106906f12621145a75f2689d97f462bf175
+
+-----BEGIN PGP SIGNATURE-----
+
+wsG5BAEBCgBtBYJpypHRCRCQx5MnNNeGRkUUAAAAAAAcACBzYWx0QG5vdGF0aW9u
+cy5vcGVucGdwanMub3JnqvYYY7B+bPRZyO8Hyb+eVNEQFwhOQpmmolSjSGXCJ0IW
+IQRwEFNOl0vedEYIptmQx5MnNNeGRgAAT3kP/2RGeWlVifKI9uGRkGiCZmBh+d+E
+N8oJw3FDta9X+kdIIo/9kOGIl3U5Dv2UacEPpVmW7vuTwHBEf/kwLjipHXeYQKSY
+Pqvhmza5UYNBC6JFn8PHP9GEKT+Uj/mJNyUxKzV1MK1SPoGG+PgHyAJiF8irxpXL
+MOcfsgvoV5Dzn9t3EK4zZNyEcpB8m3cfo0AjJpumhyh0WiaWBVgLxfC012dv2vzk
+bLCVPraoEFXhB6uaGNIbbhiYtGOUZ0gx8VGTFJPKCtuLdE8T/nKaV3GIjAYPkIEz
+h3j1I9VV28DIieVR3ayiCE4Lxl2moo9ntmhT7ubzdwMPtBHQkZzlc31otMOcveJJ
+nq2pbghpzhEFN4a1qCvHz73AzZo13lW01uh8OPFoU++CiqcU9p3uHwDIZwwAiWn9
+x1RL7CmTO6amPEDh6xsRUlrRFGRd3BAUIXHzsQ21u/iU20Gb73835NKFWp03B5D+
+MsTtI9ZGDmMxleYC++DL1bg9F0rt26IzGJWNaC68bt8YUlq7qKe+zsi6EYkzbOse
+4zZIh+YQkYGJrdGu5k6Dz8B9LA1Y7WyHYFYw/YyQSSYc+/k/j0cN7f8Bq6kKoU/7
+kPFVIxQjs5vDUT2kpEerZfOt+OlUAIMagjLqBD4YjL+PRxzTX1fH5JkLX/egd+0Q
+UHt5ZT/vCDoJdWkB
+-----END PGP SIGNATURE-----
