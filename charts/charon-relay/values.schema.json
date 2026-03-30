@@ -14,12 +14,30 @@
                     "description": "Specifies whether central monitoring should be enabled",
                     "type": "boolean"
                 },
+                "existingSecret": {
+                    "description": "Use an existing Kubernetes Secret for the monitoring token instead of a plain value",
+                    "type": "object",
+                    "properties": {
+                        "key": {
+                            "description": "Key in the secret containing the token",
+                            "type": "string"
+                        },
+                        "name": {
+                            "description": "Name of the existing secret",
+                            "type": "string"
+                        }
+                    }
+                },
+                "image": {
+                    "description": "Prometheus image (used in agent mode for scraping and remote write)",
+                    "type": "string"
+                },
                 "promEndpoint": {
-                    "description": "https endpoint to obol central prometheus ",
+                    "description": "https endpoint to obol central prometheus",
                     "type": "string"
                 },
                 "token": {
-                    "description": "The authentication token to the central prometheus",
+                    "description": "The authentication token to the central prometheus (ignored if existingSecret is set)",
                     "type": "string"
                 }
             }
@@ -104,6 +122,40 @@
         "fullnameOverride": {
             "description": "Provide a name to substitute for the full names of resources",
             "type": "string"
+        },
+        "httpRoute": {
+            "type": "object",
+            "properties": {
+                "annotations": {
+                    "type": "object"
+                },
+                "backendRef": {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string"
+                        },
+                        "port": {
+                            "type": "integer"
+                        }
+                    }
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "filters": {
+                    "type": "array"
+                },
+                "hostnames": {
+                    "type": "array"
+                },
+                "matches": {
+                    "type": "array"
+                },
+                "parentRefs": {
+                    "type": "array"
+                }
+            }
         },
         "image": {
             "description": "Charon image ropsitory, pull policy, and tag version",
