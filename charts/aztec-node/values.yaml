@@ -88,7 +88,7 @@ image:
   # -- Image repository
   repository: aztecprotocol/aztec
   # -- Image tag
-  tag: 4.1.0
+  tag: 4.1.2
   # -- Container pull policy
   pullPolicy: IfNotPresent
 
