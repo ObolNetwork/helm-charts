@@ -421,7 +421,7 @@
         "# -- OpenClaw image repository, pull policy, and tag version\\s+image:\\s+repository:\\s+(?<depName>ghcr\\.io/obolnetwork/openclaw)\\s+pullPolicy:\\s+\\w+\\s+tag:\\s+\"(?<currentValue>v?[0-9]+\\.[0-9]+\\.[0-9]+)\""
       ],
       "datasourceTemplate": "docker",
-      "versioningTemplate": "semver"
+      "versioningTemplate": "regex:^(?<major>\\d{4})\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
     },
     {
       "customType": "regex",
@@ -473,7 +473,7 @@
       ],
       "depNameTemplate": "ghcr.io/obolnetwork/openclaw",
       "datasourceTemplate": "docker",
-      "versioningTemplate": "semver"
+      "versioningTemplate": "regex:^(?<major>\\d{4})\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
     }
   ]
 }
