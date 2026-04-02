@@ -206,6 +206,38 @@ spec:
               value: /var/lib/keystore
             - name: FEE_RECIPIENT
               value: {{ .Values.sequencer.feeRecipient | quote }}
+            {{- if .Values.sequencer.ha.enabled }}
+            - name: VALIDATOR_HA_SIGNING_ENABLED
+              value: "true"
+            {{- if .Values.sequencer.ha.databaseUrlSecretName }}
+            - name: VALIDATOR_HA_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.sequencer.ha.databaseUrlSecretName }}
+                  key: database-url
+            {{- else }}
+            - name: VALIDATOR_HA_DATABASE_URL
+              value: {{ .Values.sequencer.ha.databaseUrl | quote }}
+            {{- end }}
+            - name: VALIDATOR_HA_NODE_ID
+              value: {{ .Values.sequencer.ha.nodeId | quote }}
+            {{- if .Values.sequencer.ha.pollingIntervalMs }}
+            - name: VALIDATOR_HA_POLLING_INTERVAL_MS
+              value: {{ .Values.sequencer.ha.pollingIntervalMs | quote }}
+            {{- end }}
+            {{- if .Values.sequencer.ha.signingTimeoutMs }}
+            - name: VALIDATOR_HA_SIGNING_TIMEOUT_MS
+              value: {{ .Values.sequencer.ha.signingTimeoutMs | quote }}
+            {{- end }}
+            {{- if .Values.sequencer.ha.poolMax }}
+            - name: VALIDATOR_HA_POOL_MAX
+              value: {{ .Values.sequencer.ha.poolMax | quote }}
+            {{- end }}
+            {{- if .Values.sequencer.ha.poolMin }}
+            - name: VALIDATOR_HA_POOL_MIN
+              value: {{ .Values.sequencer.ha.poolMin | quote }}
+            {{- end }}
+            {{- end }}
             {{- end }}
             - name: SENTINEL_ENABLED
               value: {{ .Values.node.sentinel.enabled | quote }}

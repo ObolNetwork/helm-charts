@@ -29,6 +29,30 @@ sequencer:
   # -- Aztec address (32 bytes) to receive unburnt transaction fees
   # feeRecipient: "0x0000000000000000000000000000000000000000000000000000000000000000"
 
+  # -- High Availability signing configuration
+  # Enables distributed locking via shared PostgreSQL to prevent double-signing
+  # Ref: https://docs.aztec.network/operate/operators/setup/high_availability_sequencers
+  ha:
+    # -- Enable HA signing (requires shared PostgreSQL database)
+    enabled: false
+    # -- PostgreSQL connection string (same database for all HA nodes)
+    # Example: postgresql://user:password@host:5432/validator_ha
+    databaseUrl: ""
+    # -- Name of existing Kubernetes secret containing the database URL
+    # The secret must contain a key named "database-url"
+    # Use this field OR databaseUrl, not both
+    databaseUrlSecretName: ""
+    # -- Unique node identifier (must be different for each HA node)
+    nodeId: ""
+    # -- How often to check duty status (ms)
+    pollingIntervalMs:
+    # -- Max wait for in-progress signing (ms)
+    signingTimeoutMs:
+    # -- Max database connections
+    poolMax:
+    # -- Min database connections
+    poolMin:
+
 # =====================================================================
 # PROVER CONFIGURATION (only used when role: prover)
 # =====================================================================
