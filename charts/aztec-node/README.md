@@ -2,7 +2,7 @@
 Aztec Node
 ===========
 
-![Version: 2.1.1](https://img.shields.io/badge/Version-2.1.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 4.1.2](https://img.shields.io/badge/AppVersion-4.1.2-informational?style=flat-square)
+![Version: 2.2.0](https://img.shields.io/badge/Version-2.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 4.1.2](https://img.shields.io/badge/AppVersion-4.1.2-informational?style=flat-square)
 
 A Helm chart for deploying an Aztec node
 
@@ -64,6 +64,15 @@ A Helm chart for deploying an Aztec node
 | rollupVersion | string | `"canonical"` | Which rollup contract we want to follow from the registry |
 | sequencer.attesterPrivateKey | string | `""` | Ethereum private key for attester (signs blocks and attestations) REQUIRED when role is 'sequencer' (unless using attesterPrivateKeySecretName) Use this field OR attesterPrivateKeySecretName, not both |
 | sequencer.attesterPrivateKeySecretName | string | `""` | Name of existing Kubernetes secret containing keystore.json Use this field OR attesterPrivateKey, not both When set, the chart will use the external secret instead of creating one The secret must contain a key named "keystore.json" with the full keystore structure Create with: kubectl create secret generic <name> --from-file=keystore.json=keystore.json |
+| sequencer.ha | object | `{"databaseUrl":"","databaseUrlSecretName":"","enabled":false,"nodeId":"","pollingIntervalMs":null,"poolMax":null,"poolMin":null,"signingTimeoutMs":null}` | High Availability signing configuration Enables distributed locking via shared PostgreSQL to prevent double-signing Ref: https://docs.aztec.network/operate/operators/setup/high_availability_sequencers |
+| sequencer.ha.databaseUrl | string | `""` | PostgreSQL connection string (same database for all HA nodes) Example: postgresql://user:password@host:5432/validator_ha |
+| sequencer.ha.databaseUrlSecretName | string | `""` | Name of existing Kubernetes secret containing the database URL The secret must contain a key named "database-url" Use this field OR databaseUrl, not both |
+| sequencer.ha.enabled | bool | `false` | Enable HA signing (requires shared PostgreSQL database) |
+| sequencer.ha.nodeId | string | `""` | Unique node identifier (must be different for each HA node) |
+| sequencer.ha.pollingIntervalMs | string | `nil` | How often to check duty status (ms) |
+| sequencer.ha.poolMax | string | `nil` | Max database connections |
+| sequencer.ha.poolMin | string | `nil` | Min database connections |
+| sequencer.ha.signingTimeoutMs | string | `nil` | Max wait for in-progress signing (ms) |
 | service.admin.enabled | bool | `true` |  |
 | service.admin.port | int | `8081` |  |
 | service.headless.enabled | bool | `true` |  |
