@@ -104,7 +104,7 @@ spec:
               {{- if $.Values.config.logLevel }}
               --log-level={{ $.Values.config.logLevel }}
               {{- end }}
-              {{- if $.Values.config.lokiAddresses }}
+              {{- if and $.Values.config.lokiAddresses (not $.Values.config.loki.existingSecret.name) }}
               --loki-addresses={{ $.Values.config.lokiAddresses }}
               {{- end }}
               {{- if $.Values.config.lokiService }}
@@ -146,6 +146,13 @@ spec:
                 fieldPath: metadata.name
           - name: KUBERNETES_CLUSTER_DOMAIN
             value: {{ $.Values.kubernetesClusterDomain }}
+          {{- if $.Values.config.loki.existingSecret.name }}
+          - name: CHARON_LOKI_ADDRESSES
+            valueFrom:
+              secretKeyRef:
+                name: {{ $.Values.config.loki.existingSecret.name }}
+                key: {{ $.Values.config.loki.existingSecret.key | default "url" }}
+          {{- end }}
           image: {{ $.Values.image.repository }}:{{ $.Values.image.tag }}
           name: {{ $.Chart.Name }}
           {{- with $.Values.containerSecurityContext }}
