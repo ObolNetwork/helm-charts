@@ -2,7 +2,7 @@
 Charon Relay
 ===========
 
-![Version: 0.4.1](https://img.shields.io/badge/Version-0.4.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.9.3](https://img.shields.io/badge/AppVersion-1.9.3-informational?style=flat-square)
+![Version: 0.5.0](https://img.shields.io/badge/Version-0.5.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.9.3](https://img.shields.io/badge/AppVersion-1.9.3-informational?style=flat-square)
 
 Charon is an open-source Ethereum Distributed validator middleware written in golang. This chart deploys a libp2p relay server.
 
@@ -30,6 +30,9 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | config.httpAddress | string | `"0.0.0.0:3640"` | Listening address (ip and port) for the relay http server serving runtime ENR. (default "127.0.0.1:3640") |
 | config.logFormat | string | `"json"` | Log format; console, logfmt or json (default "console") |
 | config.logLevel | string | `"debug"` | Log level; debug, info, warn or error (default "info") |
+| config.loki | object | `{"existingSecret":{"key":"url","name":""}}` | Use an existing Kubernetes Secret for the Loki URL instead of plain lokiAddresses value |
+| config.loki.existingSecret.key | string | `"url"` | Key in the secret containing the Loki URL |
+| config.loki.existingSecret.name | string | `""` | Name of the existing secret containing the Loki URL |
 | config.lokiAddresses | string | `""` | Enables sending of logfmt structured logs to these Loki log aggregation server addresses. This is in addition to normal stderr logs. |
 | config.lokiService | string | `""` | Service label sent with logs to Loki. |
 | config.monitoringAddress | string | `"0.0.0.0:3620"` | Listening address (ip and port) for the monitoring API (prometheus, pprof). (default "127.0.0.1:3620") |
