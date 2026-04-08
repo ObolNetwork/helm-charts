@@ -65,6 +65,25 @@
                     "description": "Log level; debug, info, warn or error (default \"info\")",
                     "type": "string"
                 },
+                "loki": {
+                    "description": "Use an existing Kubernetes Secret for the Loki URL instead of plain lokiAddresses value",
+                    "type": "object",
+                    "properties": {
+                        "existingSecret": {
+                            "type": "object",
+                            "properties": {
+                                "key": {
+                                    "description": "Key in the secret containing the Loki URL",
+                                    "type": "string"
+                                },
+                                "name": {
+                                    "description": "Name of the existing secret containing the Loki URL",
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
                 "lokiAddresses": {
                     "description": "Enables sending of logfmt structured logs to these Loki log aggregation server addresses. This is in addition to normal stderr logs.",
                     "type": "string"
