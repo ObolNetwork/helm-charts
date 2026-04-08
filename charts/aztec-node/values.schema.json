@@ -453,6 +453,44 @@
                 "attesterPrivateKeySecretName": {
                     "description": "Name of existing Kubernetes secret containing keystore.json Use this field OR attesterPrivateKey, not both When set, the chart will use the external secret instead of creating one The secret must contain a key named \"keystore.json\" with the full keystore structure",
                     "type": "string"
+                },
+                "ha": {
+                    "description": "High Availability signing configuration Enables distributed locking via shared PostgreSQL to prevent double-signing Ref: https://docs.aztec.network/operate/operators/setup/high_availability_sequencers",
+                    "type": "object",
+                    "properties": {
+                        "databaseUrl": {
+                            "description": "PostgreSQL connection string (same database for all HA nodes) Example: postgresql://user:password@host:5432/validator_ha",
+                            "type": "string"
+                        },
+                        "databaseUrlSecretName": {
+                            "description": "Name of existing Kubernetes secret containing the database URL The secret must contain a key named \"database-url\" Use this field OR databaseUrl, not both",
+                            "type": "string"
+                        },
+                        "enabled": {
+                            "description": "Enable HA signing (requires shared PostgreSQL database)",
+                            "type": "boolean"
+                        },
+                        "nodeId": {
+                            "description": "Unique node identifier (must be different for each HA node)",
+                            "type": "string"
+                        },
+                        "pollingIntervalMs": {
+                            "description": "How often to check duty status (ms)",
+                            "type": "null"
+                        },
+                        "poolMax": {
+                            "description": "Max database connections",
+                            "type": "null"
+                        },
+                        "poolMin": {
+                            "description": "Min database connections",
+                            "type": "null"
+                        },
+                        "signingTimeoutMs": {
+                            "description": "Max wait for in-progress signing (ms)",
+                            "type": "null"
+                        }
+                    }
                 }
             }
         },
