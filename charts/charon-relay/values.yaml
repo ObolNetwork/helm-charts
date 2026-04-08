@@ -175,9 +175,17 @@ config:
 
   # --  Enables sending of logfmt structured logs to these Loki log aggregation server addresses. This is in addition to normal stderr logs.
   lokiAddresses: ""
-  
+
   # -- Service label sent with logs to Loki.
   lokiService: ""
+
+  # -- Use an existing Kubernetes Secret for the Loki URL instead of plain lokiAddresses value
+  loki:
+    existingSecret:
+      # -- Name of the existing secret containing the Loki URL
+      name: ""
+      # -- Key in the secret containing the Loki URL
+      key: "url"
 
   # -- Listening address (ip and port) for the monitoring API (prometheus, pprof). (default "127.0.0.1:3620")
   monitoringAddress: "0.0.0.0:3620"
