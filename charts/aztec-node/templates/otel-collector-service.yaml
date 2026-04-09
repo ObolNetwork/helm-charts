@@ -1,0 +1,20 @@
+{{- if eq (include "chart.monitoringEnabled" .) "true" -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "chart.resourceName" . }}-otel-collector
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  ports:
+  - port: 4318
+    targetPort: 4318
+    name: otlp-http
+  - port: 8889
+    targetPort: 8889
+    name: prometheus
+  selector:
+    {{- include "chart.selectorLabels" . | nindent 4 }}
+    app: otel-collector
+  type: ClusterIP
+{{- end }}
