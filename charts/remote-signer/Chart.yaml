@@ -16,8 +16,8 @@ keywords:
   - obol
   - keystore
 type: application
-version: 0.3.0
-appVersion: "v0.1.0"
+version: 0.3.1
+appVersion: "v0.2.0"
 annotations:
   artifacthub.io/license: Apache-2.0
   artifacthub.io/signKey: |
