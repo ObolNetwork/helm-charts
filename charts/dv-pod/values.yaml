@@ -90,6 +90,9 @@ charon:
   # -- Comma-separated list of features to enable, overriding the default minimum feature set.
   featureSetEnable: ""
 
+  # -- Enables polling the Obol API for signed fee recipient update messages that override the currently configured fee recipient.
+  fetchFeeRecipientUpdates: true
+
   # -- The path on the pod to the cluster lock file that definesthe distributed validator cluster. (default "/charon-data/cluster-lock.json")
   lockFile: "/charon-data/cluster-lock.json"
 

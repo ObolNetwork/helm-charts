@@ -350,6 +350,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | charon.featureSet | string | `"stable"` | Minimum feature set to enable by default: alpha, beta, or stable. Warning: modify at own risk. (default "stable") |
 | charon.featureSetDisable | string | `""` | Comma-separated list of features to disable, overriding the default minimum feature set. |
 | charon.featureSetEnable | string | `""` | Comma-separated list of features to enable, overriding the default minimum feature set. |
+| charon.fetchFeeRecipientUpdates | bool | `true` | Enables polling the Obol API for signed fee recipient update messages that override the currently configured fee recipient. |
 | charon.lockFile | string | `"/charon-data/cluster-lock.json"` | The path on the pod to the cluster lock file that definesthe distributed validator cluster. (default "/charon-data/cluster-lock.json") |
 | charon.lockHash | string | `""` | Cluster lock hash for large cluster-lock files (>1MB) When provided, the DKG sidecar will fetch the full cluster-lock from Obol API using this hash Extract the hash from a cluster-lock.json using: `jq -r '.lock_hash' cluster-lock.json` Alternative to providing the full cluster-lock.json file via the configMaps.clusterLock value |
 | charon.logFormat | string | `"json"` | Log format; console, logfmt or json (default "json") |
