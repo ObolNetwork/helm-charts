@@ -2,8 +2,8 @@ apiVersion: v2
 name: aztec-node
 description: A Helm chart for deploying an Aztec node
 type: application
-version: 2.2.1
-appVersion: "4.1.3"
+version: 2.3.0
+appVersion: "4.2.0"
 annotations:
   artifacthub.io/license: Apache-2.0
   artifacthub.io/signKey: |
