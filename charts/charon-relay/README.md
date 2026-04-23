@@ -2,7 +2,7 @@
 Charon Relay
 ===========
 
-![Version: 0.5.0](https://img.shields.io/badge/Version-0.5.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.9.3](https://img.shields.io/badge/AppVersion-1.9.3-informational?style=flat-square)
+![Version: 0.5.1](https://img.shields.io/badge/Version-0.5.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.9.4](https://img.shields.io/badge/AppVersion-1.9.4-informational?style=flat-square)
 
 Charon is an open-source Ethereum Distributed validator middleware written in golang. This chart deploys a libp2p relay server.
 
@@ -54,7 +54,7 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | httpRoute.hostnames | list | `[]` |  |
 | httpRoute.matches | list | `[]` |  |
 | httpRoute.parentRefs | list | `[]` |  |
-| image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.9.3"}` | Charon image ropsitory, pull policy, and tag version |
+| image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.9.4"}` | Charon image ropsitory, pull policy, and tag version |
 | imagePullSecrets | list | `[]` | Credentials to fetch images from private registry # ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ |
 | initContainerImage | string | `"alpine/kubectl:1.35.2"` | Init container image |
 | livenessProbe | object | `{"enabled":true,"httpGet":{"path":"/livez"},"initialDelaySeconds":10,"periodSeconds":5}` | Configure liveness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ |
