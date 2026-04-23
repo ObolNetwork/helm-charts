@@ -1,0 +1,39 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "release.name" . }}-p2p
+  labels:
+    {{- include "charon.labels" . | nindent 4 }}
+    type: p2p
+  {{- with .Values.p2pPort.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ $.Values.p2pPort.type }}
+  externalTrafficPolicy: Local
+  ports:
+  {{- if eq .Values.p2pPort.type "NodePort" }}
+    - name: p2p-tcp
+      port: {{ .Values.p2pPort.port }}
+      protocol: TCP
+      targetPort: {{ .Values.p2pPort.nodePort }}
+      nodePort: {{ .Values.p2pPort.nodePort }}
+    - name: p2p-udp
+      port: {{ .Values.p2pPort.port }}
+      protocol: UDP
+      targetPort: {{ .Values.p2pPort.nodePort }}
+      nodePort: {{ .Values.p2pPort.nodePort }}
+  {{- else }}
+    - port: {{ .Values.p2pPort.port }}
+      targetPort: p2p-tcp
+      protocol: TCP
+      name: p2p-tcp
+    - port: {{ .Values.p2pPort.port}}
+      targetPort: p2p-udp
+      protocol: UDP
+      name: p2p-udp
+  {{- end }}
+  selector:
+    {{- include "charon.selectorLabels" . | nindent 4 }}
