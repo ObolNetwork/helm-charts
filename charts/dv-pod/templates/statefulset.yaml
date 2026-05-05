@@ -104,7 +104,7 @@ spec:
             - name: CHARON_NODE_ID_DIR
               value: "/charon-data"
             - name: CHARON_PRIVATE_KEY_FILE
-              value: "/charon-data/charon-enr-private-key"
+              value: "/enr-from-job/{{ include "dv-pod.enrSecretDataKey" . }}"
             - name: CHAIN_ID
               value: "{{ include "dv-pod.chainId" . }}"
             {{- if .Values.charon.dkgSidecar.targetConfigHash }}
@@ -124,9 +124,6 @@ spec:
               subPath: cluster-lock.json
               readOnly: true
             {{- end }}
-            - name: charon-enr-private-key
-              mountPath: /charon-data/charon-enr-private-key
-              subPath: "{{ include "dv-pod.enrSecretDataKey" . }}"
           resources:
             {{- toYaml .Values.charon.dkgSidecar.resources | nindent 12 }}
         {{- end }}
