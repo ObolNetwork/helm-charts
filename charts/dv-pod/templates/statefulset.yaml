@@ -538,6 +538,7 @@ spec:
               {{- if .Values.charon.featureSetEnable }}
               --feature-set-enable={{ .Values.charon.featureSetEnable }}
               {{- end }}
+              --fetch-feerecipient-updates={{ .Values.charon.fetchFeeRecipientUpdates }}
               {{- if .Values.charon.logFormat }}
               --log-format={{ .Values.charon.logFormat }}
               {{- end }}
