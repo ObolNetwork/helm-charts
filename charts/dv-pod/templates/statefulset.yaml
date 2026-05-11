@@ -535,6 +535,7 @@ spec:
               {{- if .Values.charon.featureSetEnable }}
               --feature-set-enable={{ .Values.charon.featureSetEnable }}
               {{- end }}
+              --fetch-feerecipient-updates={{ if kindIs "invalid" .Values.charon.fetchFeeRecipientUpdates }}true{{ else }}{{ .Values.charon.fetchFeeRecipientUpdates }}{{ end }}
               {{- if .Values.charon.logFormat }}
               --log-format={{ .Values.charon.logFormat }}
               {{- end }}

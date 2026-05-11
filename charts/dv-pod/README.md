@@ -2,7 +2,7 @@
 DV-Pod
 ===========
 
-![Version: 0.18.2](https://img.shields.io/badge/Version-0.18.2-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.9.4](https://img.shields.io/badge/AppVersion-1.9.4-informational?style=flat-square)
+![Version: 0.19.0](https://img.shields.io/badge/Version-0.19.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.10.0](https://img.shields.io/badge/AppVersion-1.10.0-informational?style=flat-square)
 
 A Helm chart for deploying a single distributed validator pod consisting of a Charon middleware client and validator client.
 
@@ -350,6 +350,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | charon.featureSet | string | `"stable"` | Minimum feature set to enable by default: alpha, beta, or stable. Warning: modify at own risk. (default "stable") |
 | charon.featureSetDisable | string | `""` | Comma-separated list of features to disable, overriding the default minimum feature set. |
 | charon.featureSetEnable | string | `""` | Comma-separated list of features to enable, overriding the default minimum feature set. |
+| charon.fetchFeeRecipientUpdates | bool | `true` | Enables polling the Obol API for signed fee recipient update messages that override the currently configured fee recipient. |
 | charon.lockFile | string | `"/charon-data/cluster-lock.json"` | The path on the pod to the cluster lock file that definesthe distributed validator cluster. (default "/charon-data/cluster-lock.json") |
 | charon.lockHash | string | `""` | Cluster lock hash for large cluster-lock files (>1MB) When provided, the DKG sidecar will fetch the full cluster-lock from Obol API using this hash Extract the hash from a cluster-lock.json using: `jq -r '.lock_hash' cluster-lock.json` Alternative to providing the full cluster-lock.json file via the configMaps.clusterLock value |
 | charon.logFormat | string | `"json"` | Log format; console, logfmt or json (default "json") |
@@ -376,7 +377,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | fullnameOverride | string | `""` | Provide a name to substitute for the full names of resources |
 | global | object | `{"annotations":{}}` | Global configuration that can be referenced across the chart Used for test configurations and shared settings |
 | global.annotations | object | `{}` | Global annotations applied to resources |
-| image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.9.4"}` | Charon image repository, pull policy, and tag version |
+| image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.10.0"}` | Charon image repository, pull policy, and tag version |
 | imagePullSecrets | list | `[]` | Credentials to fetch images from private registry # ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ |
 | livenessProbe | object | `{"enabled":false,"httpGet":{"path":"/livez","port":3620},"initialDelaySeconds":10,"periodSeconds":5}` | Configure liveness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ |
 | livenessProbe.httpGet.port | int | `3620` | Port for liveness probe HTTP checks |
