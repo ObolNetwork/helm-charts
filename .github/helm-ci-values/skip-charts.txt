@@ -4,3 +4,4 @@ obol-app
 aztec-node
 openclaw
 charon
+charon-dv-node
