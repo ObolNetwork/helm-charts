@@ -214,6 +214,9 @@ config:
   # -- Comma-separated list of listening TCP addresses (ip and port) for libP2P traffic. Empty default doesn't bind to local port therefore only supports outgoing connections.
   p2pTcpAddress: "0.0.0.0:3610"
 
+  # -- Listening UDP address (ip and port) for QUIC libP2P traffic. When set, enables QUIC transport and the relay advertises a /udp/<port>/quic-v1 multiaddr. Requires a separate UDP LoadBalancer service exposing this port.
+  p2pUdpAddress: ""
+
 # -- Prometheus Service Monitor
 ## ref: https://github.com/coreos/prometheus-operator
 serviceMonitor:

@@ -139,6 +139,9 @@ spec:
               {{- if $.Values.config.p2pTcpAddress }}
               --p2p-tcp-address={{ $.Values.config.p2pTcpAddress }}
               {{- end }}
+              {{- if $.Values.config.p2pUdpAddress }}
+              --p2p-udp-address={{ $.Values.config.p2pUdpAddress }}
+              {{- end }}
           env:
           - name: NODE_NAME
             valueFrom:

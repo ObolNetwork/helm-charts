@@ -44,6 +44,7 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | config.p2pRelayLogLevel | string | `"debug"` |  |
 | config.p2pRelays | string | `""` | Comma-separated list of libp2p relay URLs or multiaddrs. (default [https://0.relay.obol.tech/enr]) |
 | config.p2pTcpAddress | string | `"0.0.0.0:3610"` | Comma-separated list of listening TCP addresses (ip and port) for libP2P traffic. Empty default doesn't bind to local port therefore only supports outgoing connections. |
+| config.p2pUdpAddress | string | `""` | Listening UDP address (ip and port) for QUIC libP2P traffic. When set, enables QUIC transport and the relay advertises a /udp/<port>/quic-v1 multiaddr. Requires a separate UDP LoadBalancer service exposing this port. |
 | containerSecurityContext | object | See `values.yaml` | The security context for containers |
 | fullnameOverride | string | `""` | Provide a name to substitute for the full names of resources |
 | httpRoute.annotations | object | `{}` |  |
