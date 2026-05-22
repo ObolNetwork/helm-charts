@@ -2,7 +2,7 @@
 Charon Relay
 ===========
 
-![Version: 0.6.0](https://img.shields.io/badge/Version-0.6.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.10.0](https://img.shields.io/badge/AppVersion-1.10.0-informational?style=flat-square)
+![Version: 0.7.0](https://img.shields.io/badge/Version-0.7.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.10.0](https://img.shields.io/badge/AppVersion-1.10.0-informational?style=flat-square)
 
 Charon is an open-source Ethereum Distributed validator middleware written in golang. This chart deploys a libp2p relay server.
 
@@ -74,7 +74,8 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | readinessProbe | object | `{"enabled":true,"httpGet":{"path":"/readyz"},"initialDelaySeconds":5,"periodSeconds":3}` | Configure readiness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ |
 | resources | object | `{}` | Pod resources limits and requests |
 | securityContext | object | See `values.yaml` | The security context for pods |
-| service | object | `{"ports":{"http":{"name":"relay-http","port":3640,"protocol":"TCP","targetPort":3640},"monitoring":{"name":"monitoring","port":3620,"protocol":"TCP","targetPort":3620},"p2pTcp":{"name":"p2p-tcp","port":3610,"protocol":"TCP","targetPort":3610}},"type":"LoadBalancer"}` | Charon service ports |
+| service | object | `{"ports":{"http":{"name":"relay-http","port":3640,"protocol":"TCP","targetPort":3640},"monitoring":{"name":"monitoring","port":3620,"protocol":"TCP","targetPort":3620},"p2pTcp":{"name":"p2p-tcp","port":3610,"protocol":"TCP","targetPort":3610}},"type":"LoadBalancer","udpAnnotations":{}}` | Charon service ports |
+| service.udpAnnotations | object | `{}` | Annotations for UDP LoadBalancer services (created when config.p2pUdpAddress is set) |
 | serviceAccount | object | `{"annotations":{},"enabled":true,"name":""}` | Service account # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/ |
 | serviceAccount.annotations | object | `{}` | Annotations to add to the service account |
 | serviceAccount.enabled | bool | `true` | Specifies whether a service account should be created |

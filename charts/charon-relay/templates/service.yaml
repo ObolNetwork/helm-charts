@@ -24,4 +24,26 @@ spec:
       targetPort: {{ $.Values.service.ports.monitoring.targetPort }}
   selector:
     name: {{ include "release.name" $ }}-{{ $i }}
+{{- if $.Values.config.p2pUdpAddress }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "release.name" $ }}-{{ $i }}-udp
+  namespace: {{ $.Release.Namespace }}
+  {{- with $.Values.service.udpAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ $.Values.service.type }}
+  externalTrafficPolicy: Local
+  selector:
+    name: {{ include "release.name" $ }}-{{ $i }}
+  ports:
+    - name: p2p-udp
+      protocol: UDP
+      port: 3630
+      targetPort: 3630
+{{- end }}
 {{- end }}
