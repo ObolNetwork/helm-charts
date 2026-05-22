@@ -86,6 +86,8 @@ rbac:
 # -- Charon service ports
 service:
   type: LoadBalancer
+  # -- Annotations for UDP LoadBalancer services (created when config.p2pUdpAddress is set)
+  udpAnnotations: {}
   ports:
     http:
       name: relay-http
