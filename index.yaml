@@ -1939,6 +1939,36 @@ entries:
         url: https://obolnetwork.github.io/helm-charts/pubkey.asc
     apiVersion: v2
     appVersion: 1.10.0
+    created: "2026-05-22T18:50:26.244559478Z"
+    description: Charon is an open-source Ethereum Distributed validator middleware
+      written in golang. This chart deploys a libp2p relay server.
+    digest: 8981a50de395da0b67bba1f8ac79f0b969dc76c93dc8a329b602174ad16286b6
+    home: https://obol.tech/
+    icon: https://raw.githubusercontent.com/ObolNetwork/charon/main/docs/images/charonlogo.svg
+    keywords:
+    - ethereum
+    - blockchain
+    - obol
+    - charon
+    - dvt
+    - relay
+    maintainers:
+    - email: devops@obol.tech
+      name: Eth2DevOps
+    name: charon-relay
+    sources:
+    - https://github.com/ObolNetwork/charon
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/charon-relay-0.7.0/charon-relay-0.7.0.tgz
+    version: 0.7.0
+  - annotations:
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/signKey: |
+        fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+        url: https://obolnetwork.github.io/helm-charts/pubkey.asc
+    apiVersion: v2
+    appVersion: 1.10.0
     created: "2026-05-08T14:13:45.522976013Z"
     description: Charon is an open-source Ethereum Distributed validator middleware
       written in golang. This chart deploys a libp2p relay server.
@@ -3561,4 +3591,4 @@ entries:
     urls:
     - https://github.com/ObolNetwork/helm-charts/releases/download/remote-signer-0.1.0/remote-signer-0.1.0.tgz
     version: 0.1.0
-generated: "2026-05-08T14:13:45.523314035Z"
+generated: "2026-05-22T18:50:26.44465583Z"
