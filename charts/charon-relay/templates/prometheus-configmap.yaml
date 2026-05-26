@@ -22,7 +22,7 @@ data:
     {{- range $i := until (int .Values.clusterSize) }}
       - job_name: '{{ include "release.name" $ }}-{{ $i }}'
         static_configs:
-          - targets: ['{{ include "release.name" $ }}-{{ $i }}:3620']
+          - targets: ['{{ include "release.name" $ }}-{{ $i }}-metrics:3620']
         relabel_configs:
           - target_label: relay_cluster_name
             replacement: obol-{{ $.Release.Namespace }}-{{ $i }}
