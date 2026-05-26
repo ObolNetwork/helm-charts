@@ -105,6 +105,14 @@ service:
       protocol: TCP
       targetPort: 3620
 
+# -- When enabled, the metrics port (service.ports.monitoring) is removed from
+# the main (LoadBalancer) Service above and exposed on a separate ClusterIP
+# Service `{release}-{index}-metrics` so the port is not reachable from the
+# public LoadBalancer. ServiceMonitor (if enabled) auto-selects the right
+# Service. Default false to preserve the legacy behaviour.
+metricsService:
+  enabled: false
+
 # -- Pod resources limits and requests
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious

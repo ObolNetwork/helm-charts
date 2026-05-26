@@ -21,7 +21,7 @@ spec:
     scrapeTimeout: {{ $.Values.serviceMonitor.scrapeTimeout }}
     {{- end }}
     honorLabels: true
-    port: metrics
+    port: {{ $.Values.service.ports.monitoring.name }}
     path: {{ $.Values.serviceMonitor.path }}
     scheme: {{ $.Values.serviceMonitor.scheme }}
     {{- if $.Values.serviceMonitor.tlsConfig }}
@@ -35,7 +35,11 @@ spec:
   jobLabel: "{{ $.Release.Name }}-{{ $i }}"
   selector:
     matchLabels:
+      {{- if $.Values.metricsService.enabled }}
+      name: {{ include "release.name" $ }}-{{ $i }}-metrics
+      {{- else }}
       name: {{ include "release.name" $ }}-{{ $i }}
+      {{- end }}
   namespaceSelector:
     matchNames:
       - {{ $.Release.Namespace }}

@@ -18,12 +18,37 @@ spec:
       protocol: {{ $.Values.service.ports.p2pTcp.protocol }}
       port: {{ $.Values.service.ports.p2pTcp.port }}
       targetPort: {{ $.Values.service.ports.p2pTcp.targetPort }}
+    {{- if not $.Values.metricsService.enabled }}
+    - name: {{ $.Values.service.ports.monitoring.name }}
+      protocol: {{ $.Values.service.ports.monitoring.protocol }}
+      port: {{ $.Values.service.ports.monitoring.port }}
+      targetPort: {{ $.Values.service.ports.monitoring.targetPort }}
+    {{- end }}
+  selector:
+    name: {{ include "release.name" $ }}-{{ $i }}
+{{- if $.Values.metricsService.enabled }}
+---
+# Separate ClusterIP Service for metrics so port 3620 is not exposed by
+# the public LoadBalancer above. In-cluster scrapers (ServiceMonitor or
+# Prometheus pod_sd) hit this Service instead.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "release.name" $ }}-{{ $i }}-metrics
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    name: {{ include "release.name" $ }}-{{ $i }}-metrics
+    app.kubernetes.io/component: metrics
+spec:
+  type: ClusterIP
+  ports:
     - name: {{ $.Values.service.ports.monitoring.name }}
       protocol: {{ $.Values.service.ports.monitoring.protocol }}
       port: {{ $.Values.service.ports.monitoring.port }}
       targetPort: {{ $.Values.service.ports.monitoring.targetPort }}
   selector:
     name: {{ include "release.name" $ }}-{{ $i }}
+{{- end }}
 {{- if $.Values.config.p2pUdpAddress }}
 ---
 apiVersion: v1
