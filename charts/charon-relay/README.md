@@ -2,7 +2,7 @@
 Charon Relay
 ===========
 
-![Version: 0.7.0](https://img.shields.io/badge/Version-0.7.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.10.0](https://img.shields.io/badge/AppVersion-1.10.0-informational?style=flat-square)
+![Version: 0.8.0](https://img.shields.io/badge/Version-0.8.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.10.0](https://img.shields.io/badge/AppVersion-1.10.0-informational?style=flat-square)
 
 Charon is an open-source Ethereum Distributed validator middleware written in golang. This chart deploys a libp2p relay server.
 
@@ -59,6 +59,7 @@ Charon is an open-source Ethereum Distributed validator middleware written in go
 | imagePullSecrets | list | `[]` | Credentials to fetch images from private registry # ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ |
 | initContainerImage | string | `"alpine/kubectl:1.35.2"` | Init container image |
 | livenessProbe | object | `{"enabled":true,"httpGet":{"path":"/livez"},"initialDelaySeconds":10,"periodSeconds":5}` | Configure liveness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ |
+| metricsService | object | `{"enabled":false}` | When enabled, the metrics port (service.ports.monitoring) is removed from the main (LoadBalancer) Service above and exposed on a separate ClusterIP Service `{release}-{index}-metrics` so the port is not reachable from the public LoadBalancer. ServiceMonitor (if enabled) auto-selects the right Service. Default false to preserve the legacy behaviour. |
 | nameOverride | string | `""` | Provide a name in place of lighthouse for `app:` labels |
 | nodeSelector | object | `{}` | Node labels for pod assignment # ref: https://kubernetes.io/docs/user-guide/node-selection/ |
 | podAnnotations | object | `{}` | Pod annotations |
