@@ -18,8 +18,19 @@ spec:
       protocol: {{ $.Values.service.ports.p2pTcp.protocol }}
       port: {{ $.Values.service.ports.p2pTcp.port }}
       targetPort: {{ $.Values.service.ports.p2pTcp.targetPort }}
-    - name: {{ $.Values.service.ports.monitoring.name }}
-      protocol: {{ $.Values.service.ports.monitoring.protocol }}
+  selector:
+    name: {{ include "release.name" $ }}-{{ $i }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "release.name" $ }}-{{ $i }}-metrics
+  namespace: {{ $.Release.Namespace }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: monitoring
+      protocol: TCP
       port: {{ $.Values.service.ports.monitoring.port }}
       targetPort: {{ $.Values.service.ports.monitoring.targetPort }}
   selector:
