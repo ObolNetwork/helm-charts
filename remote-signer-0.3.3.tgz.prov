@@ -1,0 +1,51 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/signKey: |
+    fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+    url: https://obolnetwork.github.io/helm-charts/pubkey.asc
+apiVersion: v2
+appVersion: v0.4.0
+description: A lightweight Ethereum remote signing service for EVM networks. Multi-chain
+  native with per-request chain_id.
+home: https://obol.org/
+icon: https://avatars.githubusercontent.com/u/85748921?s=128&v=4
+keywords:
+- - ethereum
+- - signing
+- - wallet
+- - evm
+- - obol
+- - keystore
+maintainers:
+- - email: platform@obol.tech
+  name: Obol Platform Team
+name: remote-signer
+sources:
+- - https://github.com/ObolNetwork/remote-signer
+type: application
+version: 0.3.3
+
+...
+files:
+  remote-signer-0.3.3.tgz: sha256:4d3d776ddc67c29f048e4747ce02a289f431396fbc35535b02fdb6e4319be286
+
+-----BEGIN PGP SIGNATURE-----
+
+wsG5BAEBCgBtBYJqL/KQCRCQx5MnNNeGRkUUAAAAAAAcACBzYWx0QG5vdGF0aW9u
+cy5vcGVucGdwanMub3JnBZf5ZOlSj1w2Z65WxqHfVPdK3uuLYCXQ7das/eX60xUW
+IQRwEFNOl0vedEYIptmQx5MnNNeGRgAA0EcP/RsQoCFQG9ba+SsfjhZy4uHg2Rme
+zvgY7gTcl32QuH5/yBCL2JH4PFIfOTtWhDlGmZJCYh0ah++NCf6oaD+KBzAN5Cpc
+zzKP3QUOv0BtueeVucjCtaq/aau5A+Ecv+ZzUEu9VubMrhPlgveVNjkkyCjhV/aL
+iWaqX2yFvE9PO0tHTuSVuM11zjHQqB28neWiWH8DsfyKO4zjXqkqGYu7xt0koowC
+3wuEYqKdS14pXc6EwbLUNOzVjU3ULRjas6zhrQvDxN5bNOVyQbOcQPj88duJaB7C
+wHE83B4voq3Sa6dkSyTDNbkXC5q7YTPyl4Y8DDDetS5UEdUKTNgLTeuIHCPcd6no
+q+1CJl7IJR53dPwQGYq58B2cNgRtk6g7WYFiiM/MQn1kHaNJHWsYyOXDGO5ydZrf
+oOo9ZMvvuKEQ+HiT22MS7TfyJcLOnMuSLZGNm60cVizNB8+zZ/QC3zmBJuCxjz/r
+NPEQMTV14Fg3ALjuouLLBAJHvpfhfGErnVWMh6qzXeVWUyiiGFcdUTlvyFNoru8R
+A9y5TJZha1UXpd+ZSMWyGadQQ9uzQpvEQThA/zwl+JvVtdRtjAPoM7OD1VqV/FJU
+gvl0C3xt7v6ktncM/ZmVwtJblbVjGqub8JphU5feBez0gEOLhsi1e1PNzyo8ADfI
+BKJc09zeS+nd8UQe
+-----END PGP SIGNATURE-----
