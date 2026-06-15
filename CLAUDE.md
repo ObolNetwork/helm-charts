@@ -13,7 +13,7 @@ For the simpler Docker Compose launcher, see `ObolNetwork/charon-distributed-val
 | `charon` | 0.5.3 | 1.9.3 | Standalone Charon middleware (no VC). For bespoke stacks that wire their own VC. |
 | `charon-cluster` | 0.4.3 | 1.9.3 | Multiple Charon instances in one release. Intended for test/local setups; **not** the production-operator path. |
 | `charon-relay` | 0.5.0 | 1.9.3 | Hosts a Charon [p2p relay](https://docs.obol.org/learn/charon/charon-cli-reference#host-a-relay). |
-| `remote-signer` | 0.3.0 | v0.1.0 | Lightweight Ethereum remote signer. |
+| `remote-signer` | 0.3.3 | v0.4.0 | Lightweight Ethereum remote signer. |
 | `aztec-node` | 2.2.1 | 4.1.3 | Aztec node (Full Node / Sequencer / Prover). Part of Obol Stack's Aztec support. |
 | `openclaw` | 0.4.0 | 2026.3.2 | OpenClaw gateway (agent runtime). Note: the openclaw *skills* framework is being deprecated in favour of the `skills` repo designed for Claude agents; this chart remains for current operators. |
 | `helios` | 0.1.5 | 0.9.0 | Helios light client. |
