@@ -171,6 +171,22 @@
         "* * * * *"
       ],
       "groupName": "OpenClaw chart updates"
+    },
+    {
+      "description": "Remote-signer chart updates",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchFileNames": [
+        "charts/remote-signer/**"
+      ],
+      "labels": [
+        "renovate/remote-signer"
+      ],
+      "schedule": [
+        "* * * * *"
+      ],
+      "groupName": "Remote-signer chart updates"
     }
   ],
   "customManagers": [
@@ -423,6 +439,19 @@
       ],
       "datasourceTemplate": "docker",
       "versioningTemplate": "regex:^(?<major>\\d{4})\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Update appVersion in remote-signer/Chart.yaml",
+      "managerFilePatterns": [
+        "/^charts/remote-signer/Chart\\.yaml$/"
+      ],
+      "matchStrings": [
+        "appVersion:\\s*\"(?<currentValue>v?[\\d.]+)\""
+      ],
+      "depNameTemplate": "ghcr.io/obolnetwork/remote-signer",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "semver"
     },
     {
       "customType": "regex",
