@@ -2,6 +2,14 @@
 
 replicaCount: 1
 
+# Deployment update strategy. Defaults to Recreate because the signer is a
+# singleton over a ReadWriteOnce keystore volume: a RollingUpdate surge pod can
+# wedge on the volume attach on multi-node clusters, and briefly double-runs
+# the signer over the same keystore on any cluster. Set to null to fall back
+# to the Kubernetes default (RollingUpdate).
+strategy:
+  type: Recreate
+
 image:
   repository: ghcr.io/obolnetwork/remote-signer
   pullPolicy: IfNotPresent

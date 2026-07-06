@@ -246,6 +246,21 @@
                 }
             }
         },
+        "strategy": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "Recreate",
+                        "RollingUpdate"
+                    ]
+                },
+                "rollingUpdate": {
+                    "type": "object"
+                }
+            }
+        },
         "serviceMonitor": {
             "type": "object",
             "properties": {
