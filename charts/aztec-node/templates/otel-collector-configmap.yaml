@@ -1,0 +1,24 @@
+{{- if eq (include "chart.monitoringEnabled" .) "true" -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.resourceName" . }}-otel-collector
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          http:
+            endpoint: 0.0.0.0:4318
+    exporters:
+      prometheus:
+        endpoint: "0.0.0.0:8889"
+        namespace: "aztec"
+    service:
+      pipelines:
+        metrics:
+          receivers: [otlp]
+          exporters: [prometheus]
+{{- end }}
