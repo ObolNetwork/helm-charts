@@ -10,6 +10,12 @@ permissions:
   contents: write
   pages: write
 
+# Runs must not overlap: each one rewrites gh-pages, and a concurrent run can
+# clobber index.yaml, silently dropping charts from the published repo.
+concurrency:
+  group: release-charts
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -27,7 +33,7 @@ jobs:
       - name: Install Helm
         uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5
         with:
-          version: v3.10.0
+          version: v3.22.0
 
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@cae68fefc6b5f367a0275617c9f83181ba54714f # v1.7.0
@@ -35,6 +41,21 @@ jobs:
           skip_existing: true
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Reconcile index with releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git fetch origin gh-pages
+          git worktree add gh-pages origin/gh-pages
+          scripts/reconcile-index.sh gh-pages/index.yaml
+          cd gh-pages
+          if git diff --quiet -- index.yaml; then
+            exit 0
+          fi
+          git add index.yaml
+          git commit -m "chore: add missing releases to index.yaml"
+          git push origin HEAD:gh-pages
 
   deploy-metadata:
     needs: release
@@ -45,6 +66,8 @@ jobs:
 
       - name: Install Helm
         uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5
+        with:
+          version: v3.22.0
 
       - name: Import GPG key
         run: |
@@ -61,12 +84,6 @@ jobs:
               --keyring ~/.gnupg/secring.gpg \
               "$chart" -d .gpg-provenance
           done
-
-      - name: Checkout gh-pages
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-        with:
-          ref: gh-pages
-          path: gh-pages
 
       - name: Attach provenance files to GitHub releases
         env:
@@ -85,16 +102,19 @@ jobs:
             fi
           done
 
-      - name: Copy provenance and metadata to gh-pages
+      # Publish only the files this job owns. Never stage a gh-pages checkout
+      # here: its index.yaml can be stale and would overwrite chart-releaser's.
+      - name: Stage provenance and metadata
         run: |
-          cp .gpg-provenance/*.tgz.prov gh-pages/ 2>/dev/null || true
-          cp artifacthub-repo.yml gh-pages/ 2>/dev/null || true
-          cp pubkey.asc gh-pages/ 2>/dev/null || true
+          mkdir -p site
+          cp .gpg-provenance/*.tgz.prov site/ 2>/dev/null || true
+          cp artifacthub-repo.yml site/ 2>/dev/null || true
+          cp pubkey.asc site/ 2>/dev/null || true
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./gh-pages
+          publish_dir: ./site
           keep_files: true
           enable_jekyll: true
