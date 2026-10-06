@@ -19,35 +19,34 @@ on:
 
 permissions: {}
 
+env:
+  KIND_VERSION: v0.33.0
+
 jobs:
   fetch-versions:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - name: Get latest 4 Kubernetes minor versions from kind
+      - name: Get the latest 4 Kubernetes minors supported by the pinned kind
         id: set-matrix
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          # Fetch all tags, extract unique minor versions, pick the latest 4
-          ALL_TAGS=$(curl -s "https://registry.hub.docker.com/v2/repositories/kindest/node/tags?page_size=100" \
-            | jq -r '.results[].name' \
-            | grep --color=never -E '^v[0-9]+\.[0-9]+\.[0-9]+$')
+          # Use the node images published for KIND_VERSION rather than the
+          # newest Docker Hub tags: a node image newer than the kind binary
+          # fails to boot (e.g. kindest/node:v1.37 with kind v0.31).
+          IMAGES=$(gh api "repos/kubernetes-sigs/kind/releases/tags/${KIND_VERSION}" --jq .body \
+            | grep -oE 'kindest/node:v[0-9]+\.[0-9]+\.[0-9]+@sha256:[0-9a-f]{64}' | sort -u)
 
-          # Get unique minor versions (v1.35, v1.34, ...) sorted descending, take top 4
-          MINORS=$(echo "$ALL_TAGS" | sed 's/\.[0-9]*$//' | sort -Vru | head -4)
+          matrix=$(echo "$IMAGES" \
+            | sort -t: -k2 -Vr \
+            | awk -F'[:.]' '!seen[$2"."$3]++' \
+            | head -4 \
+            | jq -R . | jq -sc '{include: map({node_image: .})}')
 
-          matrix=$(jq -n '[]')
-          for minor in $MINORS; do
-            latest=$(echo "$ALL_TAGS" | grep --color=never "^${minor}\." | sort -V | tail -1)
-            if [[ -n "$latest" ]]; then
-              matrix=$(echo "$matrix" | jq --arg version "$latest" '. + [{kubernetes_version: $version}]')
-              echo "Found: $latest"
-            fi
-          done
-
-          matrix=$(echo "$matrix" | jq -c '{include: .}')
           echo "Generated matrix: $matrix"
-          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
   test:
     needs: fetch-versions
@@ -59,9 +58,10 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Set up kind
-        uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
+        uses: helm/kind-action@1544676c07bb3570fcb70166beaa07c4528fd4aa # v1.15.1
         with:
-          node_image: "kindest/node:${{ matrix.kubernetes_version }}"
+          version: ${{ env.KIND_VERSION }}
+          node_image: ${{ matrix.node_image }}
 
       - name: Install Helm
         uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5.0.0
