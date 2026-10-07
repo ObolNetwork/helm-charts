@@ -156,23 +156,6 @@
       "groupName": "Aztec-node chart updates"
     },
     {
-      "description": "OpenClaw chart updates",
-      "matchManagers": [
-        "custom.regex"
-      ],
-      "matchFileNames": [
-        "charts/openclaw/**",
-        ".github/helm-ci-values/values-openclaw.yaml"
-      ],
-      "labels": [
-        "renovate/openclaw"
-      ],
-      "schedule": [
-        "* * * * *"
-      ],
-      "groupName": "OpenClaw chart updates"
-    },
-    {
       "description": "Remote-signer chart updates",
       "matchManagers": [
         "custom.regex"
@@ -430,18 +413,6 @@
     },
     {
       "customType": "regex",
-      "description": "Update OpenClaw image tag in values.yaml",
-      "managerFilePatterns": [
-        "/^charts/openclaw/values\\.yaml$/"
-      ],
-      "matchStrings": [
-        "# -- OpenClaw image repository, pull policy, and tag version\\s+image:\\s+repository:\\s+(?<depName>ghcr\\.io/obolnetwork/openclaw)\\s+pullPolicy:\\s+\\w+\\s+tag:\\s+\"(?<currentValue>v?[0-9]+\\.[0-9]+\\.[0-9]+)\""
-      ],
-      "datasourceTemplate": "docker",
-      "versioningTemplate": "regex:^(?<major>\\d{4})\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
-    },
-    {
-      "customType": "regex",
       "description": "Update appVersion in remote-signer/Chart.yaml",
       "managerFilePatterns": [
         "/^charts/remote-signer/Chart\\.yaml$/"
@@ -491,19 +462,6 @@
       "depNameTemplate": "aztecprotocol/aztec",
       "datasourceTemplate": "docker",
       "versioningTemplate": "semver"
-    },
-    {
-      "customType": "regex",
-      "description": "Update OpenClaw tag in CI values-openclaw.yaml",
-      "managerFilePatterns": [
-        "/^\\.github/helm-ci-values/values-openclaw\\.yaml$/"
-      ],
-      "matchStrings": [
-        "repository:\\s*ghcr\\.io/obolnetwork/openclaw\\n\\s*tag:\\s*\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""
-      ],
-      "depNameTemplate": "ghcr.io/obolnetwork/openclaw",
-      "datasourceTemplate": "docker",
-      "versioningTemplate": "regex:^(?<major>\\d{4})\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
     }
   ]
 }

@@ -1,10 +1,11 @@
 apiVersion: v2
 name: openclaw
-description: OpenClaw gateway deployment (agent runtime) for Kubernetes.
+description: "DEPRECATED: OpenClaw gateway deployment (agent runtime) for Kubernetes. Obol Stack v0.15 deprecates OpenClaw in favour of Hermes; this chart will be removed in a future release."
 type: application
-version: 0.5.0
+version: 0.5.1
 appVersion: "2026.3.2"
 kubeVersion: ">=1.26.0-0"
+deprecated: true
 home: https://docs.openclaw.ai
 sources:
   - https://docs.openclaw.ai
