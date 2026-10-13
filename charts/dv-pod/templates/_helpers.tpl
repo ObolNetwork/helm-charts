@@ -302,7 +302,17 @@ Create comma-separated list of primary beacon node endpoints
 {{- define "dv-pod.beaconNodeEndpoints" -}}
 {{- if .Values.charon.beaconNodeEndpoints -}}
 {{- join "," .Values.charon.beaconNodeEndpoints -}}
+{{- else -}}
+{{- include "dv-pod.obolStackBeaconNode" . -}}
 {{- end -}}
+{{- end -}}
+
+{{/*
+Beacon node of the Obol Stack's ethereum deployment for `network`. `obol network install ethereum
+--network <n>` names the first deployment of each network after it (namespace ethereum-<n>).
+*/}}
+{{- define "dv-pod.obolStackBeaconNode" -}}
+{{- printf "http://ethereum-beacon.ethereum-%s.svc.cluster.local:5052" (include "dv-pod.network" .) -}}
 {{- end -}}
 
 {{/*

@@ -114,7 +114,9 @@ on the Launchpad; ENR-only definitions don't. See [values-examples/definition.ya
 In the [Obol Stack](https://obol.org/stack) use the in-cluster beacon node, the Stack's Prometheus and let the
 Hermes agent watch progress. [values-examples/obol-stack.yaml](./values-examples/obol-stack.yaml) sets:
 
-- `charon.beaconNodeEndpoints: [http://ethereum-beacon.ethereum-<id>.svc.cluster.local:5052]`
+- no `charon.beaconNodeEndpoints`: empty means the Stack's node for `network`
+  (`http://ethereum-beacon.ethereum-<network>.svc.cluster.local:5052`, created by
+  `obol network install ethereum --network <network>`). Set it if your deployment has another id (`obol network list`).
 - `serviceMonitor.enabled: true` with `serviceMonitor.labels.release: monitoring`
 - `statusReaders: [{namespace: hermes-obol-agent, serviceAccount: hermes}]`
 - `charon.builderApi: false` unless the Stack's beacon node is connected to MEV-boost
@@ -238,8 +240,9 @@ helm upgrade --install my-dv-pod obol/dv-pod \
   --set='charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>'
 ```
 
-`charon.beaconNodeEndpoints` must point at a synced consensus client for `network`; the default is a placeholder.
-In the [Obol Stack](https://obol.org/stack) use `http://ethereum-beacon.ethereum-<id>.svc.cluster.local:5052`.
+`charon.beaconNodeEndpoints` must point at a synced consensus client for `network`. Left empty, it defaults to the
+[Obol Stack](https://obol.org/stack)'s node for `network` (`http://ethereum-beacon.ethereum-<network>.svc.cluster.local:5052`);
+outside the Stack, always set it.
 
 ## Validator Client
 
@@ -404,7 +407,7 @@ The command removes the Kubernetes components associated with the chart and dele
 | centralMonitoring.enabled | bool | `false` | Specifies whether central monitoring should be enabled |
 | centralMonitoring.promEndpoint | string | `"https://vm.monitoring.gcp.obol.tech/write"` | https endpoint to obol central prometheus |
 | centralMonitoring.token | string | `""` | The authentication token to the central prometheus |
-| charon.beaconNodeEndpoints | list | `["http://l1-full-node-beacon.l1.svc.cluster.local:5052"]` | Beacon node endpoints. You must set this to your own synced consensus client's beacon API(s); the default is a placeholder. In the Obol Stack use http://ethereum-beacon.ethereum-<id>.svc.cluster.local:5052 (the <id> of your `obol network install ethereum` deployment). All beacon nodes specified here will be called for every charon request, if you want to leverage fallback behaviour place secondary beacon nodes in charon.fallbackBeaconNodeEndpoints[] |
+| charon.beaconNodeEndpoints | list | `[]` | Beacon node endpoints (your own synced consensus client's beacon API). Empty means the Obol Stack's node for `network`: http://ethereum-beacon.ethereum-<network>.svc.cluster.local:5052, which is what `obol network install ethereum --network <network>` creates (its first deployment's id is the network name). Set this outside the Stack, or for a Stack deployment with another id (`obol network list`). All beacon nodes specified here will be called for every charon request, if you want to leverage fallback behaviour place secondary beacon nodes in charon.fallbackBeaconNodeEndpoints[] |
 | charon.beaconNodeHeaders | string | `""` | Beacon node authentication headers WARNING: These headers will be sent to ALL beacon nodes, which could leak credentials Format: "Authorization=Basic <base64_encoded_credentials>" To generate: echo -n "username:password" | base64 Example: "Authorization=Basic am9objpkb2U=" |
 | charon.beaconNodeHeadersSecretKey | string | `"headers"` | Optional: Key within the charon.beaconNodeHeaders secret to read from |
 | charon.beaconNodeHeadersSecretName | string | `""` | Optional: Name of the secret containing beacon node headers Use this for secure credential storage instead of beaconNodeHeaders The secret should contain a key specified by charon.beaconNodeHeadersSecretKey |

@@ -2,7 +2,8 @@
 #
 # The Stack runs its own Ethereum node (`obol network install ethereum`), a Prometheus that selects
 # ServiceMonitors labelled `release: monitoring`, and the Hermes agent in namespace hermes-obol-agent.
-# Replace <id> with your ethereum deployment id:  obol kubectl get svc -A | grep ethereum-beacon
+# The beacon node defaults to the Stack's node for `network` (ethereum-<network>, the id that
+# `obol network install ethereum --network <network>` gives the first deployment). Check with `obol network list`.
 #
 # Launchpad route (default here):
 #   obol helm upgrade --install my-dv-pod obol/dv-pod -n dv-pod --create-namespace \
@@ -14,18 +15,17 @@
 #   obol kubectl get cm my-dv-pod-enr -n dv-pod -o jsonpath='{.data.enr}'
 #   obol kubectl get cm my-dv-pod-dkg-status -n dv-pod -o jsonpath='{.data.phase}'
 
-network: hoodi
+network: mainnet   # hoodi for a testnet run
 
 mode: launchpad
 
 charon:
   operatorAddress: "" # set with --set charon.operatorAddress=0x...
-  beaconNodeEndpoints:
-    - "http://ethereum-beacon.ethereum-<id>.svc.cluster.local:5052"
+  # beaconNodeEndpoints: unset = http://ethereum-beacon.ethereum-<network>.svc.cluster.local:5052
   # Fall back to publicnode.com for `network` while the local beacon node syncs.
   publicnodeFallback: true
-  # Only enable when the Stack's beacon node is connected to MEV-boost / a relay.
-  # With no MEV sidecar in the Stack, keep it off or proposals fail over to local blocks with warnings.
+  # true only if the node was installed with `obol network install ethereum --mev` (MEV-boost); the
+  # node's metadata ConfigMap shows it: obol kubectl get cm ethereum-<network>-metadata -n ethereum-<network>
   builderApi: false
   nickname: "obol-stack"
 

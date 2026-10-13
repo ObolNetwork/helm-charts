@@ -54,13 +54,13 @@ charon:
   # -- The nickname this Charon appears as in monitoring and its peer's logs. Maximum 32 characters.
   nickname: ""
 
-  # -- Beacon node endpoints. You must set this to your own synced consensus client's beacon API(s);
-  # the default is a placeholder. In the Obol Stack use http://ethereum-beacon.ethereum-<id>.svc.cluster.local:5052
-  # (the <id> of your `obol network install ethereum` deployment).
+  # -- Beacon node endpoints (your own synced consensus client's beacon API). Empty means the Obol Stack's
+  # node for `network`: http://ethereum-beacon.ethereum-<network>.svc.cluster.local:5052, which is what
+  # `obol network install ethereum --network <network>` creates (its first deployment's id is the network
+  # name). Set this outside the Stack, or for a Stack deployment with another id (`obol network list`).
   # All beacon nodes specified here will be called for every charon request, if you want to leverage fallback behaviour
   # place secondary beacon nodes in charon.fallbackBeaconNodeEndpoints[]
-  beaconNodeEndpoints:
-    - "http://l1-full-node-beacon.l1.svc.cluster.local:5052"
+  beaconNodeEndpoints: []
 
   # -- Fallback beacon node endpoints (optional)
   # These will be used if the primary beaconNodeEndpoints are unavailable.
