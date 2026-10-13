@@ -23,6 +23,8 @@
 #     --set charon.operatorAddress="0xYourOperatorAddress" \
 #     -n dv-namespace --create-namespace
 
+mode: launchpad
+
 # Standard Charon configuration
 charon:
   operatorAddress: "0x0000000000000000000000000000000000000000" # Replace with your operator address
