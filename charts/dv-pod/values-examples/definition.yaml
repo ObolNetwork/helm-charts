@@ -1,0 +1,24 @@
+# Direct route: join a cluster from a cluster definition, without the Launchpad invite flow.
+#
+# Someone creates the definition, e.g. (ENR mode, every operator's ENR from `kubectl get cm <release>-enr`):
+#   charon create dkg --network=hoodi --num-validators=1 --fee-recipient-addresses=0x... \
+#     --withdrawal-addresses=0x... --operator-enrs=enr:-...,enr:-...,enr:-...,enr:-... --publish
+# and shares the printed config hash (or the cluster-definition.json file).
+# No operator address is needed here; this node's ENR must be in the definition.
+#
+# Exactly one of configHash / url / configMap:
+#   kubectl create configmap cluster-definition -n dv-pod --from-file=cluster-definition.json
+
+network: hoodi
+
+mode: definition
+
+dkg:
+  definition:
+    configHash: "0x7f0fd29abb11674b4e61000de26bff3600237aab0402427bd1409756665c2115"
+    # url: "https://example.com/cluster-definition.json"
+    # configMap: "cluster-definition"
+
+charon:
+  beaconNodeEndpoints:
+    - "http://your-beacon-node:5052"

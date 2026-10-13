@@ -1,0 +1,9 @@
+mode: definition
+network: hoodi
+charon:
+  beaconNodeEndpoints: ["http://beacon:5052"]
+dkg:
+  definition:
+    configHash: "0x7f0fd29abb11674b4e61000de26bff3600237aab0402427bd1409756665c2115"
+networkPolicy:
+  enabled: true

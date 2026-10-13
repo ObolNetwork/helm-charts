@@ -1,0 +1,9 @@
+network: hoodi
+dkg:
+  runner: sidecar
+charon:
+  beaconNodeEndpoints: ["http://beacon:5052"]
+  operatorAddress: "0x0000000000000000000000000000000000000001"
+  builderApi: "false"
+validatorClient:
+  type: prysm

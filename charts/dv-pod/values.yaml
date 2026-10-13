@@ -36,7 +36,7 @@ secrets:
 
 # -- Kubernetes configMaps names for non-sensitive configuration data.
 configMaps:
-  # -- Name of the ConfigMap containing the cluster-lock.json file
+  # -- Name of the ConfigMap containing the cluster-lock.json file (`mode: lock`).
   # Set this to the name of an existing ConfigMap to skip the DKG process.
   # Example: kubectl create configmap cluster-lock --from-file=.charon/cluster-lock.json
   # Then set: clusterLock: "cluster-lock"
@@ -47,9 +47,10 @@ configMaps:
 
 # This code block control's charon's configuration, including the DKG initcontainer
 charon:
-  # -- The Ethereum address of this operator. This MUST be provided by the user to use the auto-dkg functionality.
-  operatorAddress: ""  # Set your operator address here. This will be used to sign approvals to DKG invites on the Obol Launchpad.
-  
+  # -- The Ethereum address of this operator (the wallet that signs the Launchpad invite).
+  # Required in `mode: launchpad` (and `mode: auto` without a lock or definition); not needed for `definition`, `lock` or `lockHash`.
+  operatorAddress: ""
+
   # -- The nickname this Charon appears as in monitoring and its peer's logs. Maximum 32 characters.
   nickname: ""
 
@@ -71,38 +72,38 @@ charon:
   # -- When fallbackBeaconNodeEndpoints is empty, fall back to the public publicnode.com beacon API matching `network`.
   # Set to false to run with no fallback beacon node.
   publicnodeFallback: true
-  
+
   # -- Beacon node authentication headers
   # WARNING: These headers will be sent to ALL beacon nodes, which could leak credentials
   # Format: "Authorization=Basic <base64_encoded_credentials>"
   # To generate: echo -n "username:password" | base64
   # Example: "Authorization=Basic am9objpkb2U="
   beaconNodeHeaders: ""
-  
+
   # -- Optional: Name of the secret containing beacon node headers
   # Use this for secure credential storage instead of beaconNodeHeaders
   # The secret should contain a key specified by charon.beaconNodeHeadersSecretKey
   beaconNodeHeadersSecretName: ""
-  
+
   # -- Optional: Key within the charon.beaconNodeHeaders secret to read from
   beaconNodeHeadersSecretKey: "headers"
 
   # -- Optional: Execution client RPC endpoint URL (e.g., your Ethereum execution client)
   # Note: Charon currently only supports a single execution endpoint
-  # This is only needed if an operator in the cluster uses a smart contract wallet for an operator signature. 
+  # This is only needed if an operator in the cluster uses a smart contract wallet for an operator signature.
   # If that does not apply to this cluster, this field can be left unset.
   executionClientRpcEndpoint: ""
 
   # --- Charon command line options ---
   ## ref: https://docs.obol.tech/docs/learn/charon/charon-cli-reference
-  
+
   # -- Enables the builder api (MEV) for validator proposals.
-  # The Builder API must also be enabled on your beacon node client(s). 
+  # The Builder API must also be enabled on your beacon node client(s).
   # The Beacon node must either be connected to a mev sidecar or a mev relay to access the builder network.
   # More documentation about MEV can be found [here](https://docs.obol.org/advanced-and-troubleshooting/advanced/enable-mev).
   # Accepts a boolean; the strings "true"/"false" from older values files are still understood.
   builderApi: true
-  
+
   # -- Minimum feature set to enable by default: alpha, beta, or stable. Warning: modify at own risk. (default "stable")
   featureSet: "stable"
 
@@ -118,8 +119,8 @@ charon:
   # -- The path on the pod to the cluster lock file that definesthe distributed validator cluster. (default "/charon-data/cluster-lock.json")
   lockFile: "/charon-data/cluster-lock.json"
 
-  # -- Cluster lock hash for large cluster-lock files (>1MB)
-  # When provided, the DKG sidecar will fetch the full cluster-lock from Obol API using this hash
+  # -- Cluster lock hash for large cluster-lock files (>1MB); used by `mode: lockHash`.
+  # The DKG sidecar fetches the full cluster-lock from the Obol API using this hash
   # Extract the hash from a cluster-lock.json using: `jq -r '.lock_hash' cluster-lock.json`
   # Alternative to providing the full cluster-lock.json file via the configMaps.clusterLock value
   lockHash: ""
@@ -132,7 +133,7 @@ charon:
 
   # --  Enables sending of logfmt structured logs to these Loki log aggregation server addresses. This is in addition to normal stderr logs.
   lokiAddresses: ""
-  
+
   # -- Service label sent with logs to Loki.
   lokiService: ""
 
@@ -150,7 +151,7 @@ charon:
 
   # -- Disables TCP port reuse for outgoing libp2p connections.
   p2pDisableReuseport: ""
-  
+
   # --  The DNS hostname advertised by libp2p. This may be used to advertise an external DNS.
   p2pExternalHostname: ""
 
@@ -168,7 +169,7 @@ charon:
   # Empty (default) disables UDP. QUIC is an alpha feature in charon v1.11: also set `featureSetEnable: quic`.
   # Adds a `p2p-udp` container port (and a UDP port on `p2pService`) on the parsed port.
   p2pUdpAddress: ""
-  
+
   # -- Listening address (ip and port) for validator-facing traffic proxying the beacon-node API. (default "127.0.0.1:3600")
   validatorApiAddress: "0.0.0.0:3600"
 
@@ -179,27 +180,13 @@ charon:
 
   # -- Path within the Charon container where the ENR private key file will be mounted.
   privateKeyFile: "/data/charon-enr-private-key"
-  
-  # -- Configuration for the DKG Sidecar init container
-  # This init container orchestrates the Distributed Key Generation (DKG) process for Charon clusters.
-  #
-  # The sidecar has three operating modes:
-  # 1. If cluster-lock.json exists: Exits immediately (cluster already initialized)
-  # 2. If cluster-definition.json exists: Attempts DKG with the existing definition
-  # 3. If neither exists: Polls the Obol API for cluster invites and runs DKG when ready
-  #
-  # To provide a pre-existing cluster-lock and skip DKG:
-  # 1. Create a configMap: kubectl create configmap cluster-lock --from-file=cluster-lock.json
-  # 2. Set `configMaps.clusterLock: cluster-lock` in your values.yaml file,
-  #    or pass --set configMaps.clusterLock=cluster-lock in your helm install command.
-  # 3. The sidecar will detect the mounted lock file and exit, allowing Charon to start immediately
-  #
-  # To provide a cluster-definition without running DKG through the API:
-  # 1. Mount your cluster-definition.json in /charon-data/
-  # 2. The sidecar will run 'charon dkg' to generate the cluster-lock.json
-  #
-  # Note: When providing a pre-existing cluster-lock.json, you must also ensure
-  # the associated validator keys are available in the charon-data volume.
+
+  # -- DKG sidecar init container (obolnetwork/charon-dkg-sidecar). It prepares participation according to `mode`:
+  # exits at once if /charon-data/cluster-lock.json exists (or is mounted from `configMaps.clusterLock`), fetches the
+  # lock for `charon.lockHash`, or obtains a fully signed cluster definition (Launchpad polling by operator address,
+  # or `dkg.definition`). With `dkg.runner: charon` the DKG itself then runs in the `charon-dkg` init container.
+  # It also writes progress to the "<fullname>-dkg-status" ConfigMap (`dkg.status.enabled`).
+  # Disable it only to bring your own cluster-lock and key shares (`mode: lock`).
   dkgSidecar:
     enabled: true
     image:
@@ -220,7 +207,7 @@ charon:
     pageLimit: 10
     # -- API endpoint for the Obol network to fetch cluster definitions
     apiEndpoint: "https://api.obol.tech"
-    # -- Target cluster definition config hash for the DKG sidecar to partake in (optional).
+    # -- Launchpad mode only: join just this cluster definition (optional).
     # Must be a valid 32-byte hex hash with 0x prefix (66 characters total).
     # Example: "0x7f0fd29abb11674b4e61000de26bff3600237aab0402427bd1409756665c2115"
     targetConfigHash: ""
@@ -279,8 +266,7 @@ charon:
         tag: "latest@sha256:999d5eb28f404b45f15117f2a110ff23c6164f76edac261d75d783b6e88252b7"
         pullPolicy: "IfNotPresent"
 
- 
-  
+
 # -- DKG (distributed key generation) settings. See `mode` for how the cluster definition is found.
 dkg:
   # -- Who runs `charon dkg`:
@@ -327,20 +313,20 @@ dkg:
 # -- Validator client configuration
 validatorClient:
   # -- Enable the validator client container
-  # If you want to use an externally managed validator client. 
-  # Set this to false, and set your external validator to communicate with the 'validator-api' service created by this chart as if it were a beacon node API. 
+  # If you want to use an externally managed validator client.
+  # Set this to false, and set your external validator to communicate with the 'validator-api' service created by this chart as if it were a beacon node API.
   enabled: true
   # -- Type of validator client to use
   # Options: lighthouse, teku, prysm, nimbus, lodestar
   type: "lighthouse"
-  
+
   # -- Image configuration for validator client
   # Repository and tag will be auto-selected based on validator client type if not specified
   image:
     repository: ""
     tag: ""
     pullPolicy: IfNotPresent
-  
+
   # -- Validator client specific configuration
   config:
     # -- Graffiti to include in proposed blocks
@@ -359,7 +345,7 @@ validatorClient:
     prysm:
       # -- Additional CLI arguments passed to the Prysm validator client only
       extraArgs: []
-  
+
   # -- Resource limits and requests for validator client
   resources:
     limits:
@@ -368,7 +354,7 @@ validatorClient:
     requests:
       cpu: 500m
       memory: 1Gi
-  
+
   # -- Validator keystores configuration
   keystores:
     # -- Name of the Secret containing validator keystores
@@ -382,7 +368,7 @@ validatorClient:
 centralMonitoring:
   # -- Specifies whether central monitoring should be enabled
   enabled: false
-  # -- https endpoint to obol central prometheus 
+  # -- https endpoint to obol central prometheus
   promEndpoint: "https://vm.monitoring.gcp.obol.tech/write"
   # -- The authentication token to the central prometheus
   token: ""
@@ -576,7 +562,7 @@ clusterThreshold: ""
 
 # -- allows you to configure and disable automated rolling updates for containers, labels, resource request/limits, and annotations for the Pods in a StatefulSet.
 updateStrategy: RollingUpdate
-  
+
 # -- Persistence configuration for DKG artifacts and charon data
 persistence:
   # -- Enable persistence using a PersistentVolumeClaim.
@@ -598,7 +584,7 @@ persistence:
   annotations: {}
   # -- StatefulSet persistentVolumeClaimRetentionPolicy. Retain keeps charon-data (cluster-lock, key shares)
   # and validator-data (slashing protection) when the StatefulSet is deleted or scaled down
-  # (Kubernetes >= 1.27). Set to {} to omit the field.
+  # (Kubernetes >= 1.27). Set to null to omit the field.
   retentionPolicy:
     whenDeleted: Retain
     whenScaled: Retain

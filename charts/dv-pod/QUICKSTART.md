@@ -21,6 +21,7 @@ Each operator deploys their node:
 
 ```bash
 helm upgrade --install my-dv-pod obol/dv-pod \
+  --set mode=launchpad \
   --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS \
   --set network=mainnet \
   --set 'charon.beaconNodeEndpoints[0]=http://YOUR_BEACON_NODE:5052' \
@@ -29,27 +30,19 @@ helm upgrade --install my-dv-pod obol/dv-pod \
 ```
 
 **What happens:**
-1. ENR job automatically generates a new ENR private key and public ENR
-2. Stores them in a secret: **`charon-enr-private-key`** (default name)
-3. DKG sidecar starts and waits for cluster configuration
+1. The ENR job generates a new ENR private key and public ENR
+2. Stores the key in the Secret **`my-dv-pod-enr-key`** (`<fullname>-enr-key`) and the public ENR in the ConfigMap **`my-dv-pod-enr`**
+3. The DKG sidecar starts and waits for the cluster invite; progress is in the ConfigMap `my-dv-pod-dkg-status`
 
-**Note on secret naming:**
-- By default, the secret is named `charon-enr-private-key` (configured via `secrets.defaultEnrPrivateKey`)
-- To use release-based naming like `my-dv-pod-enr-key`, set: `--set secrets.defaultEnrPrivateKey=""`
-- Release-based naming is smart: it avoids duplication (e.g., `my-dv-pod` → `my-dv-pod-enr-key`, NOT `my-dv-pod-dv-pod-enr-key`)
+**Note on secret naming:** an existing `charon-enr-private-key` Secret in the namespace (from an older chart or
+created by hand) is adopted instead, as long as no other release uses it. See "ENR identity" in the README.
 
 ### Step 2: Retrieve Your ENR
 
-After deployment, get your public ENR to add to the Launchpad:
+After deployment, get your public ENR to add to the Launchpad (no Secret access needed):
 
 ```bash
-# Default secret name
-kubectl get secret charon-enr-private-key -n dv-pod \
-  -o jsonpath='{.data.enr}' | base64 -d
-
-# OR if you used release-based naming (--set secrets.defaultEnrPrivateKey="")
-kubectl get secret my-dv-pod-enr-key -n dv-pod \
-  -o jsonpath='{.data.enr}' | base64 -d
+kubectl get configmap my-dv-pod-enr -n dv-pod -o jsonpath='{.data.enr}'
 ```
 
 ### Step 3: Create Cluster and Add ENR on Obol Launchpad
@@ -72,14 +65,34 @@ The sidecar does not sign anything itself. Once all operators have signed on the
 Monitor progress:
 
 ```bash
-# Watch DKG sidecar logs
-kubectl logs -n dv-pod -l app.kubernetes.io/instance=my-dv-pod -c dkg-sidecar --follow
+# Phase: WaitingForInvite -> WaitingForSignatures -> DefinitionReady -> Complete
+kubectl get configmap my-dv-pod-dkg-status -n dv-pod -o jsonpath='{.data.phase}{"\n"}{.data.message}{"\n"}'
 
-# Check if cluster-lock was created
-kubectl exec -n dv-pod my-dv-pod-0 -- ls -la /charon-data/
+# Watch the sidecar, then the DKG ceremony itself
+kubectl logs -n dv-pod my-dv-pod-0 -c dkg-sidecar --follow
+kubectl logs -n dv-pod my-dv-pod-0 -c charon-dkg --follow
 ```
 
 When all operators complete, Charon automatically starts validating.
+
+---
+
+## Scenario 1b: Direct route (cluster definition, no Launchpad invite)
+
+If someone created the cluster definition with `charon create dkg --publish` (using each operator's ENR from
+Step 2), install with its config hash instead of an operator address:
+
+```bash
+helm upgrade --install my-dv-pod obol/dv-pod \
+  --set mode=definition \
+  --set dkg.definition.configHash=0xCONFIG_HASH \
+  --set network=hoodi \
+  --set 'charon.beaconNodeEndpoints[0]=http://YOUR_BEACON_NODE:5052' \
+  --namespace=dv-pod --create-namespace
+```
+
+`dkg.definition.url` (HTTPS) and `dkg.definition.configMap` (a ConfigMap holding `cluster-definition.json`) work
+the same way. All operators' pods must be running at the same time for the DKG.
 
 ---
 
@@ -124,6 +137,7 @@ Expected output: `["charon-enr-private-key", "enr"]`
 ```bash
 helm upgrade --install my-dv-pod obol/dv-pod \
   --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS \
+  --set mode=launchpad \
   --set charon.dkgSidecar.targetConfigHash=0xYOUR_CONFIG_HASH \
   --set network=mainnet \
   --set 'charon.beaconNodeEndpoints[0]=http://YOUR_BEACON_NODE:5052' \
@@ -143,11 +157,8 @@ helm upgrade --install my-dv-pod obol/dv-pod \
 ### Step 3: Monitor DKG Progress
 
 ```bash
-# Watch DKG sidecar logs
-kubectl logs -n dv-pod -l app.kubernetes.io/instance=my-dv-pod -c dkg-sidecar --follow
-
-# Check for cluster-lock creation
-kubectl exec -n dv-pod my-dv-pod-0 -- ls -la /charon-data/cluster-lock.json
+kubectl get configmap my-dv-pod-dkg-status -n dv-pod -o jsonpath='{.data.phase}{"\n"}'
+kubectl logs -n dv-pod my-dv-pod-0 -c dkg-sidecar --follow
 ```
 
 ---
@@ -173,7 +184,7 @@ Set `network` at install time: the DKG sidecar only looks for cluster invites on
 
 ```bash
 --set charon.dkgSidecar.image.repository=your-registry/charon-dkg-sidecar \
---set charon.dkgSidecar.image.tag=v1.0.1 \
+--set charon.dkgSidecar.image.tag=v1.1.0 \
 --set charon.dkgSidecar.image.pullPolicy=Always
 ```
 
@@ -244,7 +255,7 @@ The secret MUST have these exact keys:
 
 **Check your secret:**
 ```bash
-kubectl get secret charon-enr-private-key -n dv-pod -o json | jq -r '.data | keys'
+kubectl get secret <your-enr-secret> -n dv-pod -o json | jq -r '.data | keys'
 ```
 
 ### DKG Polling Forever
@@ -289,11 +300,13 @@ kubectl port-forward -n dv-pod my-dv-pod-0 3620:3620
 
 3. **Target Config Hash**: Use `targetConfigHash` to specify exactly which cluster to join. Without it, the sidecar will join the most recent cluster where your operator is invited.
 
-4. **ENR Secret Auto-Detection**: If a secret named `charon-enr-private-key` exists in the namespace, it's automatically used. No need to set `charon.enr.existingSecret.name`.
+4. **ENR Secret Auto-Detection**: If a secret named `charon-enr-private-key` exists in the namespace and no other release uses it, it's adopted. Prefer setting `charon.enr.existingSecret.name` explicitly.
 
 5. **Namespace Isolation**: ENR secrets are only detected in the same namespace as the Helm release.
 
-6. **Secret Naming**: By default, auto-generated secrets use the name `charon-enr-private-key`. To use release-based naming (`<fullname>-enr-key`, e.g. `my-dv-pod-enr-key`), set `secrets.defaultEnrPrivateKey=""`.
+6. **Secret Naming**: Generated identities use the per-release name `<fullname>-enr-key` (e.g. `my-dv-pod-enr-key`), so two releases in one namespace never share an identity. An identity is never regenerated on upgrade.
+
+7. **Back up** `/charon-data` (cluster-lock and key shares) after the DKG; see "Backing up charon-data" in the README.
 
 ---
 
