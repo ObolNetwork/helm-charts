@@ -192,8 +192,8 @@ charon:
     image:
       # -- Image repository for the DKG sidecar
       repository: "obolnetwork/charon-dkg-sidecar"
-      # -- DKG sidecar image tag. v1.1.0 implements DKG_RUNNER/DEFINITION_SOURCE/status reporting.
-      tag: "v1.1.0"
+      # -- DKG sidecar image tag. 1.1.0 implements DKG_RUNNER/DEFINITION_SOURCE/status reporting.
+      tag: "1.1.0"
       pullPolicy: "IfNotPresent"
     # -- Initial delay in seconds before the first retry of a polling cycle.
     initialRetryDelaySeconds: 10

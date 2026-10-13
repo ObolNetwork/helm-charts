@@ -184,7 +184,7 @@ Set `network` at install time: the DKG sidecar only looks for cluster invites on
 
 ```bash
 --set charon.dkgSidecar.image.repository=your-registry/charon-dkg-sidecar \
---set charon.dkgSidecar.image.tag=v1.1.0 \
+--set charon.dkgSidecar.image.tag=1.1.0 \
 --set charon.dkgSidecar.image.pullPolicy=Always
 ```
 
