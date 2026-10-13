@@ -115,7 +115,9 @@ on the Launchpad; ENR-only definitions don't. See [values-examples/definition.ya
 In the [Obol Stack](https://obol.org/stack) use the in-cluster beacon node, the Stack's Prometheus and let the
 Hermes agent watch progress. [values-examples/obol-stack.yaml](./values-examples/obol-stack.yaml) sets:
 
-- `charon.beaconNodeEndpoints: [http://ethereum-beacon.ethereum-<id>.svc.cluster.local:5052]`
+- no `charon.beaconNodeEndpoints`: empty means the Stack's node for `network`
+  (`http://ethereum-beacon.ethereum-<network>.svc.cluster.local:5052`, created by
+  `obol network install ethereum --network <network>`). Set it if your deployment has another id (`obol network list`).
 - `serviceMonitor.enabled: true` with `serviceMonitor.labels.release: monitoring`
 - `statusReaders: [{namespace: hermes-obol-agent, serviceAccount: hermes}]`
 - `charon.builderApi: false` unless the Stack's beacon node is connected to MEV-boost
@@ -239,8 +241,9 @@ helm upgrade --install my-dv-pod obol/dv-pod \
   --set='charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>'
 ```
 
-`charon.beaconNodeEndpoints` must point at a synced consensus client for `network`; the default is a placeholder.
-In the [Obol Stack](https://obol.org/stack) use `http://ethereum-beacon.ethereum-<id>.svc.cluster.local:5052`.
+`charon.beaconNodeEndpoints` must point at a synced consensus client for `network`. Left empty, it defaults to the
+[Obol Stack](https://obol.org/stack)'s node for `network` (`http://ethereum-beacon.ethereum-<network>.svc.cluster.local:5052`);
+outside the Stack, always set it.
 
 ## Validator Client
 

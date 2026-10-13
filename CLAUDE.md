@@ -44,7 +44,7 @@ helm upgrade --install my-dv-pod obol/dv-pod \
   --timeout=10m
 ```
 
-`network` picks the network (`mainnet`, `hoodi`, `sepolia`); the chart derives the chainId. `charon.beaconNodeEndpoints` must point at a synced beacon node for that network (the default is a placeholder; in the Obol Stack use `http://ethereum-beacon.ethereum-<id>.svc.cluster.local:5052`, see `values-examples/obol-stack.yaml`). `mode` selects the route: `launchpad` (above), `definition` (`dkg.definition.configHash|url|configMap` from `charon create dkg`), `lock`/`lockHash` (import). After install, retrieve the ENR and DKG progress without reading Secrets:
+`network` picks the network (`mainnet`, `hoodi`, `sepolia`); the chart derives the chainId. `charon.beaconNodeEndpoints` must point at a synced beacon node for that network; left empty it defaults to the Obol Stack's node for `network` (`http://ethereum-beacon.ethereum-<network>.svc.cluster.local:5052`, see `values-examples/obol-stack.yaml`). `mode` selects the route: `launchpad` (above), `definition` (`dkg.definition.configHash|url|configMap` from `charon create dkg`), `lock`/`lockHash` (import). After install, retrieve the ENR and DKG progress without reading Secrets:
 
 ```bash
 kubectl get configmap my-dv-pod-enr -n dv-pod -o jsonpath='{.data.enr}'

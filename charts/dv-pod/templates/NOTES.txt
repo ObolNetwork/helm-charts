@@ -68,7 +68,7 @@ Everything below is copy-paste ready. None of it needs access to Secrets.
 
 4. Once charon is running: verify the node
    kubectl exec {{ $pod }} -n {{ $ns }} -c {{ .Chart.Name }} -- charon alpha test peers --lock-file=/charon-data/cluster-lock.json --private-key-file={{ .Values.charon.privateKeyFile }}
-   kubectl exec {{ $pod }} -n {{ $ns }} -c {{ .Chart.Name }} -- charon alpha test beacon --endpoints={{ first .Values.charon.beaconNodeEndpoints }}
+   kubectl exec {{ $pod }} -n {{ $ns }} -c {{ .Chart.Name }} -- charon alpha test beacon --endpoints={{ include "dv-pod.beaconNodeEndpoints" . }}
    kubectl get pod {{ $pod }} -n {{ $ns }} -o jsonpath='{.status.containerStatuses[?(@.name=="{{ .Chart.Name }}")].ready}'   # /readyz
 
 5. Back up after the DKG (cluster-lock + key shares; the PVC is kept on uninstall)
@@ -76,9 +76,9 @@ Everything below is copy-paste ready. None of it needs access to Secrets.
    (in the Obol Stack: obol kubectl cp ...). See the chart README, "Backing up charon-data".
 
 Beacon node: {{ include "dv-pod.beaconNodeEndpoints" . }}
-{{- if has "http://l1-full-node-beacon.l1.svc.cluster.local:5052" .Values.charon.beaconNodeEndpoints }}
-WARNING: that is the chart's placeholder. Set charon.beaconNodeEndpoints to a synced beacon node for {{ .Values.network }}
-(Obol Stack: http://ethereum-beacon.ethereum-<id>.svc.cluster.local:5052).
+{{- if not .Values.charon.beaconNodeEndpoints }}
+(default: the Obol Stack's {{ include "dv-pod.network" . }} node from `obol network install ethereum --network {{ include "dv-pod.network" . }}`.
+Outside the Stack, or for a deployment with a different id, set charon.beaconNodeEndpoints.)
 {{- end }}
 {{- with include "dv-pod.fallbackBeaconNodeEndpoints" . }}
 Fallback beacon node: {{ . }}

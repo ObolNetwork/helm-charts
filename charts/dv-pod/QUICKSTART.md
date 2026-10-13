@@ -8,8 +8,8 @@ This guide covers deploying a Distributed Validator (DV) node using the dv-pod H
 - Helm 3.x installed
 - Namespace created: `kubectl create namespace dv-pod`
 - Ethereum wallet address for operator signature
-- A synced consensus client (beacon node) for the same network. In the Obol Stack this is
-  `http://ethereum-beacon.ethereum-<id>.svc.cluster.local:5052` (from `obol network install ethereum`)
+- A synced consensus client (beacon node) for the same network. In the Obol Stack the chart defaults to
+  `http://ethereum-beacon.ethereum-<network>.svc.cluster.local:5052` (from `obol network install ethereum --network <network>`)
 
 ## Scenario 1: Fresh Start (Automatic ENR Generation)
 
@@ -194,7 +194,8 @@ Set `network` at install time: the DKG sidecar only looks for cluster invites on
 # Single beacon node
 --set 'charon.beaconNodeEndpoints[0]=http://beacon:5052'
 
-# Obol Stack beacon node (replace <id> with your ethereum network deployment id)
+# Obol Stack beacon node: the default when unset (ethereum-<network>); set it only if your
+# deployment has another id (see `obol network list`)
 --set 'charon.beaconNodeEndpoints[0]=http://ethereum-beacon.ethereum-<id>.svc.cluster.local:5052'
 
 # Multiple beacon nodes (primary + fallbacks)

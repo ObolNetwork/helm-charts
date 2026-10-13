@@ -1,6 +1,3 @@
-{{- if not .Values.charon.beaconNodeEndpoints }}
-{{- fail ".Values.charon.beaconNodeEndpoints is required" }}
-{{- end }}
 
 {{- $mode := include "dv-pod.mode" . }}
 {{- $explicit := ne (.Values.mode | default "auto") "auto" }}
