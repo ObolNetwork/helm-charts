@@ -50,6 +50,18 @@ spec:
               LEGACY_SECRET_NAME="{{ if not .Values.charon.enr.existingSecret.name }}{{ .Values.secrets.defaultEnrPrivateKey }}{{ end }}"
               STATEFULSET_NAME="{{ include "dv-pod.fullname" . }}"
 
+              # 0 if the secret exists, 1 if it does not; aborts on any other error (RBAC, API down), so an
+              # unreadable identity is never mistaken for a missing one and replaced.
+              secret_exists() {
+                if OUT=$(kubectl get secret "$1" -n "${NAMESPACE}" -o name 2>&1); then
+                  return 0
+                fi
+                case "$OUT" in
+                  *NotFound*|*"not found"*) return 1 ;;
+                esac
+                echo "ERROR: cannot check secret '$1': $OUT"
+                exit 1
+              }
               # Reads one base64 data field of a secret ("" when absent).
               secret_field() {
                 kubectl get secret "$1" -n "${NAMESPACE}" -o jsonpath="{.data.$2}" 2>/dev/null || true
@@ -61,7 +73,7 @@ spec:
               }
 
               echo "Checking if secret '$SECRET_NAME' already exists in namespace '$NAMESPACE'..."
-              if kubectl get secret "${SECRET_NAME}" -n "${NAMESPACE}" >/dev/null 2>&1; then
+              if secret_exists "${SECRET_NAME}"; then
                 echo "INFO: Secret '$SECRET_NAME' already exists. Checking field completeness..."
                 PRIVATE_KEY_DATA=$(secret_field "${SECRET_NAME}" "${ENR_PRIVATE_KEY_DATA_NAME}")
                 PUBLIC_ENR_DATA=$(secret_field "${SECRET_NAME}" "${ENR_PUBLIC_ADDRESS_DATA_NAME}")
@@ -84,7 +96,7 @@ spec:
 
               echo "Secret '$SECRET_NAME' does not exist."
               if [ -n "$LEGACY_SECRET_NAME" ] && [ "$LEGACY_SECRET_NAME" != "$SECRET_NAME" ] \
-                && kubectl get secret "${LEGACY_SECRET_NAME}" -n "${NAMESPACE}" >/dev/null 2>&1; then
+                && secret_exists "${LEGACY_SECRET_NAME}"; then
                 echo "INFO: Found legacy ENR secret '$LEGACY_SECRET_NAME'. Checking whether it belongs to this release..."
                 OWN=$(sts_enr_secret "${STATEFULSET_NAME}")
                 ADOPT=""
@@ -93,7 +105,9 @@ spec:
                   ADOPT=true
                 else
                   CLAIMED=""
-                  for sts in $(kubectl get statefulset -n "${NAMESPACE}" -o jsonpath='{.items[*].metadata.name}'); do
+                  ALL_STS=$(kubectl get statefulset -n "${NAMESPACE}" -o jsonpath='{.items[*].metadata.name}') \
+                    || { echo "ERROR: cannot list StatefulSets to check who uses '$LEGACY_SECRET_NAME'"; exit 1; }
+                  for sts in $ALL_STS; do
                     [ "$sts" = "$STATEFULSET_NAME" ] && continue
                     if [ "$(sts_enr_secret "$sts")" = "$LEGACY_SECRET_NAME" ]; then
                       CLAIMED="$sts"
