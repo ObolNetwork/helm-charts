@@ -2,15 +2,75 @@
 {{- fail ".Values.charon.beaconNodeEndpoints is required" }}
 {{- end }}
 
+{{- $mode := include "dv-pod.mode" . }}
+{{- $explicit := ne (.Values.mode | default "auto") "auto" }}
+{{- $hashRe := "^0x[0-9a-fA-F]{64}$" }}
+{{- $addrRe := "^0x[0-9a-fA-F]{40}$" }}
 
-
-{{- /* The DKG sidecar needs an operator address unless a cluster-lock is supplied (it exits early when the lock exists). */}}
-{{- if and .Values.charon.dkgSidecar.enabled (not .Values.configMaps.clusterLock) }}
-{{- if not .Values.charon.operatorAddress }}
-{{- fail "charon.operatorAddress is required for the DKG sidecar (or set configMaps.clusterLock to import an existing cluster-lock)" }}
+{{- if not (has (.Values.dkg.runner | default "charon") (list "charon" "sidecar")) }}
+{{- fail (printf "dkg.runner must be \"charon\" or \"sidecar\", got %q" .Values.dkg.runner) }}
 {{- end }}
-{{- if not (regexMatch "^0x[0-9a-fA-F]{40}$" .Values.charon.operatorAddress) }}
-{{- fail "charon.operatorAddress must be a 0x-prefixed 20-byte hex Ethereum address" }}
+
+{{- if and $explicit (has $mode (list "launchpad" "definition" "lockHash")) (not .Values.charon.dkgSidecar.enabled) }}
+{{- fail (printf "mode %s needs the DKG sidecar: set charon.dkgSidecar.enabled=true (or use mode=lock with configMaps.clusterLock)" $mode) }}
+{{- end }}
+
+{{- if eq $mode "launchpad" }}
+{{- if .Values.charon.dkgSidecar.enabled }}
+{{- if not .Values.charon.operatorAddress }}
+{{- fail "mode launchpad: charon.operatorAddress is required (the address you sign the Launchpad invite with). To join with a cluster definition instead, set mode=definition and one of dkg.definition.configHash/url/configMap; to import a cluster set configMaps.clusterLock" }}
+{{- end }}
+{{- if not (regexMatch $addrRe .Values.charon.operatorAddress) }}
+{{- fail (printf "charon.operatorAddress must be a 0x-prefixed 20-byte hex Ethereum address, got %q" .Values.charon.operatorAddress) }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- if eq $mode "definition" }}
+{{- $sources := 0 }}
+{{- range (list .Values.dkg.definition.configHash .Values.dkg.definition.url .Values.dkg.definition.configMap) }}
+{{- if . }}{{ $sources = add1 $sources }}{{ end }}
+{{- end }}
+{{- if ne (int $sources) 1 }}
+{{- fail (printf "mode definition: set exactly one of dkg.definition.configHash, dkg.definition.url or dkg.definition.configMap (%d set)" (int $sources)) }}
+{{- end }}
+{{- if and .Values.dkg.definition.configHash (not (regexMatch $hashRe .Values.dkg.definition.configHash)) }}
+{{- fail (printf "dkg.definition.configHash must be 0x followed by 64 hex characters, got %q" .Values.dkg.definition.configHash) }}
+{{- end }}
+{{- if and .Values.dkg.definition.url (not (hasPrefix "https://" .Values.dkg.definition.url)) }}
+{{- fail (printf "dkg.definition.url must be an https:// URL, got %q" .Values.dkg.definition.url) }}
+{{- end }}
+{{- if and .Values.charon.operatorAddress (not (regexMatch $addrRe .Values.charon.operatorAddress)) }}
+{{- fail (printf "charon.operatorAddress must be a 0x-prefixed 20-byte hex Ethereum address, got %q" .Values.charon.operatorAddress) }}
+{{- end }}
+{{- end }}
+
+{{- if and (eq $mode "lock") (not .Values.configMaps.clusterLock) }}
+{{- fail "mode lock: configMaps.clusterLock is required (kubectl create configmap cluster-lock --from-file=cluster-lock.json). For locks over 1MB use mode=lockHash with charon.lockHash" }}
+{{- end }}
+
+{{- if eq $mode "lockHash" }}
+{{- if not .Values.charon.lockHash }}
+{{- fail "mode lockHash: charon.lockHash is required (jq -r .lock_hash cluster-lock.json)" }}
+{{- end }}
+{{- if not (regexMatch $hashRe .Values.charon.lockHash) }}
+{{- fail (printf "charon.lockHash must be 0x followed by 64 hex characters, got %q" .Values.charon.lockHash) }}
+{{- end }}
+{{- /* Pre-0.22 behaviour: in auto mode the sidecar still required an operator address alongside lockHash. */}}
+{{- if and (not $explicit) .Values.charon.dkgSidecar.enabled (not .Values.charon.operatorAddress) }}
+{{- fail "charon.operatorAddress is required with charon.lockHash in mode auto; set mode=lockHash to fetch the lock without one" }}
+{{- end }}
+{{- end }}
+
+{{- if $explicit }}
+{{- if and (ne $mode "lock") .Values.configMaps.clusterLock }}
+{{- fail (printf "configMaps.clusterLock is set but mode is %s; use mode=lock (or mode=auto)" $mode) }}
+{{- end }}
+{{- if and (ne $mode "lockHash") .Values.charon.lockHash }}
+{{- fail (printf "charon.lockHash is set but mode is %s; use mode=lockHash (or mode=auto)" $mode) }}
+{{- end }}
+{{- if and (ne $mode "definition") (or .Values.dkg.definition.configHash .Values.dkg.definition.url .Values.dkg.definition.configMap) }}
+{{- fail (printf "dkg.definition.* is set but mode is %s; use mode=definition (or mode=auto)" $mode) }}
 {{- end }}
 {{- end }}
 
@@ -21,13 +81,8 @@
 {{- end }}
 
 {{- if .Values.charon.dkgSidecar.targetConfigHash }}
-  {{- if not (hasPrefix "0x" .Values.charon.dkgSidecar.targetConfigHash) }}
-    {{- fail "charon.dkgSidecar.targetConfigHash must start with '0x'" }}
-  {{- end }}
-  {{- if ne (len .Values.charon.dkgSidecar.targetConfigHash) 66 }}
-    {{- fail "charon.dkgSidecar.targetConfigHash must be exactly 66 characters (0x + 64 hex digits)" }}
-  {{- end }}
-  {{- if not (regexMatch "^0x[0-9a-fA-F]{64}$" .Values.charon.dkgSidecar.targetConfigHash) }}
-    {{- fail "charon.dkgSidecar.targetConfigHash must be a valid hex hash (0x followed by 64 hexadecimal characters)" }}
-  {{- end }}
+{{- if not (regexMatch $hashRe .Values.charon.dkgSidecar.targetConfigHash) }}
+{{- fail "charon.dkgSidecar.targetConfigHash must be a valid hex hash (0x followed by 64 hexadecimal characters)" }}
 {{- end }}
+{{- end }}
+

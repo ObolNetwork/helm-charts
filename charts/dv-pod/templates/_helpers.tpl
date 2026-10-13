@@ -385,3 +385,21 @@ helm.sh/chart: {{ include "dv-pod.chart" . }}
 app.kubernetes.io/component: prometheus
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
+
+{{/*
+Shell snippet: copy the ENR private key into /charon-data, where `charon dkg` requires it.
+Refuses to continue if a different key is already there (identity mismatch).
+*/}}
+{{- define "dv-pod.stageEnrKey" -}}
+ENR_SRC="/enr-from-job/{{ include "dv-pod.enrSecretDataKey" . }}"
+ENR_DST="/charon-data/charon-enr-private-key"
+if [ -f "$ENR_DST" ]; then
+  if [ "$(cat "$ENR_DST")" != "$(cat "$ENR_SRC")" ]; then
+    echo "ERROR: $ENR_DST differs from the ENR private key in Secret {{ include "dv-pod.enrSecretName" . }}."
+    echo "This node would join the DKG with the wrong identity. Resolve manually; nothing was changed."
+    exit 1
+  fi
+else
+  cp "$ENR_SRC" "$ENR_DST" && chmod 600 "$ENR_DST"
+fi
+{{- end -}}

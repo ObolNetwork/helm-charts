@@ -7,6 +7,19 @@
 # The chainId is automatically derived from the network name
 network: mainnet  # Default to Mainnet
 
+# -- How this node joins its distributed validator cluster:
+# - `auto` (default): infer from the values set, as charts < 0.22 did:
+#   `configMaps.clusterLock` -> lock, `charon.lockHash` -> lockHash, any `dkg.definition.*` -> definition,
+#   otherwise launchpad.
+# - `launchpad`: Launchpad invite. The DKG sidecar polls the Obol API for a definition containing this
+#   node's ENR under `charon.operatorAddress` (required), waits for every operator to sign, then runs the DKG.
+# - `definition`: direct route. The cluster definition (from `charon create dkg`) is given by exactly one of
+#   `dkg.definition.configHash`, `.url` or `.configMap`. No operator address needed; this node's ENR must be
+#   one of the definition's operators.
+# - `lock`: import an existing cluster; `configMaps.clusterLock` is required. No DKG.
+# - `lockHash`: like `lock` for large locks; `charon.lockHash` is required and the lock is fetched from the Obol API.
+mode: auto
+
 # -- Kubernetes secrets names.
 # The ENR private key (this node's charon identity) lives in, in order of precedence:
 # 1. `charon.enr.existingSecret.name`, if set;
@@ -185,7 +198,8 @@ charon:
     image:
       # -- Image repository for the DKG sidecar
       repository: "obolnetwork/charon-dkg-sidecar"
-      tag: "main"
+      # -- DKG sidecar image tag. v1.1.0 implements DKG_RUNNER/DEFINITION_SOURCE/status reporting.
+      tag: "v1.1.0"
       pullPolicy: "IfNotPresent"
     # -- Initial delay in seconds before the first retry of a polling cycle.
     initialRetryDelaySeconds: 10
@@ -260,6 +274,49 @@ charon:
 
  
   
+# -- DKG (distributed key generation) settings. See `mode` for how the cluster definition is found.
+dkg:
+  # -- Who runs `charon dkg`:
+  # - `charon` (default): the sidecar only fetches/validates the definition and exits; a `charon-dkg` init
+  #   container then runs `charon dkg` with this chart's charon `image`, so the DKG always uses the same
+  #   charon version as the node. A `dkg-report` init container records the result.
+  # - `sidecar`: legacy; the sidecar runs the charon binary bundled in its own image.
+  runner: charon
+  # -- Cluster definition for `mode: definition` (or `mode: auto`). Set exactly one source.
+  definition:
+    # -- Config hash of a definition published to the Obol API (`charon create dkg --publish`), 0x + 64 hex.
+    configHash: ""
+    # -- HTTPS URL serving the cluster-definition.json.
+    url: ""
+    # -- Name of a ConfigMap in the release namespace holding the cluster-definition.json.
+    # Example: kubectl create configmap cluster-definition --from-file=cluster-definition.json
+    configMap: ""
+    # -- Key within `dkg.definition.configMap` holding the definition.
+    configMapKey: "cluster-definition.json"
+  # -- Publish the resulting cluster-lock to the Obol API (`charon dkg --publish`, to `charon.dkgSidecar.apiEndpoint`). Runner `charon` only.
+  publish: true
+  # -- Timeout for one `charon dkg` attempt, e.g. "5m" (empty: charon default, 2m). Runner `charon` only.
+  timeout: ""
+  # -- Seconds to wait between `charon dkg` attempts while peers come online. Runner `charon` only.
+  retryDelaySeconds: 10
+  # -- Extra arguments for `charon dkg`. Runner `charon` only.
+  extraArgs: []
+  # -- Resources for the `charon-dkg` init container.
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  status:
+    # -- Have the sidecar publish DKG progress to the ConfigMap "<fullname>-dkg-status"
+    # (keys: phase, message, updatedAt, enr, operatorAddress, definitionSource, configHash, clusterName,
+    # signatures, lockHash, numValidators, sidecarVersion), so agents can watch it without reading Secrets or logs.
+    # Creates a Role allowing only get/patch on that ConfigMap; the service account token is mounted only into
+    # the sidecar containers. Needs `serviceAccount.enabled` and `rbac.enabled`.
+    enabled: true
+
 # -- Validator client configuration
 validatorClient:
   # -- Enable the validator client container
@@ -401,6 +458,15 @@ rbac:
   clusterRules: []
   # -- Role rules for the pod's service account. Empty by default; the Role is only created when rules are set.
   rules: []
+
+# -- Grant read access to this release's public ConfigMaps ("<fullname>-dkg-status" and "<fullname>-enr")
+# to service accounts outside the release, e.g. an agent watching DKG progress. Renders a Role with
+# get/watch restricted to those two names (no list: Kubernetes can't restrict list by name, so readers
+# fetch them by name) and a RoleBinding. Never grants access to Secrets.
+# Obol Stack (Hermes agent): [{namespace: hermes-obol-agent, serviceAccount: hermes}]
+statusReaders: []
+# - namespace: hermes-obol-agent
+#   serviceAccount: hermes
 
 # -- Charon service ports
 service:
