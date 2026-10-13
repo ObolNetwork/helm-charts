@@ -403,3 +403,12 @@ else
   cp "$ENR_SRC" "$ENR_DST" && chmod 600 "$ENR_DST"
 fi
 {{- end -}}
+
+{{/*
+UDP (QUIC) listen port, parsed from the first charon.p2pUdpAddress entry ("" when UDP is off).
+*/}}
+{{- define "dv-pod.p2pUdpPort" -}}
+{{- with .Values.charon.p2pUdpAddress -}}
+{{- regexFind "[0-9]+$" (first (splitList "," .)) -}}
+{{- end -}}
+{{- end -}}

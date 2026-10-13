@@ -100,7 +100,8 @@ charon:
   # The Builder API must also be enabled on your beacon node client(s). 
   # The Beacon node must either be connected to a mev sidecar or a mev relay to access the builder network.
   # More documentation about MEV can be found [here](https://docs.obol.org/advanced-and-troubleshooting/advanced/enable-mev).
-  builderApi: "true"
+  # Accepts a boolean; the strings "true"/"false" from older values files are still understood.
+  builderApi: true
   
   # -- Minimum feature set to enable by default: alpha, beta, or stable. Warning: modify at own risk. (default "stable")
   featureSet: "stable"
@@ -162,13 +163,19 @@ charon:
 
   # -- Comma-separated list of listening TCP addresses (ip and port) for libP2P traffic. Empty default doesn't bind to local port therefore only supports outgoing connections.
   p2pTcpAddress: "0.0.0.0:3610"
+
+  # -- Comma-separated list of listening UDP addresses (ip and port) for libp2p QUIC traffic, e.g. "0.0.0.0:3610".
+  # Empty (default) disables UDP. QUIC is an alpha feature in charon v1.11: also set `featureSetEnable: quic`.
+  # Adds a `p2p-udp` container port (and a UDP port on `p2pService`) on the parsed port.
+  p2pUdpAddress: ""
   
   # -- Listening address (ip and port) for validator-facing traffic proxying the beacon-node API. (default "127.0.0.1:3600")
   validatorApiAddress: "0.0.0.0:3600"
 
   # -- If enabled, it will set p2pExternalHostname value to the pod name and enable direct connection between cluster nodes.
   # This is useful for deployments where pods can directly communicate with each other.
-  directConnectionEnabled: "true"
+  # Accepts a boolean; the strings "true"/"false" from older values files are still understood.
+  directConnectionEnabled: true
 
   # -- Path within the Charon container where the ENR private key file will be mounted.
   privateKeyFile: "/data/charon-enr-private-key"
@@ -468,10 +475,38 @@ statusReaders: []
 # - namespace: hermes-obol-agent
 #   serviceAccount: hermes
 
+# -- Optional Service exposing charon's libp2p port outside the cluster, so peers can connect directly
+# instead of via relays. Disabled by default (relays work without it).
+# With LoadBalancer, set `charon.p2pExternalIp` (or `p2pExternalHostname`) to the load balancer address.
+# With NodePort, peers reach the node port, so charon must listen and advertise on that same port: e.g.
+# `nodePorts.tcp: 31610`, `charon.p2pTcpAddress: 0.0.0.0:31610`, `service.ports.p2pTcp.targetPort: 31610`,
+# and `charon.p2pExternalIp: <node public IP>`. UDP (QUIC) is added when `charon.p2pUdpAddress` is set.
+p2pService:
+  enabled: false
+  # -- NodePort or LoadBalancer
+  type: LoadBalancer
+  # -- Service annotations (e.g. cloud load balancer settings)
+  annotations: {}
+  # -- Service port for libp2p TCP (and UDP)
+  port: 3610
+  # -- Fixed node ports when type is NodePort (null: allocated by Kubernetes)
+  nodePorts:
+    tcp: null
+    udp: null
+  # -- Cluster or Local. Local preserves the peer's source IP and avoids a second hop.
+  externalTrafficPolicy: Local
+  # -- loadBalancerIP for providers that support it
+  loadBalancerIP: ""
+  # -- Restrict which source ranges may reach a LoadBalancer
+  loadBalancerSourceRanges: []
+
 # -- Charon service ports
 service:
   # -- Headless service to create DNS for each statefulset instance
   clusterIP: None
+  # -- Publish DNS records for pods that are not Ready yet. Peers resolve each other's
+  # <pod>.<fullname>.<namespace>.svc names during the DKG and before charon is ready.
+  publishNotReadyAddresses: true
   ports:
     validatorApi:
       name: validator-api
@@ -561,6 +596,12 @@ persistence:
   # -- Annotations for the PVC
   # Example: annotations: {"volume.beta.kubernetes.io/storage-class": "fast"}
   annotations: {}
+  # -- StatefulSet persistentVolumeClaimRetentionPolicy. Retain keeps charon-data (cluster-lock, key shares)
+  # and validator-data (slashing protection) when the StatefulSet is deleted or scaled down
+  # (Kubernetes >= 1.27). Set to {} to omit the field.
+  retentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
 
 
 # -- Prometheus Service Monitor
@@ -599,12 +640,17 @@ livenessProbe:
     # -- Port for liveness probe HTTP checks
     port: 3620
 
-# -- Configure readiness probes
+# -- Readiness probe on charon's /readyz (beacon node synced, peers and validator client connected).
+# Readiness only marks the pod Ready; Services publish not-ready addresses, so peers and an external VC can
+# still connect while charon gets ready. There is deliberately no liveness probe by default: a node that is
+# up but waiting for peers or a syncing beacon node must not be restarted. Init containers (DKG) run first.
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 readinessProbe:
-  enabled: false
-  initialDelaySeconds: 5
-  periodSeconds: 3
+  enabled: true
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
   httpGet:
     path: /readyz
     # -- Port for readiness probe HTTP checks
@@ -664,6 +710,10 @@ networkPolicy:
     # -- Namespace selector for monitoring namespace
     namespaceSelector: {}
       # name: monitoring
+    # -- Additional NetworkPolicyPeers allowed to reach port 3620 (metrics, /readyz), e.g. an agent namespace.
+    # Only applied when podSelector or namespaceSelector is set (otherwise 3620 is open to all sources).
+    # Obol Stack Hermes: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: hermes-obol-agent}}}]
+    extraFrom: []
   # -- Beacon node configuration
   beaconNodes:
     # -- Enable egress to beacon nodes
@@ -687,6 +737,28 @@ networkPolicy:
     cidr: "0.0.0.0/0"
     # -- IP ranges to exclude
     except: []
+  # -- Charon P2P traffic outside the cluster (peers and relays)
+  p2p:
+    # -- Allow egress to peers/relays on `ports` (TCP and UDP)
+    enabled: true
+    # -- Also allow inbound peers from `cidr` (always on when p2pService is enabled)
+    allowInbound: false
+    # -- CIDR for external peers and relays
+    cidr: "0.0.0.0/0"
+    # -- IP ranges to exclude
+    except: []
+    # -- Peer/relay libp2p ports
+    ports:
+      - 3610
+  # -- Kubernetes API egress for the DKG sidecar's status ConfigMap (only rendered when dkg.status is active)
+  kubeApi:
+    enabled: true
+    # -- CIDR of the API server endpoints
+    cidr: "0.0.0.0/0"
+    # -- API server ports (443 for the kubernetes Service, 6443 for typical endpoints)
+    ports:
+      - 443
+      - 6443
   # -- Custom ingress rules to add
   customIngress: []
   # -- Custom egress rules to add

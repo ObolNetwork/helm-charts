@@ -6,6 +6,10 @@ metadata:
     {{- include "dv-pod.labels" . | nindent 4 }}
 spec:
   clusterIP: {{ .Values.service.clusterIP }}
+  {{- if .Values.service.publishNotReadyAddresses }}
+  # charon's readiness probe must not hide the pod from peers or an external validator client.
+  publishNotReadyAddresses: true
+  {{- end }}
   ports:
     - name: {{ .Values.service.ports.validatorApi.name }}
       protocol: {{ .Values.service.ports.validatorApi.protocol }}

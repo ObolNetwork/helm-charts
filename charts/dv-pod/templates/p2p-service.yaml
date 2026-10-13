@@ -1,0 +1,48 @@
+{{- if include "dv-pod.truthy" .Values.p2pService.enabled }}
+# Exposes charon's libp2p port outside the cluster for direct peer connections.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "dv-pod.fullname" . }}-p2p
+  labels:
+    {{- include "dv-pod.labels" . | nindent 4 }}
+    app.kubernetes.io/component: p2p
+  {{- with .Values.p2pService.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.p2pService.type }}
+  {{- with .Values.p2pService.externalTrafficPolicy }}
+  externalTrafficPolicy: {{ . }}
+  {{- end }}
+  {{- if eq .Values.p2pService.type "LoadBalancer" }}
+  {{- with .Values.p2pService.loadBalancerIP }}
+  loadBalancerIP: {{ . }}
+  {{- end }}
+  {{- with .Values.p2pService.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- end }}
+  publishNotReadyAddresses: true
+  ports:
+    - name: p2p-tcp
+      protocol: TCP
+      port: {{ .Values.p2pService.port }}
+      targetPort: p2p-tcp
+      {{- if and (eq .Values.p2pService.type "NodePort") .Values.p2pService.nodePorts.tcp }}
+      nodePort: {{ .Values.p2pService.nodePorts.tcp }}
+      {{- end }}
+    {{- if include "dv-pod.p2pUdpPort" . }}
+    - name: p2p-udp
+      protocol: UDP
+      port: {{ .Values.p2pService.port }}
+      targetPort: p2p-udp
+      {{- if and (eq .Values.p2pService.type "NodePort") .Values.p2pService.nodePorts.udp }}
+      nodePort: {{ .Values.p2pService.nodePorts.udp }}
+      {{- end }}
+    {{- end }}
+  selector:
+    {{- include "dv-pod.selectorLabels" . | nindent 4 }}
+{{- end }}

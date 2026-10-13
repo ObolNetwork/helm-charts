@@ -4,6 +4,7 @@
 {{- $runner := .Values.dkg.runner | default "charon" -}}
 {{- $runsDkg := include "dv-pod.runsDkg" . -}}
 {{- $status := include "dv-pod.statusEnabled" . -}}
+{{- $builderApi := include "dv-pod.truthy" .Values.charon.builderApi -}}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -231,6 +232,9 @@ spec:
                   {{- end }}
                   {{- with .Values.charon.p2pTcpAddress }}
                   --p2p-tcp-address={{ . | quote }} \
+                  {{- end }}
+                  {{- with .Values.charon.p2pUdpAddress }}
+                  --p2p-udp-address={{ . | quote }} \
                   {{- end }}
                   {{- if include "dv-pod.truthy" .Values.charon.directConnectionEnabled }}
                   --p2p-external-hostname="${NODE_NAME}.{{ include "dv-pod.fullname" . }}.{{ .Release.Namespace }}.svc" \
@@ -713,8 +717,8 @@ spec:
               {{- if .Values.charon.nickname }}
               --nickname={{ .Values.charon.nickname }}
               {{- end }}
-              {{- if .Values.charon.builderApi }}
-              --builder-api={{ .Values.charon.builderApi }}
+              {{- if $builderApi }}
+              --builder-api=true
               {{- end }}
               {{- if .Values.charon.featureSet }}
               --feature-set={{ .Values.charon.featureSet }}
@@ -755,7 +759,7 @@ spec:
               {{- if .Values.charon.p2pDisableReuseport }}
               --p2p-disable-reuseport={{ .Values.charon.p2pDisableReuseport }}
               {{- end }}
-              {{- if .Values.charon.directConnectionEnabled }}
+              {{- if include "dv-pod.truthy" .Values.charon.directConnectionEnabled }}
               --p2p-external-hostname="${NODE_NAME}.{{ include "dv-pod.fullname" . }}.{{ .Release.Namespace }}.svc"
               {{- else if .Values.charon.p2pExternalHostname }}
               --p2p-external-hostname={{ .Values.charon.p2pExternalHostname }}
@@ -768,6 +772,9 @@ spec:
               {{- end }}
               {{- if .Values.charon.p2pTcpAddress }}
               --p2p-tcp-address={{ .Values.charon.p2pTcpAddress }}
+              {{- end }}
+              {{- if .Values.charon.p2pUdpAddress }}
+              --p2p-udp-address={{ .Values.charon.p2pUdpAddress }}
               {{- end }}
               --private-key-file="{{ .Values.charon.privateKeyFile }}"
               {{- if .Values.charon.validatorApiAddress }}
@@ -796,6 +803,11 @@ spec:
             - containerPort: {{ .Values.service.ports.p2pTcp.targetPort }}
               name: p2p-tcp
               protocol: TCP
+            {{- with include "dv-pod.p2pUdpPort" . }}
+            - containerPort: {{ . }}
+              name: p2p-udp
+              protocol: UDP
+            {{- end }}
             - containerPort: 3620
               name: monitoring
               protocol: TCP
@@ -811,6 +823,12 @@ spec:
           readinessProbe:
             initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            {{- with .Values.readinessProbe.timeoutSeconds }}
+            timeoutSeconds: {{ . }}
+            {{- end }}
+            {{- with .Values.readinessProbe.failureThreshold }}
+            failureThreshold: {{ . }}
+            {{- end }}
             httpGet:
               path: {{ .Values.readinessProbe.httpGet.path }}
               port: {{ .Values.readinessProbe.httpGet.port }}
@@ -849,7 +867,7 @@ spec:
             - {{ printf "--graffiti=%s" . | quote }}
             {{- end }}
             - --datadir=/validator-data
-            {{- if .Values.charon.builderApi }}
+            {{- if $builderApi }}
             - --builder-proposals
             {{- end }}
             - --init-slashing-protection
@@ -867,7 +885,7 @@ spec:
             - validator-client
             - --network={{ include "dv-pod.network" . }}
             - --beacon-node-api-endpoint=http://localhost:3600
-            {{- if .Values.charon.builderApi }}
+            {{- if $builderApi }}
             - --validators-builder-registration-default-enabled=true
             {{- end }}
             {{- with .Values.validatorClient.config.graffiti }}
@@ -905,7 +923,7 @@ spec:
             {{- with .Values.validatorClient.config.graffiti }}
             - {{ printf "--graffiti=%s" . | quote }}
             {{- end }}
-            {{- if .Values.charon.builderApi }}
+            {{- if $builderApi }}
             - --enable-builder
             {{- end }}
             - --datadir=/validator-data
@@ -925,7 +943,7 @@ spec:
           command:
             - /home/user/nimbus_validator_client
             - --beacon-node=http://localhost:3600
-            {{- if .Values.charon.builderApi }}
+            {{- if $builderApi }}
             - --payload-builder=true
             {{- end }}
             {{- with .Values.validatorClient.config.graffiti }}
@@ -947,7 +965,7 @@ spec:
             - validator
             - --beacon-nodes=http://localhost:3600
             - --network={{ include "dv-pod.network" . }}
-            {{- if .Values.charon.builderApi }}
+            {{- if $builderApi }}
             - --builder=true
             - --builder.selection=builderonly
             {{- end }}
@@ -1031,6 +1049,12 @@ spec:
           emptyDir: {}
         {{- end }}
         # Note: validator-data volume is always provided via PVC to prevent slashing
+  {{- with .Values.persistence.retentionPolicy }}
+  # Keep the PVCs (cluster-lock, key shares, slashing protection) when the StatefulSet is deleted or scaled down.
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: {{ .whenDeleted | default "Retain" }}
+    whenScaled: {{ .whenScaled | default "Retain" }}
+  {{- end }}
   volumeClaimTemplates:
     {{- if .Values.persistence.enabled }}
     - metadata:
