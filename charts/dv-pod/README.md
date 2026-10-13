@@ -2,7 +2,7 @@
 DV-Pod
 ===========
 
-![Version: 0.20.0](https://img.shields.io/badge/Version-0.20.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.11.0](https://img.shields.io/badge/AppVersion-1.11.0-informational?style=flat-square)
+![Version: 0.21.0](https://img.shields.io/badge/Version-0.21.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.11.0](https://img.shields.io/badge/AppVersion-1.11.0-informational?style=flat-square)
 
 A Helm chart for deploying a single distributed validator pod consisting of a Charon middleware client and validator client.
 
@@ -73,7 +73,7 @@ helm install my-dv-pod obol/dv-pod \
   --set validatorClient.keystores.secretName=validator-keys
 ```
 
-That should be enough to get your DV-Pod running, and loaded with the required artifacts, assuming the default beacon node endpoint of the Obol Stack works.
+That should be enough to get your DV-Pod running, and loaded with the required artifacts, once you also set `network` and `charon.beaconNodeEndpoints` to your synced beacon node (see [Install the chart](#install-the-chart)).
 
 #### Example 1b: From a Distributed Key Generation ceremony output (a `.charon/` folder structure)
 
@@ -122,10 +122,12 @@ If you don't have pre-existing artifacts, the chart can automatically:
 Simply deploy the chart with your operator address:
 ```sh
 helm install my-dv-pod obol/dv-pod \
+  --set network=hoodi \
+  --set 'charon.beaconNodeEndpoints[0]=<BEACON_NODE_ENDPOINT>' \
   --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS
 ```
 
-The DKG sidecar will poll the Obol API for cluster invites and automatically run the DKG ceremony when ready.
+The DKG sidecar polls the Obol API for cluster definitions on `network` that include this pod's ENR, and runs the DKG ceremony once every operator has signed. Approving the invite still happens on the Launchpad with your operator wallet, using the ENR printed in the install notes.
 
 ## Add Obol's Helm Charts Repo
 
@@ -139,9 +141,13 @@ _See [helm repo](https://helm.sh/docs/helm/helm_repo/) for command documentation
 Install a distributed validator pod:
 ```sh
 helm upgrade --install my-dv-pod obol/dv-pod \
+  --set network=<mainnet|hoodi|sepolia> \
   --set='charon.beaconNodeEndpoints[0]=<BEACON_NODE_ENDPOINT>' \
   --set='charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>'
 ```
+
+`charon.beaconNodeEndpoints` must point at a synced consensus client for `network`; the default is a placeholder.
+In the [Obol Stack](https://obol.org/stack) use `http://ethereum-beacon.ethereum-<id>.svc.cluster.local:5052`.
 
 ## Validator Client
 
@@ -176,11 +182,11 @@ With a `helm install` command for pre-existing artifacts.
 helm install my-dv-pod obol/dv-pod \
   --set configMaps.clusterLock=cluster-lock \
   --set validatorClient.keystores.secretName=validator-keys \
-  --set validatorClient.type=prysm --set validatorClient.config.prysm.acceptTermsOfUse=true
+  --set validatorClient.type=prysm
 ```
 
 > [!NOTE]
-> To run Prysm VC you must accept their [Terms of Use](https://github.com/OffchainLabs/prysm/blob/develop/TERMS_OF_SERVICE.md).
+> By choosing the Prysm VC you accept their [Terms of Use](https://github.com/OffchainLabs/prysm/blob/develop/TERMS_OF_SERVICE.md); the chart passes `--accept-terms-of-use`.
 
 ### Validator Keystores
 
@@ -211,7 +217,7 @@ When running DKG through the chart, keystores are automatically generated and im
 - **Lighthouse**: Keystores in `/validator-data/validators/`, passwords in `/validator-data/secrets/`
 - **Lodestar**: Restructured with pubkey directories under `/validator-data/keystores/`
 - **Teku**: Keystores in `/validator-data/keys/`, passwords in `/validator-data/passwords/`
-- **Prysm**: Keystores in `/validator-data/wallets/`
+- **Prysm**: Imported into a wallet in `/validator-data/wallet/`
 - **Nimbus**: Similar to Lighthouse structure
 
 ## Namespace Requirements
@@ -248,7 +254,7 @@ validatorClient:
 
 2. Configure your external validator client to connect to the Charon node's validator API endpoint:
 ```
---beacon-node-api-endpoint="http://<RELEASE_NAME>-dv-pod.<NAMESPACE>.svc.cluster.local:3600"
+--beacon-node-api-endpoint="http://<RELEASE_NAME>.<NAMESPACE>.svc.cluster.local:3600"
 ```
 
 For example, if you installed the chart as `my-dv-pod` in namespace `dv-pod`:
@@ -266,9 +272,7 @@ If your `cluster-lock.json` file is larger than 1MB, you may encounter errors wh
 error validating data: ValidationError(ConfigMap.data.cluster-lock.json): invalid type for io.k8s.api.core.v1.ConfigMap.data: got "array", expected "string"
 ```
 
-In this case, you have two options:
-
-**Option A: Direct lock hash (Recommended)**
+In this case, provide the lock hash instead:
 
 1. Extract the lock_hash from your cluster-lock.json:
    ```sh
@@ -280,22 +284,6 @@ In this case, you have two options:
    ```sh
    helm install my-dv-pod obol/dv-pod \
      --set charon.lockHash=$LOCK_HASH \
-     --set charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>
-   ```
-
-**Option B: ConfigMap approach**
-
-1. Extract the lock_hash and create a ConfigMap:
-   ```sh
-   LOCK_HASH=$(jq -r '.lock_hash' cluster-lock.json)
-   kubectl create configmap cluster-lock-hash \
-     --from-literal=lock-hash=$LOCK_HASH
-   ```
-
-2. Install the chart referencing the ConfigMap:
-   ```sh
-   helm install my-dv-pod obol/dv-pod \
-     --set configMaps.lockHash=cluster-lock-hash \
      --set charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>
    ```
 
@@ -319,13 +307,13 @@ The command removes all the Kubernetes components associated with the chart and 
 | centralMonitoring.enabled | bool | `false` | Specifies whether central monitoring should be enabled |
 | centralMonitoring.promEndpoint | string | `"https://vm.monitoring.gcp.obol.tech/write"` | https endpoint to obol central prometheus  |
 | centralMonitoring.token | string | `""` | The authentication token to the central prometheus |
-| charon.beaconNodeEndpoints | list | `["http://l1-full-node-beacon.l1.cluster.svc.local:5052"]` | Beacon node endpoints The default is the Obol Stack full node address. Change this to your own consensus client beacon API(s). All beacon nodes specified here will be called for every charon request, if you want to leverage fallback behaviour place secondary beacon nodes in charon.fallbackBeaconNodeEndpoints[] |
+| charon.beaconNodeEndpoints | list | `["http://l1-full-node-beacon.l1.svc.cluster.local:5052"]` | Beacon node endpoints. You must set this to your own synced consensus client's beacon API(s); the default is a placeholder. In the Obol Stack use http://ethereum-beacon.ethereum-<id>.svc.cluster.local:5052 (the <id> of your `obol network install ethereum` deployment). All beacon nodes specified here will be called for every charon request, if you want to leverage fallback behaviour place secondary beacon nodes in charon.fallbackBeaconNodeEndpoints[] |
 | charon.beaconNodeHeaders | string | `""` | Beacon node authentication headers WARNING: These headers will be sent to ALL beacon nodes, which could leak credentials Format: "Authorization=Basic <base64_encoded_credentials>" To generate: echo -n "username:password" | base64 Example: "Authorization=Basic am9objpkb2U=" |
 | charon.beaconNodeHeadersSecretKey | string | `"headers"` | Optional: Key within the charon.beaconNodeHeaders secret to read from |
 | charon.beaconNodeHeadersSecretName | string | `""` | Optional: Name of the secret containing beacon node headers Use this for secure credential storage instead of beaconNodeHeaders The secret should contain a key specified by charon.beaconNodeHeadersSecretKey |
 | charon.builderApi | string | `"true"` | Enables the builder api (MEV) for validator proposals. The Builder API must also be enabled on your beacon node client(s).  The Beacon node must either be connected to a mev sidecar or a mev relay to access the builder network. More documentation about MEV can be found [here](https://docs.obol.org/advanced-and-troubleshooting/advanced/enable-mev). |
 | charon.directConnectionEnabled | string | `"true"` | If enabled, it will set p2pExternalHostname value to the pod name and enable direct connection between cluster nodes. This is useful for deployments where pods can directly communicate with each other. |
-| charon.dkgSidecar | object | `{"apiEndpoint":"https://api.obol.tech","enabled":true,"image":{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon-dkg-sidecar","tag":"main"},"initialRetryDelaySeconds":10,"maxRetryDelaySeconds":300,"pageLimit":10,"resources":{"limits":{"cpu":"200m","memory":"256Mi"},"requests":{"cpu":"50m","memory":"128Mi"}},"retryDelayFactor":2,"retryDelaySeconds":10,"serviceAccount":{"create":true},"targetConfigHash":""}` | Configuration for the DKG Sidecar init container This init container orchestrates the Distributed Key Generation (DKG) process for Charon clusters.  The sidecar has three operating modes: 1. If cluster-lock.json exists: Exits immediately (cluster already initialized) 2. If cluster-definition.json exists: Attempts DKG with the existing definition 3. If neither exists: Polls the Obol API for cluster invites and runs DKG when ready  To provide a pre-existing cluster-lock and skip DKG: 1. Create a configMap: kubectl create configmap cluster-lock --from-file=cluster-lock.json 2. Change the `confiMaps.clusterLock: cluster-lock in your values.yaml file,    or pass --set configMaps.clusterLock=cluster-lock in your helm install command. 3. The sidecar will detect the mounted lock file and exit, allowing Charon to start immediately  To provide a cluster-definition without running DKG through the API: 1. Mount your cluster-definition.json in /charon-data/ 2. The sidecar will run 'charon dkg' to generate the cluster-lock.json  Note: When providing a pre-existing cluster-lock.json, you must also ensure the associated validator keys are available in the charon-data volume. |
+| charon.dkgSidecar | object | `{"apiEndpoint":"https://api.obol.tech","enabled":true,"image":{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon-dkg-sidecar","tag":"main"},"initialRetryDelaySeconds":10,"maxRetryDelaySeconds":300,"pageLimit":10,"resources":{"limits":{"cpu":"200m","memory":"256Mi"},"requests":{"cpu":"50m","memory":"128Mi"}},"retryDelayFactor":2,"retryDelaySeconds":10,"serviceAccount":{"create":true},"targetConfigHash":""}` | Configuration for the DKG Sidecar init container This init container orchestrates the Distributed Key Generation (DKG) process for Charon clusters.  The sidecar has three operating modes: 1. If cluster-lock.json exists: Exits immediately (cluster already initialized) 2. If cluster-definition.json exists: Attempts DKG with the existing definition 3. If neither exists: Polls the Obol API for cluster invites and runs DKG when ready  To provide a pre-existing cluster-lock and skip DKG: 1. Create a configMap: kubectl create configmap cluster-lock --from-file=cluster-lock.json 2. Set `configMaps.clusterLock: cluster-lock` in your values.yaml file,    or pass --set configMaps.clusterLock=cluster-lock in your helm install command. 3. The sidecar will detect the mounted lock file and exit, allowing Charon to start immediately  To provide a cluster-definition without running DKG through the API: 1. Mount your cluster-definition.json in /charon-data/ 2. The sidecar will run 'charon dkg' to generate the cluster-lock.json  Note: When providing a pre-existing cluster-lock.json, you must also ensure the associated validator keys are available in the charon-data volume. |
 | charon.dkgSidecar.apiEndpoint | string | `"https://api.obol.tech"` | API endpoint for the Obol network to fetch cluster definitions |
 | charon.dkgSidecar.image.repository | string | `"obolnetwork/charon-dkg-sidecar"` | Image repository for the DKG sidecar |
 | charon.dkgSidecar.initialRetryDelaySeconds | int | `10` | Initial delay in seconds before the first retry of a polling cycle. |
@@ -339,14 +327,14 @@ The command removes all the Kubernetes components associated with the chart and 
 | charon.enr.existingSecret | object | `{"name":"","privateKeyDataKey":"charon-enr-private-key","publicKeyDataKey":"enr"}` | Point to an existing Kubernetes secret that holds the ENR private key. If 'privateKey' above is not set and this 'existingSecret.name' is provided, 'generate' is ignored. NOTE: If not set, the chart will automatically check for a secret named 'charon-enr-private-key' (configurable via secrets.defaultEnrPrivateKey) and use it if it exists. |
 | charon.enr.existingSecret.privateKeyDataKey | string | `"charon-enr-private-key"` | Key in the secret's 'data' field holding the private key hex string |
 | charon.enr.existingSecret.publicKeyDataKey | string | `"enr"` | Key in the secret's 'data' field holding the public ENR string |
-| charon.enr.generate | object | `{"annotations":{},"enabled":true,"image":{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.7.1"},"kubectlImage":{"pullPolicy":"IfNotPresent","repository":"bitnamisecure/kubectl","tag":"latest"},"nodeSelector":{}}` | Enable automatic generation of an ENR private key. Only used if 'privateKey' and 'existingSecret.name' are not provided. The generated key will be stored in a secret with data keys 'charon-enr-private-key' and 'enr'. |
+| charon.enr.generate | object | `{"annotations":{},"enabled":true,"kubectlImage":{"pullPolicy":"IfNotPresent","repository":"bitnamisecure/kubectl","tag":"latest@sha256:999d5eb28f404b45f15117f2a110ff23c6164f76edac261d75d783b6e88252b7"},"nodeSelector":{}}` | Enable automatic generation of an ENR private key. Only used if 'privateKey' and 'existingSecret.name' are not provided. The generated key will be stored in a secret with data keys 'charon-enr-private-key' and 'enr'. |
 | charon.enr.generate.annotations | object | `{}` | Annotations to add to the ENR generation job |
-| charon.enr.generate.kubectlImage | object | `{"pullPolicy":"IfNotPresent","repository":"bitnamisecure/kubectl","tag":"latest"}` | Image to use for kubectl operations within the ENR generation job This image must contain a compatible kubectl binary. |
-| charon.enr.generate.nodeSelector | object | `{}` | Node selector for the ENR generation job |
-| charon.enr.privateKey | string | `""` | Provide the ENR private key directly (hex format, e.g., 0x...).  If set, 'generate' and 'existingSecret' are ignored. |
+| charon.enr.generate.kubectlImage | object | `{"pullPolicy":"IfNotPresent","repository":"bitnamisecure/kubectl","tag":"latest@sha256:999d5eb28f404b45f15117f2a110ff23c6164f76edac261d75d783b6e88252b7"}` | Image to use for kubectl operations within the ENR generation job This image must contain a compatible kubectl binary and a POSIX shell. bitnamisecure only publishes `latest`, so it is pinned by digest. |
+| charon.enr.generate.nodeSelector | object | `{}` | Node selector for the ENR generation job The job generates the key with the main charon image (`image`). |
+| charon.enr.privateKey | string | `""` | Provide the ENR private key directly (hex format, e.g., 0x...). The ENR job uses it to create the ENR secret (passed via a short-lived hook Secret, not the Job spec). Ignored if the ENR secret already exists, so an existing identity is never overwritten. Prefer 'existingSecret': values are stored in the Helm release. |
 | charon.enrJob.enabled | bool | `true` | Enable or disable the Kubernetes Job that generates/manages the ENR. Note: This is typically not needed as the job automatically detects existing secrets. The job will check if the ENR secret already exists and skip generation if found. Only set to false for advanced use cases where you need to completely disable the job. |
 | charon.executionClientRpcEndpoint | string | `""` | Optional: Execution client RPC endpoint URL (e.g., your Ethereum execution client) Note: Charon currently only supports a single execution endpoint This is only needed if an operator in the cluster uses a smart contract wallet for an operator signature.  If that does not apply to this cluster, this field can be left unset. |
-| charon.fallbackBeaconNodeEndpoints | list | `["https://ethereum-beacon-api.publicnode.com"]` | Fallback beacon node endpoints (optional) These will be used if the primary beaconNodeEndpoints are unavailable |
+| charon.fallbackBeaconNodeEndpoints | list | `[]` | Fallback beacon node endpoints (optional) These will be used if the primary beaconNodeEndpoints are unavailable. If empty and publicnodeFallback is true, the publicnode.com beacon API for `network` is used. |
 | charon.featureSet | string | `"stable"` | Minimum feature set to enable by default: alpha, beta, or stable. Warning: modify at own risk. (default "stable") |
 | charon.featureSetDisable | string | `""` | Comma-separated list of features to disable, overriding the default minimum feature set. |
 | charon.featureSetEnable | string | `""` | Comma-separated list of features to enable, overriding the default minimum feature set. |
@@ -369,6 +357,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | charon.p2pRelays | string | `""` | Comma-separated list of libp2p relay URLs or multiaddrs. Default list is provided by libp2p and may change over time |
 | charon.p2pTcpAddress | string | `"0.0.0.0:3610"` | Comma-separated list of listening TCP addresses (ip and port) for libP2P traffic. Empty default doesn't bind to local port therefore only supports outgoing connections. |
 | charon.privateKeyFile | string | `"/data/charon-enr-private-key"` | Path within the Charon container where the ENR private key file will be mounted. |
+| charon.publicnodeFallback | bool | `true` | When fallbackBeaconNodeEndpoints is empty, fall back to the public publicnode.com beacon API matching `network`. Set to false to run with no fallback beacon node. |
 | charon.validatorApiAddress | string | `"0.0.0.0:3600"` | Listening address (ip and port) for validator-facing traffic proxying the beacon-node API. (default "127.0.0.1:3600") |
 | clusterThreshold | string | `""` | Maximum number of pods that can be unavailable for cluster threshold Used in pod disruption budget when minAvailable is not specified |
 | configMaps | object | `{"clusterLock":""}` | Kubernetes configMaps names for non-sensitive configuration data. |
@@ -413,19 +402,17 @@ The command removes all the Kubernetes components associated with the chart and 
 | podAnnotations | object | `{"pod-security.kubernetes.io/audit":"baseline","pod-security.kubernetes.io/audit-version":"latest","pod-security.kubernetes.io/enforce":"baseline","pod-security.kubernetes.io/enforce-version":"latest","pod-security.kubernetes.io/warn":"baseline","pod-security.kubernetes.io/warn-version":"latest"}` | Pod annotations |
 | podDisruptionBudget | object | `{"enabled":true,"minAvailable":""}` | Enable pod disruption budget # ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb |
 | priorityClassName | string | `""` | Used to assign priority to pods # ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/ |
-| rbac | object | `{"clusterRules":[{"apiGroups":[""],"resources":["nodes"],"verbs":["get","list","watch"]}],"enabled":true,"name":"","rules":[{"apiGroups":[""],"resources":["services"],"verbs":["get","list","watch"]}]}` | RBAC configuration. # ref: https://kubernetes.io/docs/reference/access-authn-authz/rbac/ |
-| rbac.clusterRules | list | `[{"apiGroups":[""],"resources":["nodes"],"verbs":["get","list","watch"]}]` | Required ClusterRole rules |
-| rbac.clusterRules[0] | object | `{"apiGroups":[""],"resources":["nodes"],"verbs":["get","list","watch"]}` | Required to obtain the nodes external IP |
+| rbac | object | `{"clusterRules":[],"enabled":true,"name":"","rules":[]}` | RBAC configuration. # ref: https://kubernetes.io/docs/reference/access-authn-authz/rbac/ |
+| rbac.clusterRules | list | `[]` | ClusterRole rules for the pod's service account. None of the chart's containers call the Kubernetes API, so this is empty by default; the ClusterRole is only created when rules are set. |
 | rbac.enabled | bool | `true` | Specifies whether RBAC resources are to be created |
 | rbac.name | string | `""` | The name of the cluster role to use. If not set and create is true, a name is generated using the fullname template |
-| rbac.rules | list | `[{"apiGroups":[""],"resources":["services"],"verbs":["get","list","watch"]}]` | Required Role rules |
-| rbac.rules[0] | object | `{"apiGroups":[""],"resources":["services"],"verbs":["get","list","watch"]}` | Required to get information about the serices nodePort. |
+| rbac.rules | list | `[]` | Role rules for the pod's service account. Empty by default; the Role is only created when rules are set. |
 | readinessProbe | object | `{"enabled":false,"httpGet":{"path":"/readyz","port":3620},"initialDelaySeconds":5,"periodSeconds":3}` | Configure readiness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ |
 | readinessProbe.httpGet.port | int | `3620` | Port for readiness probe HTTP checks |
 | resources | object | `{"limits":{"cpu":"2000m","memory":"4Gi"},"requests":{"cpu":"1000m","memory":"2Gi"}}` | Pod resources limits and requests |
-| secrets | object | `{"defaultEnrPrivateKey":"charon-enr-private-key"}` | Kubernetes secrets names For the ENR, the secret name is either defined in 'charon.enr.existingSecret.name' or generated by the ENR job (e.g., {{ .Release.Name }}-dv-pod-enr-key). |
+| secrets | object | `{"defaultEnrPrivateKey":"charon-enr-private-key"}` | Kubernetes secrets names For the ENR, the secret name is 'charon.enr.existingSecret.name' if set, else 'secrets.defaultEnrPrivateKey' (default "charon-enr-private-key"), else "<fullname>-enr-key" (e.g. "my-dv-pod-enr-key"). |
 | secrets.defaultEnrPrivateKey | string | `"charon-enr-private-key"` | Default ENR private key secret name to check for auto-detection IMPORTANT: This secret MUST exist in the same namespace as the Helm release If this secret exists in the release namespace, it will be used automatically unless explicitly overridden by charon.enr.existingSecret.name The ENR job will NOT check other namespaces to prevent unexpected behavior |
-| securityContext | object | See `values.yaml` | The security context for pods Note: This must be set to null or omit runAsNonRoot to allow the prepare-validator-data init container to run as root for setting file permissions |
+| securityContext | object | See `values.yaml` | The security context for pods fsGroup lets the non-root containers (uid 1000) write to volumes provisioned root-owned. Note: do not set runAsNonRoot here; the prepare-validator-data init container runs as root to set file permissions. |
 | service | object | `{"clusterIP":"None","ports":{"monitoring":{"name":"monitoring","port":3620,"protocol":"TCP","targetPort":3620},"p2pTcp":{"name":"p2p-tcp","port":3610,"protocol":"TCP","targetPort":3610},"validatorApi":{"name":"validator-api","port":3600,"protocol":"TCP","targetPort":3600}}}` | Charon service ports |
 | service.clusterIP | string | `"None"` | Headless service to create DNS for each statefulset instance |
 | serviceAccount | object | `{"annotations":{},"enabled":true,"name":"","nameTest":""}` | Service account # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/ |

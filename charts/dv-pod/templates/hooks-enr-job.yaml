@@ -119,10 +119,10 @@ spec:
                 echo "INFO: Deriving public ENR from existing private key using 'charon enr --data-dir /enr-output' ..."
                 # 'charon enr --data-dir' will read the key from /enr-output/charon-enr-private-key
                 PUBLIC_ENR_STRING=$(charon enr --data-dir /enr-output)
-              elif [ -n "{{ .Values.charon.enr.privateKey }}" ]; then
+              elif [ -n "${PROVIDED_ENR_PRIVATE_KEY:-}" ]; then
                 echo "INFO: Using provided ENR private key from values."
-                # Remove 0x prefix and write to the default location within data-dir
-                echo "{{ .Values.charon.enr.privateKey | trimPrefix "0x" }}" > /enr-output/charon-enr-private-key
+                # Write to the default location within data-dir (0x prefix already stripped)
+                printf '%s\n' "${PROVIDED_ENR_PRIVATE_KEY}" > /enr-output/charon-enr-private-key
                 chmod 600 /enr-output/charon-enr-private-key
                 echo "INFO: Deriving public ENR from provided private key using 'charon enr --data-dir /enr-output' ..."
                 # 'charon enr --data-dir' will read the key from /enr-output/charon-enr-private-key
@@ -161,6 +161,14 @@ spec:
                 exit 1
               fi
               echo "INFO: ENR private key and public string prepared in /enr-output."
+          {{- if .Values.charon.enr.privateKey }}
+          env:
+            - name: PROVIDED_ENR_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "dv-pod.enrProvidedKeySecretName" . }}
+                  key: charon-enr-private-key
+          {{- end }}
           volumeMounts:
             - name: enr-data
               mountPath: /enr-output
