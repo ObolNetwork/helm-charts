@@ -40,56 +40,86 @@ spec:
             - -c
             - |
               set -e
-              # Get the name of the k8s secret where the private key and public address are saved
               NAMESPACE="{{ .Release.Namespace }}"
+              # The Secret this release mounts as its charon identity (see dv-pod.enrSecretName).
               SECRET_NAME="{{ include "dv-pod.enrSecretName" . }}"
-              # Get the name of the key the private key value is saved as within the secret
               ENR_PRIVATE_KEY_DATA_NAME="{{ include "dv-pod.enrSecretDataKey" . }}"
-              # Get the name of the key the ENR address value is saved as within the secret
               ENR_PUBLIC_ADDRESS_DATA_NAME="{{ include "dv-pod.enrSecretPublicDataKey" . }}"
+              # Pre-0.22 shared default name, checked when SECRET_NAME does not exist yet so an existing
+              # identity is migrated rather than replaced. Empty when an explicit secret is configured.
+              LEGACY_SECRET_NAME="{{ if not .Values.charon.enr.existingSecret.name }}{{ .Values.secrets.defaultEnrPrivateKey }}{{ end }}"
+              STATEFULSET_NAME="{{ include "dv-pod.fullname" . }}"
 
-              # Check if the secret already exists
+              # Reads one base64 data field of a secret ("" when absent).
+              secret_field() {
+                kubectl get secret "$1" -n "${NAMESPACE}" -o jsonpath="{.data.$2}" 2>/dev/null || true
+              }
+              # Secret mounted as the ENR volume by a StatefulSet's pod template.
+              sts_enr_secret() {
+                kubectl get statefulset "$1" -n "${NAMESPACE}" \
+                  -o jsonpath='{.spec.template.spec.volumes[?(@.name=="charon-enr-private-key")].secret.secretName}' 2>/dev/null || true
+              }
+
               echo "Checking if secret '$SECRET_NAME' already exists in namespace '$NAMESPACE'..."
               if kubectl get secret "${SECRET_NAME}" -n "${NAMESPACE}" >/dev/null 2>&1; then
                 echo "INFO: Secret '$SECRET_NAME' already exists. Checking field completeness..."
+                PRIVATE_KEY_DATA=$(secret_field "${SECRET_NAME}" "${ENR_PRIVATE_KEY_DATA_NAME}")
+                PUBLIC_ENR_DATA=$(secret_field "${SECRET_NAME}" "${ENR_PUBLIC_ADDRESS_DATA_NAME}")
 
-                # Check if both required fields exist in the secret
-                HAS_PRIVATE_KEY=""
-                HAS_PUBLIC_ENR=""
-
-                if kubectl get secret "${SECRET_NAME}" -n "${NAMESPACE}" -o jsonpath="{.data.${ENR_PRIVATE_KEY_DATA_NAME}}" >/dev/null 2>&1; then
-                  PRIVATE_KEY_DATA=$(kubectl get secret "${SECRET_NAME}" -n "${NAMESPACE}" -o jsonpath="{.data.${ENR_PRIVATE_KEY_DATA_NAME}}")
-                  if [ -n "$PRIVATE_KEY_DATA" ]; then
-                    HAS_PRIVATE_KEY="true"
-                    echo "INFO: Private key field '${ENR_PRIVATE_KEY_DATA_NAME}' found in secret."
-                  fi
-                fi
-
-                if kubectl get secret "${SECRET_NAME}" -n "${NAMESPACE}" -o jsonpath="{.data.${ENR_PUBLIC_ADDRESS_DATA_NAME}}" >/dev/null 2>&1; then
-                  PUBLIC_ENR_DATA=$(kubectl get secret "${SECRET_NAME}" -n "${NAMESPACE}" -o jsonpath="{.data.${ENR_PUBLIC_ADDRESS_DATA_NAME}}")
-                  if [ -n "$PUBLIC_ENR_DATA" ]; then
-                    HAS_PUBLIC_ENR="true"
-                    echo "INFO: Public ENR field '${ENR_PUBLIC_ADDRESS_DATA_NAME}' found in secret."
-                  fi
-                fi
-
-                # If both fields exist, skip generation entirely
-                if [ "$HAS_PRIVATE_KEY" = "true" ] && [ "$HAS_PUBLIC_ENR" = "true" ]; then
+                if [ -n "$PRIVATE_KEY_DATA" ] && [ -n "$PUBLIC_ENR_DATA" ]; then
                   echo "INFO: Both private key and public ENR are present. Skipping ENR generation."
+                  echo "$PUBLIC_ENR_DATA" | base64 -d > /enr-shared/existing-enr
                   touch /enr-shared/skip-generation
-                # If only private key exists, generate the missing public ENR
-                elif [ "$HAS_PRIVATE_KEY" = "true" ] && [ "$HAS_PUBLIC_ENR" != "true" ]; then
-                  echo "INFO: Private key exists but public ENR is missing. Will generate public ENR from existing private key."
-                  # Decode the private key and save it for charon to use
+                elif [ -n "$PRIVATE_KEY_DATA" ]; then
+                  echo "INFO: Private key exists but public ENR is missing. Will derive the public ENR from the existing private key."
                   echo "$PRIVATE_KEY_DATA" | base64 -d > /enr-shared/existing-private-key
                   touch /enr-shared/generate-enr-only
-                # If neither field exists or only public ENR exists (unusual case), do full generation
                 else
-                  echo "INFO: Secret exists but required fields are missing or incomplete. Will proceed with full ENR generation."
+                  echo "ERROR: Secret '$SECRET_NAME' exists but has no '${ENR_PRIVATE_KEY_DATA_NAME}' field."
+                  echo "ERROR: Refusing to overwrite it. Add the private key to it, or delete it to generate a new identity."
+                  exit 1
                 fi
-              else
-                echo "Secret '$SECRET_NAME' does not exist. ENR generation will proceed."
+                exit 0
               fi
+
+              echo "Secret '$SECRET_NAME' does not exist."
+              if [ -n "$LEGACY_SECRET_NAME" ] && [ "$LEGACY_SECRET_NAME" != "$SECRET_NAME" ] \
+                && kubectl get secret "${LEGACY_SECRET_NAME}" -n "${NAMESPACE}" >/dev/null 2>&1; then
+                echo "INFO: Found legacy ENR secret '$LEGACY_SECRET_NAME'. Checking whether it belongs to this release..."
+                OWN=$(sts_enr_secret "${STATEFULSET_NAME}")
+                ADOPT=""
+                if [ "$OWN" = "$LEGACY_SECRET_NAME" ]; then
+                  echo "INFO: StatefulSet '$STATEFULSET_NAME' already uses '$LEGACY_SECRET_NAME': keeping this identity."
+                  ADOPT=true
+                else
+                  CLAIMED=""
+                  for sts in $(kubectl get statefulset -n "${NAMESPACE}" -o jsonpath='{.items[*].metadata.name}'); do
+                    [ "$sts" = "$STATEFULSET_NAME" ] && continue
+                    if [ "$(sts_enr_secret "$sts")" = "$LEGACY_SECRET_NAME" ]; then
+                      CLAIMED="$sts"
+                    fi
+                  done
+                  if [ -n "$CLAIMED" ]; then
+                    echo "INFO: '$LEGACY_SECRET_NAME' is the identity of StatefulSet '$CLAIMED'; not sharing it. A new identity will be created."
+                  else
+                    echo "INFO: '$LEGACY_SECRET_NAME' is not used by any other StatefulSet: adopting it as this release's identity."
+                    ADOPT=true
+                  fi
+                fi
+                if [ -n "$ADOPT" ]; then
+                  PRIVATE_KEY_DATA=$(secret_field "${LEGACY_SECRET_NAME}" "${ENR_PRIVATE_KEY_DATA_NAME}")
+                  PUBLIC_ENR_DATA=$(secret_field "${LEGACY_SECRET_NAME}" "${ENR_PUBLIC_ADDRESS_DATA_NAME}")
+                  if [ -z "$PRIVATE_KEY_DATA" ]; then
+                    echo "ERROR: Legacy secret '$LEGACY_SECRET_NAME' has no '${ENR_PRIVATE_KEY_DATA_NAME}' field; refusing to guess an identity."
+                    exit 1
+                  fi
+                  echo "$PRIVATE_KEY_DATA" | base64 -d > /enr-shared/existing-private-key
+                  touch /enr-shared/copy-existing
+                  echo "INFO: Will copy the identity from '$LEGACY_SECRET_NAME' into '$SECRET_NAME'."
+                  exit 0
+                fi
+              fi
+              echo "INFO: ENR generation will proceed."
           volumeMounts:
             - name: enr-data
               mountPath: /enr-shared
@@ -110,9 +140,9 @@ spec:
 
               mkdir -p /enr-output
 
-              # Check if we only need to generate public ENR from existing private key
-              if [ -f /enr-shared/generate-enr-only ]; then
-                echo "INFO: Generating public ENR from existing private key in secret."
+              # Derive the public ENR from an existing private key (incomplete secret, or a migrated legacy identity)
+              if [ -f /enr-shared/generate-enr-only ] || [ -f /enr-shared/copy-existing ]; then
+                echo "INFO: Deriving public ENR from the existing private key."
                 # Copy the existing private key to the expected location
                 cp /enr-shared/existing-private-key /enr-output/charon-enr-private-key
                 chmod 600 /enr-output/charon-enr-private-key
@@ -186,9 +216,25 @@ spec:
               NAMESPACE="{{ .Release.Namespace }}"
               ENR_PUBLIC_ADDRESS_DATA_NAME="{{ include "dv-pod.enrSecretPublicDataKey" . }}"
 
-              # Check if we should skip (double-check in case secret was created between containers)
+              ENR_CONFIGMAP_NAME="{{ include "dv-pod.enrConfigMapName" . }}"
+
+              # Publishes the public ENR in a ConfigMap so agents/humans can read it without Secret access.
+              write_enr_configmap() {
+                echo "Writing public ENR to ConfigMap '$ENR_CONFIGMAP_NAME'..."
+                kubectl create configmap "${ENR_CONFIGMAP_NAME}" \
+                  --namespace="${NAMESPACE}" \
+                  --from-literal=enr="$1" \
+                  --from-literal=secretName="${SECRET_NAME}" \
+                  --dry-run=client -o yaml | kubectl apply -f -
+                kubectl label configmap "${ENR_CONFIGMAP_NAME}" -n "${NAMESPACE}" --overwrite \
+                  app.kubernetes.io/name={{ include "dv-pod.name" . }} \
+                  app.kubernetes.io/instance={{ .Release.Name }} \
+                  app.kubernetes.io/component=enr
+              }
+
               if [ -f /enr-shared/skip-generation ]; then
-                echo "INFO: Skipping secret operations as it already contains both fields."
+                echo "INFO: Secret already contains both fields; not modifying it."
+                write_enr_configmap "$(cat /enr-shared/existing-enr)"
                 exit 0
               fi
 
@@ -218,23 +264,22 @@ spec:
                 kubectl patch secret "${SECRET_NAME}" -n "${NAMESPACE}" --type='merge' -p="{\"data\":{\"${ENR_PUBLIC_ADDRESS_DATA_NAME}\":\"$(echo -n "$PUBLIC_ENR" | base64 -w 0)\"}}"
                 echo "Secret '$SECRET_NAME' updated with missing ENR field successfully."
               else
-                # Check again if the secret already exists (race condition protection)
-                echo "Double-checking if secret '$SECRET_NAME' already exists in namespace '$NAMESPACE'..."
+                # Never overwrite an identity created in the meantime (race protection).
                 if kubectl get secret "${SECRET_NAME}" -n "${NAMESPACE}" >/dev/null 2>&1; then
-                  echo "INFO: Secret '$SECRET_NAME' already exists. Skipping creation."
+                  echo "INFO: Secret '$SECRET_NAME' appeared meanwhile. Not overwriting it."
+                  EXISTING=$(kubectl get secret "${SECRET_NAME}" -n "${NAMESPACE}" -o jsonpath="{.data.${ENR_PUBLIC_ADDRESS_DATA_NAME}}" | base64 -d)
+                  [ -n "$EXISTING" ] && write_enr_configmap "$EXISTING"
                   exit 0
                 fi
 
-                echo "Creating new secret '$SECRET_NAME' with both fields..."
-                # Using kubectl create secret generic with --dry-run and kubectl apply for idempotency
+                echo "Creating secret '$SECRET_NAME'..."
                 kubectl create secret generic "${SECRET_NAME}" \
                   --namespace="${NAMESPACE}" \
-                  --from-literal=charon-enr-private-key="${PRIVATE_KEY}" \
-                  --from-literal=enr="${PUBLIC_ENR}" \
-                  --dry-run=client -o yaml | kubectl apply -f -
-
+                  --from-literal="{{ include "dv-pod.enrSecretDataKey" . }}=${PRIVATE_KEY}" \
+                  --from-literal="${ENR_PUBLIC_ADDRESS_DATA_NAME}=${PUBLIC_ENR}"
                 echo "Secret '$SECRET_NAME' created successfully."
               fi
+              write_enr_configmap "${PUBLIC_ENR}"
           env:
             - name: GODEBUG
               value: "x509sha1=1,tls13=0"
