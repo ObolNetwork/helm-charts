@@ -53,7 +53,7 @@ In `launchpad` and `definition` modes the pod runs these init containers before 
 `dkg.runner: sidecar` keeps the pre-0.22 behaviour, where the sidecar runs the charon binary bundled in its image.
 
 > [!IMPORTANT]
-> `dkg.runner: charon`, `mode: definition` and status reporting need `obolnetwork/charon-dkg-sidecar:v1.1.0`
+> `dkg.runner: charon`, `mode: definition` and status reporting need `obolnetwork/charon-dkg-sidecar:1.1.0`
 > (the chart default). Until that tag is published, pods using it stay in `ErrImagePull`; pin an older tag with
 > `charon.dkgSidecar.image.tag` and `dkg.runner: sidecar` if you need the legacy flow meanwhile.
 
@@ -188,7 +188,7 @@ at runtime and copies an existing identity into `<fullname>-enr-key` instead of 
 
 ## Upgrading from chart < 0.22
 
-- Do not upgrade before `obolnetwork/charon-dkg-sidecar:v1.1.0` is published (or pin `charon.dkgSidecar.image.tag`):
+- Do not upgrade before `obolnetwork/charon-dkg-sidecar:1.1.0` is published (or pin `charon.dkgSidecar.image.tag`):
   the upgrade restarts the pod, and the sidecar init containers run on every start, even with a lock present.
 - Existing installs keep `mode: auto`, which infers the same behaviour as before, and keep their ENR Secret.
 - `dkg.runner` now defaults to `charon`. For a node that already has its cluster-lock this changes nothing at

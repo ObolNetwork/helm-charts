@@ -52,7 +52,7 @@ In `launchpad` and `definition` modes the pod runs these init containers before 
 `dkg.runner: sidecar` keeps the pre-0.22 behaviour, where the sidecar runs the charon binary bundled in its image.
 
 > [!IMPORTANT]
-> `dkg.runner: charon`, `mode: definition` and status reporting need `obolnetwork/charon-dkg-sidecar:v1.1.0`
+> `dkg.runner: charon`, `mode: definition` and status reporting need `obolnetwork/charon-dkg-sidecar:1.1.0`
 > (the chart default). Until that tag is published, pods using it stay in `ErrImagePull`; pin an older tag with
 > `charon.dkgSidecar.image.tag` and `dkg.runner: sidecar` if you need the legacy flow meanwhile.
 
@@ -187,7 +187,7 @@ at runtime and copies an existing identity into `<fullname>-enr-key` instead of 
 
 ## Upgrading from chart < 0.22
 
-- Do not upgrade before `obolnetwork/charon-dkg-sidecar:v1.1.0` is published (or pin `charon.dkgSidecar.image.tag`):
+- Do not upgrade before `obolnetwork/charon-dkg-sidecar:1.1.0` is published (or pin `charon.dkgSidecar.image.tag`):
   the upgrade restarts the pod, and the sidecar init containers run on every start, even with a lock present.
 - Existing installs keep `mode: auto`, which infers the same behaviour as before, and keep their ENR Secret.
 - `dkg.runner` now defaults to `charon`. For a node that already has its cluster-lock this changes nothing at
@@ -413,10 +413,10 @@ The command removes the Kubernetes components associated with the chart and dele
 | charon.beaconNodeHeadersSecretName | string | `""` | Optional: Name of the secret containing beacon node headers Use this for secure credential storage instead of beaconNodeHeaders The secret should contain a key specified by charon.beaconNodeHeadersSecretKey |
 | charon.builderApi | bool | `true` | Enables the builder api (MEV) for validator proposals. The Builder API must also be enabled on your beacon node client(s). The Beacon node must either be connected to a mev sidecar or a mev relay to access the builder network. More documentation about MEV can be found [here](https://docs.obol.org/advanced-and-troubleshooting/advanced/enable-mev). Accepts a boolean; the strings "true"/"false" from older values files are still understood. |
 | charon.directConnectionEnabled | bool | `true` | If enabled, it will set p2pExternalHostname value to the pod name and enable direct connection between cluster nodes. This is useful for deployments where pods can directly communicate with each other. Accepts a boolean; the strings "true"/"false" from older values files are still understood. |
-| charon.dkgSidecar | object | `{"apiEndpoint":"https://api.obol.tech","enabled":true,"image":{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon-dkg-sidecar","tag":"v1.1.0"},"initialRetryDelaySeconds":10,"maxRetryDelaySeconds":300,"pageLimit":10,"resources":{"limits":{"cpu":"200m","memory":"256Mi"},"requests":{"cpu":"50m","memory":"128Mi"}},"retryDelayFactor":2,"retryDelaySeconds":10,"serviceAccount":{"create":true},"targetConfigHash":""}` | DKG sidecar init container (obolnetwork/charon-dkg-sidecar). It prepares participation according to `mode`: exits at once if /charon-data/cluster-lock.json exists (or is mounted from `configMaps.clusterLock`), fetches the lock for `charon.lockHash`, or obtains a fully signed cluster definition (Launchpad polling by operator address, or `dkg.definition`). With `dkg.runner: charon` the DKG itself then runs in the `charon-dkg` init container. It also writes progress to the "<fullname>-dkg-status" ConfigMap (`dkg.status.enabled`). Disable it only to bring your own cluster-lock and key shares (`mode: lock`). |
+| charon.dkgSidecar | object | `{"apiEndpoint":"https://api.obol.tech","enabled":true,"image":{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon-dkg-sidecar","tag":"1.1.0"},"initialRetryDelaySeconds":10,"maxRetryDelaySeconds":300,"pageLimit":10,"resources":{"limits":{"cpu":"200m","memory":"256Mi"},"requests":{"cpu":"50m","memory":"128Mi"}},"retryDelayFactor":2,"retryDelaySeconds":10,"serviceAccount":{"create":true},"targetConfigHash":""}` | DKG sidecar init container (obolnetwork/charon-dkg-sidecar). It prepares participation according to `mode`: exits at once if /charon-data/cluster-lock.json exists (or is mounted from `configMaps.clusterLock`), fetches the lock for `charon.lockHash`, or obtains a fully signed cluster definition (Launchpad polling by operator address, or `dkg.definition`). With `dkg.runner: charon` the DKG itself then runs in the `charon-dkg` init container. It also writes progress to the "<fullname>-dkg-status" ConfigMap (`dkg.status.enabled`). Disable it only to bring your own cluster-lock and key shares (`mode: lock`). |
 | charon.dkgSidecar.apiEndpoint | string | `"https://api.obol.tech"` | API endpoint for the Obol network to fetch cluster definitions |
 | charon.dkgSidecar.image.repository | string | `"obolnetwork/charon-dkg-sidecar"` | Image repository for the DKG sidecar |
-| charon.dkgSidecar.image.tag | string | `"v1.1.0"` | DKG sidecar image tag. v1.1.0 implements DKG_RUNNER/DEFINITION_SOURCE/status reporting. |
+| charon.dkgSidecar.image.tag | string | `"1.1.0"` | DKG sidecar image tag. 1.1.0 implements DKG_RUNNER/DEFINITION_SOURCE/status reporting. |
 | charon.dkgSidecar.initialRetryDelaySeconds | int | `10` | Initial delay in seconds before the first retry of a polling cycle. |
 | charon.dkgSidecar.maxRetryDelaySeconds | int | `300` | Maximum delay in seconds for exponential backoff between polling cycles. |
 | charon.dkgSidecar.pageLimit | int | `10` | Page limit for API calls when fetching cluster definitions |

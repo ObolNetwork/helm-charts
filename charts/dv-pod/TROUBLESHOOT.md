@@ -71,4 +71,4 @@ After recovery, you can share the relevant files with your cluster peers:
 - **Two releases in one namespace shared `charon-enr-private-key`** (charts < 0.22): one of them has the wrong
   identity. Keep the Secret with the release whose ENR is in the cluster lock, and give the other release its own
   identity via `charon.enr.existingSecret.name`.
-- **`ErrImagePull` for `charon-dkg-sidecar:v1.1.0`**: the tag isn't published yet; see the README.
+- **`ErrImagePull` for `charon-dkg-sidecar:1.1.0`**: the tag isn't published yet; see the README.
