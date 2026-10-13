@@ -1,4 +1,4 @@
-{{- if .Values.charon.enr.generate.enabled }}
+{{- if eq (include "dv-pod.shouldCreateEnrJob" .) "true" }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -23,17 +23,15 @@ metadata:
     "helm.sh/hook-weight": "-15"
     "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded"
 rules:
+# Scoped to the ENR secret only, so the job can't read other secrets (e.g. validator keystores) in the namespace.
 - apiGroups: [""]
   resources: ["secrets"]
-  verbs: ["get", "list"]  # For checking existence
-- apiGroups: [""]
-  resources: ["secrets"]
-  resourceNames: 
+  resourceNames:
     - {{ include "dv-pod.enrSecretName" . | quote }}
-  verbs: ["update", "patch"]  # For updating existing secret
+  verbs: ["get", "update", "patch"]
 - apiGroups: [""]
   resources: ["secrets"]
-  verbs: ["create"]  # For initial creation only
+  verbs: ["create"]  # create can't be restricted by resourceNames
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

@@ -106,17 +106,22 @@ Return the data key for the ENR public key within the shared secret.
 
 {{/*
 Determine if the ENR generation job should be created.
-The job should be created if:
-1. Generate is enabled AND
-2. No private key is directly provided AND
-3. ENR job is enabled
+The job should be created if the ENR job is enabled AND either generation is enabled
+or a private key is provided (the job derives the public ENR and creates the secret).
 Note: The job will run even if an existing secret is specified, as it can handle incomplete secrets
 (secrets with only private key missing the public ENR field)
 */}}
 {{- define "dv-pod.shouldCreateEnrJob" -}}
-{{- if and .Values.charon.enr.generate.enabled (not .Values.charon.enr.privateKey) .Values.charon.enrJob.enabled -}}
+{{- if and .Values.charon.enrJob.enabled (or .Values.charon.enr.generate.enabled .Values.charon.enr.privateKey) -}}
 true
 {{- end -}}
+{{- end -}}
+
+{{/*
+Name of the hook Secret that carries charon.enr.privateKey to the ENR job.
+*/}}
+{{- define "dv-pod.enrProvidedKeySecretName" -}}
+{{- printf "%s-enr-provided-key" (include "dv-pod.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
@@ -145,6 +150,13 @@ Create comma-separated list of fallback beacon node endpoints
 {{- define "dv-pod.fallbackBeaconNodeEndpoints" -}}
 {{- if .Values.charon.fallbackBeaconNodeEndpoints -}}
 {{- join "," .Values.charon.fallbackBeaconNodeEndpoints -}}
+{{- else if .Values.charon.publicnodeFallback -}}
+{{- $network := include "dv-pod.network" . -}}
+{{- if eq $network "mainnet" -}}
+https://ethereum-beacon-api.publicnode.com
+{{- else -}}
+{{- printf "https://ethereum-%s-beacon-api.publicnode.com" $network -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}
 
@@ -196,3 +208,19 @@ Derives chainId from the network name
 {{- define "dv-pod.chainId" -}}
 {{- include "dv-pod.chainIdFromNetwork" . -}}
 {{- end -}}
+
+{{/*
+Selector labels for the central-monitoring Prometheus. Must not overlap dv-pod.selectorLabels,
+which select the charon StatefulSet pods (Service, PDB, ServiceMonitor).
+*/}}
+{{- define "dv-pod.prometheusSelectorLabels" -}}
+app.kubernetes.io/name: {{ include "dv-pod.name" . }}-prometheus
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{- define "dv-pod.prometheusLabels" -}}
+helm.sh/chart: {{ include "dv-pod.chart" . }}
+{{ include "dv-pod.prometheusSelectorLabels" . }}
+app.kubernetes.io/component: prometheus
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}

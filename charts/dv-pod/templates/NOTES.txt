@@ -38,11 +38,14 @@ Your Obol distributed validator pod "{{ template "dv-pod.fullname" . }}" has bee
    To retrieve when ready: kubectl get secret -n {{ .Release.Namespace }} {{ include "dv-pod.enrSecretName" . }} -o jsonpath='{.data.enr}' | base64 --decode
    {{- end }}
 
-   {{- if not .Values.configMaps.clusterlock }}
+   {{- if not .Values.configMaps.clusterLock }}
    {{- if not .Values.charon.lockHash }}
    **IMPORTANT ACTION REQUIRED:** You **MUST** take this public ENR string and submit it during the cluster formation process on the Obol Launchpad (https://launchpad.obol.org/) for the operator address '{{ .Values.charon.operatorAddress }}'.
    {{- end }}
    {{- end }}
+
+   The sidecar matches cluster definitions by this exact ENR: on the Launchpad, paste THIS pod's ENR (not one generated elsewhere).
+   Approving the invite (signing with the operator wallet) still happens on the Launchpad; the sidecar only polls and runs the DKG.
 
 2. Cluster Orchestration Process:
    The Charon node includes an orchestrator init container. This orchestrator will:
@@ -69,7 +72,17 @@ Your Obol distributed validator pod "{{ template "dv-pod.fullname" . }}" has bee
    DKG artifacts and Charon data will be stored in an emptyDir volume and will be LOST if the pod restarts. It is STRONGLY recommended to enable persistence for any non-testing deployment.
    {{- end }}
 
-For troubleshooting and more details, refer to the Obol Network documentation: https://docs.obol.tech/
+4. Beacon node:
+   Charon is using: {{ include "dv-pod.beaconNodeEndpoints" . }}
+   {{- if has "http://l1-full-node-beacon.l1.svc.cluster.local:5052" .Values.charon.beaconNodeEndpoints }}
+   WARNING: this is the chart's placeholder endpoint. Set charon.beaconNodeEndpoints to your own synced consensus client's
+   beacon API. In the Obol Stack that is http://ethereum-beacon.ethereum-<id>.svc.cluster.local:5052.
+   {{- end }}
+   {{- if .Values.charon.fallbackBeaconNodeEndpoints }}
+   Fallback: {{ include "dv-pod.fallbackBeaconNodeEndpoints" . }}
+   {{- end }}
+
+For troubleshooting and more details, refer to the Obol Network documentation: https://docs.obol.org/
 {{- end -}}
 
 {{- include "dv-pod.clusterNotes" . }}

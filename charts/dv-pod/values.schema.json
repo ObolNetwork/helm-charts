@@ -28,7 +28,7 @@
             "type": "object",
             "properties": {
                 "beaconNodeEndpoints": {
-                    "description": "Beacon node endpoints The default is the Obol Stack full node address. Change this to your own consensus client beacon API(s). All beacon nodes specified here will be called for every charon request, if you want to leverage fallback behaviour place secondary beacon nodes in charon.fallbackBeaconNodeEndpoints[]",
+                    "description": "Beacon node endpoints. You must set this to your own synced consensus client's beacon API(s); the default is a placeholder. In the Obol Stack use http://ethereum-beacon.ethereum-\u003cid\u003e.svc.cluster.local:5052 (the \u003cid\u003e of your `obol network install ethereum` deployment). All beacon nodes specified here will be called for every charon request, if you want to leverage fallback behaviour place secondary beacon nodes in charon.fallbackBeaconNodeEndpoints[]",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -55,7 +55,7 @@
                     "type": "string"
                 },
                 "dkgSidecar": {
-                    "description": "Configuration for the DKG Sidecar init container This init container orchestrates the Distributed Key Generation (DKG) process for Charon clusters.  The sidecar has three operating modes: 1. If cluster-lock.json exists: Exits immediately (cluster already initialized) 2. If cluster-definition.json exists: Attempts DKG with the existing definition 3. If neither exists: Polls the Obol API for cluster invites and runs DKG when ready  To provide a pre-existing cluster-lock and skip DKG: 2. Change the `confiMaps.clusterLock: cluster-lock in your values.yaml file, 3. The sidecar will detect the mounted lock file and exit, allowing Charon to start immediately  To provide a cluster-definition without running DKG through the API: 1. Mount your cluster-definition.json in /charon-data/ 2. The sidecar will run 'charon dkg' to generate the cluster-lock.json  Note: When providing a pre-existing cluster-lock.json, you must also ensure the associated validator keys are available in the charon-data volume.",
+                    "description": "Configuration for the DKG Sidecar init container This init container orchestrates the Distributed Key Generation (DKG) process for Charon clusters.  The sidecar has three operating modes: 1. If cluster-lock.json exists: Exits immediately (cluster already initialized) 2. If cluster-definition.json exists: Attempts DKG with the existing definition 3. If neither exists: Polls the Obol API for cluster invites and runs DKG when ready  To provide a pre-existing cluster-lock and skip DKG: 2. Set `configMaps.clusterLock: cluster-lock` in your values.yaml file, 3. The sidecar will detect the mounted lock file and exit, allowing Charon to start immediately  To provide a cluster-definition without running DKG through the API: 1. Mount your cluster-definition.json in /charon-data/ 2. The sidecar will run 'charon dkg' to generate the cluster-lock.json  Note: When providing a pre-existing cluster-lock.json, you must also ensure the associated validator keys are available in the charon-data volume.",
                     "type": "object",
                     "properties": {
                         "apiEndpoint": {
@@ -175,22 +175,8 @@
                                 "enabled": {
                                     "type": "boolean"
                                 },
-                                "image": {
-                                    "type": "object",
-                                    "properties": {
-                                        "pullPolicy": {
-                                            "type": "string"
-                                        },
-                                        "repository": {
-                                            "type": "string"
-                                        },
-                                        "tag": {
-                                            "type": "string"
-                                        }
-                                    }
-                                },
                                 "kubectlImage": {
-                                    "description": "Image to use for kubectl operations within the ENR generation job This image must contain a compatible kubectl binary.",
+                                    "description": "Image to use for kubectl operations within the ENR generation job This image must contain a compatible kubectl binary and a POSIX shell. bitnamisecure only publishes `latest`, so it is pinned by digest.",
                                     "type": "object",
                                     "properties": {
                                         "pullPolicy": {
@@ -205,13 +191,13 @@
                                     }
                                 },
                                 "nodeSelector": {
-                                    "description": "Node selector for the ENR generation job",
+                                    "description": "Node selector for the ENR generation job The job generates the key with the main charon image (`image`).",
                                     "type": "object"
                                 }
                             }
                         },
                         "privateKey": {
-                            "description": "Provide the ENR private key directly (hex format, e.g., 0x...).  If set, 'generate' and 'existingSecret' are ignored.",
+                            "description": "Provide the ENR private key directly (hex format, e.g., 0x...). The ENR job uses it to create the ENR secret (passed via a short-lived hook Secret, not the Job spec). Ignored if the ENR secret already exists, so an existing identity is never overwritten. Prefer 'existingSecret': values are stored in the Helm release.",
                             "type": "string"
                         }
                     }
@@ -230,11 +216,8 @@
                     "type": "string"
                 },
                 "fallbackBeaconNodeEndpoints": {
-                    "description": "Fallback beacon node endpoints (optional) These will be used if the primary beaconNodeEndpoints are unavailable",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                    "description": "Fallback beacon node endpoints (optional) These will be used if the primary beaconNodeEndpoints are unavailable. If empty and publicnodeFallback is true, the publicnode.com beacon API for `network` is used.",
+                    "type": "array"
                 },
                 "featureSet": {
                     "description": "Minimum feature set to enable by default: alpha, beta, or stable. Warning: modify at own risk. (default \"stable\")",
@@ -323,6 +306,10 @@
                 "privateKeyFile": {
                     "description": "Path within the Charon container where the ENR private key file will be mounted.",
                     "type": "string"
+                },
+                "publicnodeFallback": {
+                    "description": "When fallbackBeaconNodeEndpoints is empty, fall back to the public publicnode.com beacon API matching `network`. Set to false to run with no fallback beacon node.",
+                    "type": "boolean"
                 },
                 "validatorApiAddress": {
                     "description": "Listening address (ip and port) for validator-facing traffic proxying the beacon-node API. (default \"127.0.0.1:3600\")",
@@ -601,31 +588,8 @@
             "type": "object",
             "properties": {
                 "clusterRules": {
-                    "description": "Required ClusterRole rules",
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "apiGroups": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            },
-                            "resources": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            },
-                            "verbs": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
+                    "description": "ClusterRole rules for the pod's service account. None of the chart's containers call the Kubernetes API, so this is empty by default; the ClusterRole is only created when rules are set.",
+                    "type": "array"
                 },
                 "enabled": {
                     "description": "Specifies whether RBAC resources are to be created",
@@ -636,31 +600,8 @@
                     "type": "string"
                 },
                 "rules": {
-                    "description": "Required Role rules",
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "apiGroups": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            },
-                            "resources": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            },
-                            "verbs": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
+                    "description": "Role rules for the pod's service account. Empty by default; the Role is only created when rules are set.",
+                    "type": "array"
                 }
             }
         },
@@ -720,7 +661,7 @@
             }
         },
         "secrets": {
-            "description": "Kubernetes secrets names For the ENR, the secret name is either defined in 'charon.enr.existingSecret.name' or generated by the ENR job (e.g., {{ .Release.Name }}-dv-pod-enr-key).",
+            "description": "Kubernetes secrets names For the ENR, the secret name is 'charon.enr.existingSecret.name' if set, else 'secrets.defaultEnrPrivateKey' (default \"charon-enr-private-key\"), else \"\u003cfullname\u003e-enr-key\" (e.g. \"my-dv-pod-enr-key\").",
             "type": "object",
             "properties": {
                 "defaultEnrPrivateKey": {
@@ -730,8 +671,16 @@
             }
         },
         "securityContext": {
-            "description": "The security context for pods Note: This must be set to null or omit runAsNonRoot to allow the prepare-validator-data init container to run as root for setting file permissions",
-            "type": "object"
+            "description": "The security context for pods fsGroup lets the non-root containers (uid 1000) write to volumes provisioned root-owned. Note: do not set runAsNonRoot here; the prepare-validator-data init container runs as root to set file permissions.",
+            "type": "object",
+            "properties": {
+                "fsGroup": {
+                    "type": "integer"
+                },
+                "fsGroupChangePolicy": {
+                    "type": "string"
+                }
+            }
         },
         "service": {
             "description": "Charon service ports",

@@ -2,19 +2,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: {{ include "dv-pod.fullname" . }}-prometheus
   labels:
-    app: prometheus
-  name: prometheus
+    {{- include "dv-pod.prometheusLabels" . | nindent 4 }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: prometheus
+      {{- include "dv-pod.prometheusSelectorLabels" . | nindent 6 }}
   template:
     metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/prometheus-configmap.yaml") . | sha256sum }}
       labels:
-        app: prometheus
+        {{- include "dv-pod.prometheusSelectorLabels" . | nindent 8 }}
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
       containers:
       - args:
         - --config.file=/etc/prometheus/prometheus.yaml
@@ -23,15 +30,27 @@ spec:
         ports:
         - containerPort: 9090
           protocol: TCP
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
         volumeMounts:
         - mountPath: /etc/prometheus/prometheus.yaml
-          name: prometheus
+          name: config
           subPath: prometheus.yaml
-      securityContext:
-        runAsUser: 0
+        - mountPath: /etc/prometheus/secrets
+          name: token
+          readOnly: true
+        - mountPath: /prometheus
+          name: data
       volumes:
-      - configMap:
-          defaultMode: 420
-          name: prometheus
-        name: prometheus
+      - name: config
+        configMap:
+          name: {{ include "dv-pod.fullname" . }}-prometheus
+      - name: token
+        secret:
+          secretName: {{ include "dv-pod.fullname" . }}-prometheus
+      - name: data
+        emptyDir: {}
 {{- end }}

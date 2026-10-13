@@ -74,7 +74,7 @@ helm install my-dv-pod obol/dv-pod \
   --set validatorClient.keystores.secretName=validator-keys
 ```
 
-That should be enough to get your DV-Pod running, and loaded with the required artifacts, assuming the default beacon node endpoint of the Obol Stack works. 
+That should be enough to get your DV-Pod running, and loaded with the required artifacts, once you also set `network` and `charon.beaconNodeEndpoints` to your synced beacon node (see [Install the chart](#install-the-chart)).
 
 #### Example 1b: From a Distributed Key Generation ceremony output (a `.charon/` folder structure)
 
@@ -124,10 +124,12 @@ If you don't have pre-existing artifacts, the chart can automatically:
 Simply deploy the chart with your operator address:
 ```sh
 helm install my-dv-pod obol/dv-pod \
+  --set network=hoodi \
+  --set 'charon.beaconNodeEndpoints[0]=<BEACON_NODE_ENDPOINT>' \
   --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS
 ```
 
-The DKG sidecar will poll the Obol API for cluster invites and automatically run the DKG ceremony when ready.
+The DKG sidecar polls the Obol API for cluster definitions on `network` that include this pod's ENR, and runs the DKG ceremony once every operator has signed. Approving the invite still happens on the Launchpad with your operator wallet, using the ENR printed in the install notes.
 
 ## Add Obol's Helm Charts Repo
 
@@ -141,9 +143,13 @@ _See [helm repo](https://helm.sh/docs/helm/helm_repo/) for command documentation
 Install a distributed validator pod:
 ```sh
 helm upgrade --install my-dv-pod obol/dv-pod \
+  --set network=<mainnet|hoodi|sepolia> \
   --set='charon.beaconNodeEndpoints[0]=<BEACON_NODE_ENDPOINT>' \
   --set='charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>'
 ```
+
+`charon.beaconNodeEndpoints` must point at a synced consensus client for `network`; the default is a placeholder.
+In the [Obol Stack](https://obol.org/stack) use `http://ethereum-beacon.ethereum-<id>.svc.cluster.local:5052`.
 
 ## Validator Client
 
@@ -178,11 +184,11 @@ With a `helm install` command for pre-existing artifacts.
 helm install my-dv-pod obol/dv-pod \
   --set configMaps.clusterLock=cluster-lock \
   --set validatorClient.keystores.secretName=validator-keys \
-  --set validatorClient.type=prysm --set validatorClient.config.prysm.acceptTermsOfUse=true
+  --set validatorClient.type=prysm
 ```
 
 > [!NOTE]
-> To run Prysm VC you must accept their [Terms of Use](https://github.com/OffchainLabs/prysm/blob/develop/TERMS_OF_SERVICE.md).
+> By choosing the Prysm VC you accept their [Terms of Use](https://github.com/OffchainLabs/prysm/blob/develop/TERMS_OF_SERVICE.md); the chart passes `--accept-terms-of-use`.
 
 ### Validator Keystores
 
@@ -213,7 +219,7 @@ When running DKG through the chart, keystores are automatically generated and im
 - **Lighthouse**: Keystores in `/validator-data/validators/`, passwords in `/validator-data/secrets/`
 - **Lodestar**: Restructured with pubkey directories under `/validator-data/keystores/`
 - **Teku**: Keystores in `/validator-data/keys/`, passwords in `/validator-data/passwords/`
-- **Prysm**: Keystores in `/validator-data/wallets/`
+- **Prysm**: Imported into a wallet in `/validator-data/wallet/`
 - **Nimbus**: Similar to Lighthouse structure
 
 ## Namespace Requirements
@@ -250,7 +256,7 @@ validatorClient:
 
 2. Configure your external validator client to connect to the Charon node's validator API endpoint:
 ```
---beacon-node-api-endpoint="http://<RELEASE_NAME>-dv-pod.<NAMESPACE>.svc.cluster.local:3600"
+--beacon-node-api-endpoint="http://<RELEASE_NAME>.<NAMESPACE>.svc.cluster.local:3600"
 ```
 
 For example, if you installed the chart as `my-dv-pod` in namespace `dv-pod`:
@@ -268,9 +274,7 @@ If your `cluster-lock.json` file is larger than 1MB, you may encounter errors wh
 error validating data: ValidationError(ConfigMap.data.cluster-lock.json): invalid type for io.k8s.api.core.v1.ConfigMap.data: got "array", expected "string"
 ```
 
-In this case, you have two options:
-
-**Option A: Direct lock hash (Recommended)**
+In this case, provide the lock hash instead:
 
 1. Extract the lock_hash from your cluster-lock.json:
    ```sh
@@ -282,22 +286,6 @@ In this case, you have two options:
    ```sh
    helm install my-dv-pod obol/dv-pod \
      --set charon.lockHash=$LOCK_HASH \
-     --set charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>
-   ```
-
-**Option B: ConfigMap approach**
-
-1. Extract the lock_hash and create a ConfigMap:
-   ```sh
-   LOCK_HASH=$(jq -r '.lock_hash' cluster-lock.json)
-   kubectl create configmap cluster-lock-hash \
-     --from-literal=lock-hash=$LOCK_HASH
-   ```
-
-2. Install the chart referencing the ConfigMap:
-   ```sh
-   helm install my-dv-pod obol/dv-pod \
-     --set configMaps.lockHash=cluster-lock-hash \
      --set charon.operatorAddress=<YOUR_OPERATOR_ADDRESS>
    ```
 

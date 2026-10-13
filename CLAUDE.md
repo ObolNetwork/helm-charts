@@ -8,7 +8,7 @@ For the simpler Docker Compose launcher, see `ObolNetwork/charon-distributed-val
 
 | Chart | Version | App | Purpose |
 |-------|---------|-----|---------|
-| **`dv-pod`** ⭐ | 0.18.0 | Charon 1.9.3 | **Flagship.** Single DV node: Charon + VC, with automatic DKG orchestration. The default recommendation for "run a DV on k8s". |
+| **`dv-pod`** ⭐ | 0.21.0 | Charon 1.11.0 | **Flagship.** Single DV node: Charon + VC, with automatic DKG orchestration. The default recommendation for "run a DV on k8s". |
 | `obol-app` | 0.1.1 | latest | General-purpose "run any Docker image on the [Obol Stack](https://obol.org/stack)" chart. Not DV-specific — the Stack's generic service-deploy mechanism. |
 | `charon` | 0.5.3 | 1.9.3 | Standalone Charon middleware (no VC). For bespoke stacks that wire their own VC. |
 | `charon-cluster` | 0.4.3 | 1.9.3 | Multiple Charon instances in one release. Intended for test/local setups; **not** the production-operator path. |
@@ -38,19 +38,20 @@ Each operator in a DV cluster runs one `dv-pod` release. Killer feature: **autom
 kubectl create namespace dv-pod
 helm upgrade --install my-dv-pod obol/dv-pod \
   --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS \
-  --set chainId=1 \
+  --set network=mainnet \
+  --set 'charon.beaconNodeEndpoints[0]=http://YOUR_BEACON_NODE:5052' \
   --namespace=dv-pod \
   --timeout=10m
 ```
 
-`chainId` picks the network (1 = mainnet, 560048 = hoodi, 11155111 = sepolia). Equivalently, `--set network=mainnet|sepolia|hoodi` lets the chart derive the chainId itself — prefer this in examples for readability. After install, retrieve the generated ENR:
+`network` picks the network (`mainnet`, `hoodi`, `sepolia`); the chart derives the chainId. `charon.beaconNodeEndpoints` must point at a synced beacon node for that network (the default is a placeholder; in the Obol Stack use `http://ethereum-beacon.ethereum-<id>.svc.cluster.local:5052`). After install, retrieve the generated ENR:
 
 ```bash
 kubectl get secret charon-enr-private-key -n dv-pod \
   -o jsonpath='{.data.enr}' | base64 -d
 ```
 
-Paste it into [launchpad.obol.org](https://launchpad.obol.org) to create or accept a cluster.
+Paste it into [launchpad.obol.org](https://launchpad.obol.org) to create or accept a cluster, signing with the operator address. The DKG sidecar only polls for the fully-signed definition and runs the DKG; it does not sign.
 
 ### Deep references in-chart
 

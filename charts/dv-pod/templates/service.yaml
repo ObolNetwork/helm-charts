@@ -27,3 +27,25 @@ spec:
     {{- end }}
   selector:
     {{- include "dv-pod.selectorLabels" . | nindent 4 }}
+{{- if ne (include "release.name" .) (include "dv-pod.fullname" .) }}
+---
+# Governing headless Service for the StatefulSet (spec.serviceName), so each pod gets a
+# <pod>.<fullname>.<namespace>.svc DNS record. Only needed when the Service above has a
+# different name; the StatefulSet's serviceName is immutable, so it can't simply be renamed.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "dv-pod.fullname" . }}
+  labels:
+    {{- include "dv-pod.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+    - name: {{ .Values.service.ports.p2pTcp.name }}
+      protocol: {{ .Values.service.ports.p2pTcp.protocol }}
+      port: {{ .Values.service.ports.p2pTcp.port }}
+      targetPort: {{ .Values.service.ports.p2pTcp.targetPort }}
+  selector:
+    {{- include "dv-pod.selectorLabels" . | nindent 4 }}
+{{- end }}

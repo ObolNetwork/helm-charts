@@ -27,7 +27,8 @@ spec:
         app.kubernetes.io/component: dkg-mock-api
         app.kubernetes.io/instance: {{ .Release.Name }}
         app.kubernetes.io/name: charon-cluster # Match service selector
-        {{- include "dv-pod.labels" . | nindent 8 }}
+        helm.sh/chart: {{ include "dv-pod.chart" . }}
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
     spec:
       {{- if .Values.tests.dkgSidecar.serviceAccount.create }}
       serviceAccountName: {{ template "dv-pod.serviceAccountNameTest" . }}

@@ -67,20 +67,21 @@ spec:
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
-          args:
-            - "{{ .Values.charon.operatorAddress }}"
-            - "/enr-from-job/{{ include "dv-pod.enrSecretPublicDataKey" . }}"
           {{- if .Values.charon.lockHash }}
           command:
             - sh
             - -c
             - |
               # Write lockHash to file for DKG sidecar
-              echo "{{ .Values.charon.lockHash }}" > /charon-data/lockhash
-              # Execute the original command with the original args
-              exec node /app/dist/dkg-sidecar.js {{ .Values.charon.operatorAddress }} /enr-from-job/{{ include "dv-pod.enrSecretPublicDataKey" . }}
+              echo {{ .Values.charon.lockHash | quote }} > /charon-data/lockhash
+              exec node /app/dist/index.js
           {{- end }}
           env:
+            # Passed as env rather than positional args: an empty positional arg shifts the ENR path into the operator address slot.
+            - name: OPERATOR_ADDRESS
+              value: {{ .Values.charon.operatorAddress | quote }}
+            - name: ENR_FILE_PATH
+              value: "/enr-from-job/{{ include "dv-pod.enrSecretPublicDataKey" . }}"
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -371,9 +372,7 @@ spec:
                 --wallet-dir=/validator-data/wallet \
                 --wallet-password-file=/validator-data/wallet-password.txt \
                 --keymanager-kind=direct \
-                {{- if .Values.validatorClient.config.prysm.acceptTermsOfUse }}
                 --accept-terms-of-use \
-                {{- end }}
                 || { echo "ERROR: Wallet creation failed"; exit 1; }
 
               echo "Wallet created successfully"
@@ -406,9 +405,7 @@ spec:
                   --keys-dir=/tmp/tmpkeys \
                   --account-password-file="$password_file" \
                   --wallet-password-file=/validator-data/wallet-password.txt \
-                  {{- if .Values.validatorClient.config.prysm.acceptTermsOfUse }}
                   --accept-terms-of-use \
-                  {{- end }}
                   || { echo "ERROR: Failed to import $(basename $keystore_file)"; exit 1; }
 
                 # Remove the keystore from tmpkeys for next iteration
@@ -435,7 +432,8 @@ spec:
         # Follows Obol reference: https://github.com/ObolNetwork/charon-distributed-validator-node/blob/main/nimbus/run.sh
         {{- if and .Values.validatorClient.enabled (eq .Values.validatorClient.type "nimbus") }}
         - name: nimbus-import
-          image: {{ .Values.validatorClient.image.repository | default "statusim/nimbus-eth2" }}:{{ .Values.validatorClient.image.tag | default "multiarch-v26.3.1" }}
+          # The import uses nimbus_beacon_node, which is only in the nimbus-eth2 image (not the VC image).
+          image: statusim/nimbus-eth2:{{ .Values.validatorClient.image.tag | default "multiarch-v26.3.1" }}
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -514,8 +512,8 @@ spec:
               {{- if and .Values.charon.beaconNodeHeaders (not .Values.charon.beaconNodeHeadersSecretName) }}
               --beacon-node-headers={{ .Values.charon.beaconNodeHeaders | quote }}
               {{- end }}
-              {{- if .Values.charon.fallbackBeaconNodeEndpoints }}
-              --fallback-beacon-node-endpoints={{ include "dv-pod.fallbackBeaconNodeEndpoints" . }}
+              {{- with include "dv-pod.fallbackBeaconNodeEndpoints" . }}
+              --fallback-beacon-node-endpoints={{ . }}
               {{- end }}
               {{- if .Values.charon.lockFile }}
               --lock-file={{ .Values.charon.lockFile }}
@@ -551,7 +549,7 @@ spec:
               --loki-service="${NODE_NAME}"
               {{- end }}
               {{- if .Values.charon.monitoringAddress }}
-              --monitoring-address=0.0.0.0:3620
+              --monitoring-address={{ .Values.charon.monitoringAddress }}
               {{- end }}
               {{- if .Values.charon.noVerify }}
               --no-verify={{ .Values.charon.noVerify }}
@@ -566,8 +564,8 @@ spec:
               --p2p-disable-reuseport={{ .Values.charon.p2pDisableReuseport }}
               {{- end }}
               {{- if .Values.charon.directConnectionEnabled }}
-              --p2p-external-hostname="${NODE_NAME}"
-              {{- else }}
+              --p2p-external-hostname="${NODE_NAME}.{{ include "dv-pod.fullname" . }}.{{ .Release.Namespace }}.svc"
+              {{- else if .Values.charon.p2pExternalHostname }}
               --p2p-external-hostname={{ .Values.charon.p2pExternalHostname }}
               {{- end }}
               {{- if .Values.charon.p2pExternalIp }}
@@ -655,7 +653,9 @@ spec:
             - --beacon-nodes=http://localhost:3600
             - --suggested-fee-recipient=0x0000000000000000000000000000000000000000
             - --network={{ include "dv-pod.network" . }}
-            - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
+            {{- with .Values.validatorClient.config.graffiti }}
+            - {{ printf "--graffiti=%s" . | quote }}
+            {{- end }}
             - --datadir=/validator-data
             {{- if .Values.charon.builderApi }}
             - --builder-proposals
@@ -678,7 +678,9 @@ spec:
             {{- if .Values.charon.builderApi }}
             - --validators-builder-registration-default-enabled=true
             {{- end }}
-            - --validators-graffiti={{ .Values.validatorClient.config.graffiti | quote }}
+            {{- with .Values.validatorClient.config.graffiti }}
+            - {{ printf "--validators-graffiti=%s" . | quote }}
+            {{- end }}
             - --data-path=/validator-data
             - --validator-keys=/validator-data/keys:/validator-data/passwords
             - --validators-keystore-locking-enabled=false
@@ -708,7 +710,9 @@ spec:
             {{- else if eq $network "sepolia" }}
             - --sepolia
             {{- end }}
-            - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
+            {{- with .Values.validatorClient.config.graffiti }}
+            - {{ printf "--graffiti=%s" . | quote }}
+            {{- end }}
             {{- if .Values.charon.builderApi }}
             - --enable-builder
             {{- end }}
@@ -732,7 +736,9 @@ spec:
             {{- if .Values.charon.builderApi }}
             - --payload-builder=true
             {{- end }}
-            - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
+            {{- with .Values.validatorClient.config.graffiti }}
+            - {{ printf "--graffiti=%s" . | quote }}
+            {{- end }}
             - --data-dir=/validator-data
             - --metrics
             - --metrics-address=0.0.0.0
@@ -750,10 +756,12 @@ spec:
             - --beacon-nodes=http://localhost:3600
             - --network={{ include "dv-pod.network" . }}
             {{- if .Values.charon.builderApi }}
-            - --builder="true" 
-            - --builder.selection="builderonly"
+            - --builder=true
+            - --builder.selection=builderonly
             {{- end }}
-            - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
+            {{- with .Values.validatorClient.config.graffiti }}
+            - {{ printf "--graffiti=%s" . | quote }}
+            {{- end }}
             - --dataDir=/validator-data
             - --keystoresDir=/validator-data/keystores
             - --secretsDir=/validator-data/secrets

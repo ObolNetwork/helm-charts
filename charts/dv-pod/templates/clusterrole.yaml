@@ -1,8 +1,9 @@
-{{- if .Values.rbac.enabled }}
+{{- if and .Values.rbac.enabled .Values.rbac.clusterRules }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "dv-pod.serviceAccountName" . }}
+  # Cluster-scoped: include the namespace so same-named releases in different namespaces don't collide.
+  name: {{ printf "%s-%s" .Release.Namespace (include "dv-pod.serviceAccountName" .) | trunc 63 | trimSuffix "-" }}
   labels:
     {{- include "dv-pod.labels" . | nindent 4 }}
 rules:
