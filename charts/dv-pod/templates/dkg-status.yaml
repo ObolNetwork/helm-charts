@@ -1,0 +1,45 @@
+{{- if eq (include "dv-pod.statusEnabled" .) "true" }}
+# DKG status, written by the dkg-sidecar / dkg-report init containers (merge-patch of `data`).
+# The chart creates it without `data` on purpose: Helm's three-way merge only patches fields the chart
+# renders, so keys written by the sidecar survive `helm upgrade` (but not `helm upgrade --force`, which
+# recreates it; the sidecar rewrites it on the next pod start).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "dv-pod.statusConfigMapName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "dv-pod.labels" . | nindent 4 }}
+    app.kubernetes.io/component: dkg-status
+---
+# Lets the pod's sidecar containers read and patch the status ConfigMap, and nothing else.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "dv-pod.statusConfigMapName" . }}-writer
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "dv-pod.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames:
+      - {{ include "dv-pod.statusConfigMapName" . | quote }}
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "dv-pod.statusConfigMapName" . }}-writer
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "dv-pod.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "dv-pod.statusConfigMapName" . }}-writer
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "dv-pod.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

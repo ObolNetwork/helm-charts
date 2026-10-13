@@ -1,0 +1,37 @@
+{{- if and .Values.rbac.enabled .Values.statusReaders }}
+# Read-only access for external watchers (e.g. the Obol Stack's Hermes agent) to this release's public
+# ConfigMaps: the DKG status and the public ENR. get/watch only, restricted by name; Kubernetes cannot
+# restrict `list` by name, so readers fetch these ConfigMaps by name (kubectl get/describe cm <name>).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "dv-pod.fullname" . }}-status-reader
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "dv-pod.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames:
+      - {{ include "dv-pod.statusConfigMapName" . | quote }}
+      - {{ include "dv-pod.enrConfigMapName" . | quote }}
+    verbs: ["get", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "dv-pod.fullname" . }}-status-reader
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "dv-pod.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "dv-pod.fullname" . }}-status-reader
+subjects:
+  {{- range .Values.statusReaders }}
+  - kind: ServiceAccount
+    name: {{ required "statusReaders[].serviceAccount is required" .serviceAccount }}
+    namespace: {{ required "statusReaders[].namespace is required" .namespace }}
+  {{- end }}
+{{- end }}
