@@ -7,15 +7,18 @@
 # The chainId is automatically derived from the network name
 network: mainnet  # Default to Mainnet
 
-# -- Kubernetes secrets names
-# For the ENR, the secret name is 'charon.enr.existingSecret.name' if set, else 'secrets.defaultEnrPrivateKey'
-# (default "charon-enr-private-key"), else "<fullname>-enr-key" (e.g. "my-dv-pod-enr-key").
+# -- Kubernetes secrets names.
+# The ENR private key (this node's charon identity) lives in, in order of precedence:
+# 1. `charon.enr.existingSecret.name`, if set;
+# 2. on upgrade, the Secret this release's StatefulSet already mounts (an identity is never replaced);
+# 3. `secrets.defaultEnrPrivateKey` ("charon-enr-private-key") if it exists in the namespace and no other
+#    StatefulSet uses it (a pre-created Secret for importing a cluster, or an install from chart < 0.22);
+# 4. otherwise a per-release Secret "<fullname>-enr-key" (e.g. "my-dv-pod-enr-key"), created by the ENR job.
+# Two releases in one namespace therefore never share an identity. The public ENR is also published to the
+# ConfigMap "<fullname>-enr" (key `enr`), so it can be read without access to Secrets.
 secrets:
-  # -- Default ENR private key secret name to check for auto-detection
-  # IMPORTANT: This secret MUST exist in the same namespace as the Helm release
-  # If this secret exists in the release namespace, it will be used automatically
-  # unless explicitly overridden by charon.enr.existingSecret.name
-  # The ENR job will NOT check other namespaces to prevent unexpected behavior
+  # -- Legacy shared ENR secret name, adopted if it exists and is not used by another release.
+  # IMPORTANT: only the release namespace is checked. Set to "" to never adopt it.
   defaultEnrPrivateKey: "charon-enr-private-key"
 
 # -- Kubernetes configMaps names for non-sensitive configuration data.
@@ -228,9 +231,8 @@ charon:
     privateKey: ""
 
     # -- Point to an existing Kubernetes secret that holds the ENR private key.
-    # If 'privateKey' above is not set and this 'existingSecret.name' is provided, 'generate' is ignored.
-    # NOTE: If not set, the chart will automatically check for a secret named 'charon-enr-private-key'
-    # (configurable via secrets.defaultEnrPrivateKey) and use it if it exists.
+    # The ENR job never overwrites it; it only adds a missing public `enr` field.
+    # NOTE: If not set, see `secrets` above for how the secret name is chosen.
     existingSecret:
       name: ""           # Name of the K8s secret (e.g., "my-dv-pod-enr-secret")
       # -- Key in the secret's 'data' field holding the private key hex string
