@@ -24,8 +24,8 @@ charon:
   # beaconNodeEndpoints: unset = http://ethereum-beacon.ethereum-<network>.svc.cluster.local:5052
   # Fall back to publicnode.com for `network` while the local beacon node syncs.
   publicnodeFallback: true
-  # true only if the node was installed with `obol network install ethereum --mev` (MEV-boost); the
-  # node's metadata ConfigMap shows it: obol kubectl get cm ethereum-<network>-metadata -n ethereum-<network>
+  # The Stack runs no MEV-boost: its beacon node builds blocks locally until Gloas, and from Gloas
+  # builder bids arrive in-protocol (p2p). Keep this false; with true, charon only proposes builder blocks.
   builderApi: false
   nickname: "obol-stack"
 

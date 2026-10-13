@@ -119,7 +119,7 @@ Hermes agent watch progress. [values-examples/obol-stack.yaml](./values-examples
   `obol network install ethereum --network <network>`). Set it if your deployment has another id (`obol network list`).
 - `serviceMonitor.enabled: true` with `serviceMonitor.labels.release: monitoring`
 - `statusReaders: [{namespace: hermes-obol-agent, serviceAccount: hermes}]`
-- `charon.builderApi: false` unless the Stack's beacon node is connected to MEV-boost
+- `charon.builderApi: false`: the Stack runs no MEV-boost (local blocks until Gloas, in-protocol builder bids after it)
 
 ```sh
 obol helm upgrade --install my-dv-pod obol/dv-pod -n dv-pod --create-namespace \
