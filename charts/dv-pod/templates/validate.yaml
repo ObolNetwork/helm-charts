@@ -86,3 +86,7 @@
 {{- end }}
 {{- end }}
 
+
+{{- if and (include "dv-pod.truthy" .Values.p2pService.enabled) (not .Values.charon.p2pTcpAddress) }}
+{{- fail "p2pService.enabled requires charon.p2pTcpAddress (charon must listen for inbound peer connections)" }}
+{{- end }}
