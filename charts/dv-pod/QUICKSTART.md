@@ -8,6 +8,8 @@ This guide covers deploying a Distributed Validator (DV) node using the dv-pod H
 - Helm 3.x installed
 - Namespace created: `kubectl create namespace dv-pod`
 - Ethereum wallet address for operator signature
+- A synced consensus client (beacon node) for the same network. In the Obol Stack this is
+  `http://ethereum-beacon.ethereum-<id>.svc.cluster.local:5052` (from `obol network install ethereum`)
 
 ## Scenario 1: Fresh Start (Automatic ENR Generation)
 
@@ -20,7 +22,8 @@ Each operator deploys their node:
 ```bash
 helm upgrade --install my-dv-pod obol/dv-pod \
   --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS \
-  --set chainId=1 \
+  --set network=mainnet \
+  --set 'charon.beaconNodeEndpoints[0]=http://YOUR_BEACON_NODE:5052' \
   --namespace=dv-pod \
   --timeout=10m --create-namespace
 ```
@@ -59,10 +62,10 @@ Summary:
 1. Visit [Obol Launchpad](https://launchpad.obol.org)
 2. Create a new cluster OR accept an existing cluster invitation
 3. Connect your wallet with the operator address you configured
-4. Paste your ENR from Step 2
-5. Sign the cluster configuration
+4. Paste the ENR from Step 2 (this pod's ENR; the sidecar only matches a definition containing it)
+5. Sign the cluster configuration with your operator wallet
 
-Once all operators have signed, the DKG ceremony will automatically begin.
+The sidecar does not sign anything itself. Once all operators have signed on the Launchpad, it runs the DKG ceremony automatically.
 
 ### Step 4: Wait for DKG Completion
 
@@ -73,7 +76,7 @@ Monitor progress:
 kubectl logs -n dv-pod -l app.kubernetes.io/instance=my-dv-pod -c dkg-sidecar --follow
 
 # Check if cluster-lock was created
-kubectl exec -n dv-pod my-dv-pod-dv-pod-0 -- ls -la /charon-data/
+kubectl exec -n dv-pod my-dv-pod-0 -- ls -la /charon-data/
 ```
 
 When all operators complete, Charon automatically starts validating.
@@ -122,7 +125,7 @@ Expected output: `["charon-enr-private-key", "enr"]`
 helm upgrade --install my-dv-pod obol/dv-pod \
   --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS \
   --set charon.dkgSidecar.targetConfigHash=0xYOUR_CONFIG_HASH \
-  --set chainId=1 \
+  --set network=mainnet \
   --set 'charon.beaconNodeEndpoints[0]=http://YOUR_BEACON_NODE:5052' \
   --set charon.enr.existingSecret.name=charon-enr-private-key \
   --namespace=dv-pod \
@@ -134,9 +137,8 @@ helm upgrade --install my-dv-pod obol/dv-pod \
 2. DKG sidecar reads your existing ENR
 3. Fetches the specific cluster using targetConfigHash
 4. Validates your ENR matches the cluster definition
-5. Automatically signs and accepts the cluster
-6. Waits for all operators to sign
-7. Runs DKG ceremony when ready
+5. Waits for all operators (including you, on the Launchpad) to sign
+6. Runs DKG ceremony when ready
 
 ### Step 3: Monitor DKG Progress
 
@@ -145,7 +147,7 @@ helm upgrade --install my-dv-pod obol/dv-pod \
 kubectl logs -n dv-pod -l app.kubernetes.io/instance=my-dv-pod -c dkg-sidecar --follow
 
 # Check for cluster-lock creation
-kubectl exec -n dv-pod my-dv-pod-dv-pod-0 -- ls -la /charon-data/cluster-lock.json
+kubectl exec -n dv-pod my-dv-pod-0 -- ls -la /charon-data/cluster-lock.json
 ```
 
 ---
@@ -156,17 +158,16 @@ kubectl exec -n dv-pod my-dv-pod-dv-pod-0 -- ls -la /charon-data/cluster-lock.js
 
 ```bash
 # Mainnet (default)
---set chainId=1
-
-# Sepolia testnet
---set chainId=11155111
+--set network=mainnet
 
 # Hoodi testnet
---set chainId=560048
+--set network=hoodi
 
-# Gnosis Chain
---set chainId=100
+# Sepolia testnet
+--set network=sepolia
 ```
+
+Set `network` at install time: the DKG sidecar only looks for cluster invites on that network.
 
 ### Custom DKG Sidecar Image
 
@@ -182,7 +183,11 @@ kubectl exec -n dv-pod my-dv-pod-dv-pod-0 -- ls -la /charon-data/cluster-lock.js
 # Single beacon node
 --set 'charon.beaconNodeEndpoints[0]=http://beacon:5052'
 
+# Obol Stack beacon node (replace <id> with your ethereum network deployment id)
+--set 'charon.beaconNodeEndpoints[0]=http://ethereum-beacon.ethereum-<id>.svc.cluster.local:5052'
+
 # Multiple beacon nodes (primary + fallbacks)
+# If no fallback is set, the public publicnode.com beacon API for `network` is used (disable with charon.publicnodeFallback=false)
 --set 'charon.beaconNodeEndpoints[0]=http://primary-beacon:5052' \
 --set 'charon.fallbackBeaconNodeEndpoints[0]=http://fallback-beacon:5052' \
 --set 'charon.fallbackBeaconNodeEndpoints[1]=http://backup-beacon:5052'
@@ -197,9 +202,8 @@ kubectl exec -n dv-pod my-dv-pod-dv-pod-0 -- ls -la /charon-data/cluster-lock.js
 # Teku
 --set validatorClient.type=teku
 
-# Prysm
---set validatorClient.type=prysm \
---set validatorClient.config.prysm.acceptTermsOfUse=true
+# Prysm (by choosing Prysm you accept its Terms of Use; the chart passes --accept-terms-of-use)
+--set validatorClient.type=prysm
 
 # Lodestar
 --set validatorClient.type=lodestar
@@ -216,13 +220,13 @@ kubectl exec -n dv-pod my-dv-pod-dv-pod-0 -- ls -la /charon-data/cluster-lock.js
 
 ```bash
 kubectl get jobs -n dv-pod
-kubectl logs job/my-dv-pod-dv-pod-enr-job -n dv-pod
+kubectl logs job/my-dv-pod-enr-job -n dv-pod
 ```
 
 ### View DKG Sidecar Logs
 
 ```bash
-kubectl logs -n dv-pod my-dv-pod-dv-pod-0 -c dkg-sidecar --follow
+kubectl logs -n dv-pod my-dv-pod-0 -c dkg-sidecar --follow
 ```
 
 ### ENR Mismatch Error
@@ -265,13 +269,13 @@ helm test my-dv-pod -n dv-pod
 
 ```bash
 # View Charon logs
-kubectl logs -n dv-pod my-dv-pod-dv-pod-0 -c charon --tail=50
+kubectl logs -n dv-pod my-dv-pod-0 -c dv-pod --tail=50
 
 # Check validator client logs
-kubectl logs -n dv-pod my-dv-pod-dv-pod-0 -c validator-client --tail=50
+kubectl logs -n dv-pod my-dv-pod-0 -c validator-client --tail=50
 
 # Check Prometheus metrics
-kubectl port-forward -n dv-pod my-dv-pod-dv-pod-0 3620:3620
+kubectl port-forward -n dv-pod my-dv-pod-0 3620:3620
 # Visit: http://localhost:3620/metrics
 ```
 
@@ -281,7 +285,7 @@ kubectl port-forward -n dv-pod my-dv-pod-dv-pod-0 3620:3620
 
 1. **ENR Private Key Security**: The ENR private key is crucial for DV operations. Always backup secrets.
 
-2. **Automatic DKG**: The DKG sidecar automatically handles cluster discovery, acceptance, and DKG ceremony execution when all operators are ready.
+2. **Automatic DKG**: The DKG sidecar automatically handles cluster discovery and DKG ceremony execution once all operators have signed on the Launchpad. It does not accept or sign invites itself.
 
 3. **Target Config Hash**: Use `targetConfigHash` to specify exactly which cluster to join. Without it, the sidecar will join the most recent cluster where your operator is invited.
 
@@ -289,7 +293,7 @@ kubectl port-forward -n dv-pod my-dv-pod-dv-pod-0 3620:3620
 
 5. **Namespace Isolation**: ENR secrets are only detected in the same namespace as the Helm release.
 
-6. **Secret Naming**: By default, auto-generated secrets use the name `charon-enr-private-key`. To use release-based naming (`{release-name}-dv-pod-enr-key`), set `secrets.defaultEnrPrivateKey=""`.
+6. **Secret Naming**: By default, auto-generated secrets use the name `charon-enr-private-key`. To use release-based naming (`<fullname>-enr-key`, e.g. `my-dv-pod-enr-key`), set `secrets.defaultEnrPrivateKey=""`.
 
 ---
 
