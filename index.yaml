@@ -7,6 +7,21 @@ entries:
         fingerprint: 7010534E974BDE744608A6D990C7932734D78646
         url: https://obolnetwork.github.io/helm-charts/pubkey.asc
     apiVersion: v2
+    appVersion: 4.2.0
+    created: "2026-10-17T20:13:55.03022817Z"
+    description: A Helm chart for deploying an Aztec node
+    digest: e799b1e5f0876460051a914bcc7d2fb68cc33f4011d9ae5088fab45ad93d14f0
+    name: aztec-node
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/aztec-node-2.3.0/aztec-node-2.3.0.tgz
+    version: 2.3.0
+  - annotations:
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/signKey: |
+        fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+        url: https://obolnetwork.github.io/helm-charts/pubkey.asc
+    apiVersion: v2
     appVersion: 4.1.3
     created: "2026-04-08T13:40:08.399938065Z"
     description: A Helm chart for deploying an Aztec node
@@ -46,6 +61,21 @@ entries:
     urls:
     - https://github.com/ObolNetwork/helm-charts/releases/download/aztec-node-2.1.1/aztec-node-2.1.1.tgz
     version: 2.1.1
+  - annotations:
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/signKey: |
+        fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+        url: https://obolnetwork.github.io/helm-charts/pubkey.asc
+    apiVersion: v2
+    appVersion: 4.1.0
+    created: "2026-10-17T20:13:54.351442144Z"
+    description: A Helm chart for deploying an Aztec node
+    digest: b42cd10f454effc34a3383d9df204db0c225984e423e4579abf5c6747c5d4837
+    name: aztec-node
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/aztec-node-2.1.0/aztec-node-2.1.0.tgz
+    version: 2.1.0
   - annotations:
       artifacthub.io/license: Apache-2.0
       artifacthub.io/signKey: |
@@ -152,6 +182,36 @@ entries:
     urls:
     - https://github.com/ObolNetwork/helm-charts/releases/download/charon-0.7.0/charon-0.7.0.tgz
     version: 0.7.0
+  - annotations:
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/signKey: |
+        fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+        url: https://obolnetwork.github.io/helm-charts/pubkey.asc
+    apiVersion: v2
+    appVersion: 1.10.0
+    created: "2026-10-17T20:13:55.677596484Z"
+    description: Charon is an open-source Ethereum Distributed validator middleware
+      written in golang.
+    digest: 35ccdf5306577a24b4c2152aa707d3271922eb24d867bdbec92981b4d88a6292
+    home: https://obol.tech/
+    icon: https://raw.githubusercontent.com/ObolNetwork/charon/main/docs/images/charonlogo.svg
+    keywords:
+    - ethereum
+    - blockchain
+    - obol
+    - charon
+    - dvt
+    - node
+    maintainers:
+    - email: devops@obol.tech
+      name: Eth2DevOps
+    name: charon
+    sources:
+    - https://github.com/ObolNetwork/charon
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/charon-0.6.0/charon-0.6.0.tgz
+    version: 0.6.0
   - annotations:
       artifacthub.io/license: Apache-2.0
       artifacthub.io/signKey: |
@@ -2298,6 +2358,36 @@ entries:
         fingerprint: 7010534E974BDE744608A6D990C7932734D78646
         url: https://obolnetwork.github.io/helm-charts/pubkey.asc
     apiVersion: v2
+    appVersion: 1.9.0
+    created: "2026-10-17T20:13:56.457383488Z"
+    description: Charon is an open-source Ethereum Distributed validator middleware
+      written in golang. This chart deploys a libp2p relay server.
+    digest: 698435abadab107c878b35efc4b52bfb53c809930bc49a192716f69cf0074627
+    home: https://obol.tech/
+    icon: https://raw.githubusercontent.com/ObolNetwork/charon/main/docs/images/charonlogo.svg
+    keywords:
+    - ethereum
+    - blockchain
+    - obol
+    - charon
+    - dvt
+    - relay
+    maintainers:
+    - email: devops@obol.tech
+      name: Eth2DevOps
+    name: charon-relay
+    sources:
+    - https://github.com/ObolNetwork/charon
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/charon-relay-0.3.0/charon-relay-0.3.0.tgz
+    version: 0.3.0
+  - annotations:
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/signKey: |
+        fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+        url: https://obolnetwork.github.io/helm-charts/pubkey.asc
+    apiVersion: v2
     appVersion: 1.8.2
     created: "2026-02-16T15:17:30.598320265Z"
     description: Charon is an open-source Ethereum Distributed validator middleware
@@ -2708,6 +2798,38 @@ entries:
         url: https://obolnetwork.github.io/helm-charts/pubkey.asc
     apiVersion: v2
     appVersion: 1.9.3
+    created: "2026-10-17T20:13:58.564948569Z"
+    description: A Helm chart for deploying a single distributed validator pod consisting
+      of a Charon middleware client and validator client.
+    digest: 48754ffdf319c0be575238a6c1ae8f932c253873c5f786a8f7b5a19a7c9dd9b8
+    home: https://docs.obol.org/
+    icon: https://raw.githubusercontent.com/ObolNetwork/charon/main/docs/images/charonlogo.svg
+    keywords:
+    - ethereum
+    - blockchain
+    - obol
+    - charon
+    - dvt
+    - distributed-validator
+    - validator-client
+    - dv-pod
+    maintainers:
+    - email: devops@obol.tech
+      name: DV Labs
+    name: dv-pod
+    sources:
+    - https://github.com/ObolNetwork/charon
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/dv-pod-0.18.0/dv-pod-0.18.0.tgz
+    version: 0.18.0
+  - annotations:
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/signKey: |
+        fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+        url: https://obolnetwork.github.io/helm-charts/pubkey.asc
+    apiVersion: v2
+    appVersion: 1.9.3
     created: "2026-04-08T13:40:45.233366724Z"
     description: A Helm chart for deploying a single distributed validator pod consisting
       of a Charon middleware client and validator client.
@@ -2868,6 +2990,38 @@ entries:
         url: https://obolnetwork.github.io/helm-charts/pubkey.asc
     apiVersion: v2
     appVersion: 1.9.0
+    created: "2026-10-17T20:13:57.876789724Z"
+    description: A Helm chart for deploying a single distributed validator pod consisting
+      of a Charon middleware client and validator client.
+    digest: 5dafd9cf5886610fdb0dfe7eb5ea0a6a848d3979e57d6d46c31579a161ae6ee0
+    home: https://docs.obol.org/
+    icon: https://raw.githubusercontent.com/ObolNetwork/charon/main/docs/images/charonlogo.svg
+    keywords:
+    - ethereum
+    - blockchain
+    - obol
+    - charon
+    - dvt
+    - distributed-validator
+    - validator-client
+    - dv-pod
+    maintainers:
+    - email: devops@obol.tech
+      name: DV Labs
+    name: dv-pod
+    sources:
+    - https://github.com/ObolNetwork/charon
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/dv-pod-0.14.0/dv-pod-0.14.0.tgz
+    version: 0.14.0
+  - annotations:
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/signKey: |
+        fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+        url: https://obolnetwork.github.io/helm-charts/pubkey.asc
+    apiVersion: v2
+    appVersion: 1.9.0
     created: "2026-03-18T13:39:32.482287505Z"
     description: A Helm chart for deploying a single distributed validator pod consisting
       of a Charon middleware client and validator client.
@@ -2957,6 +3111,38 @@ entries:
     urls:
     - https://github.com/ObolNetwork/helm-charts/releases/download/dv-pod-0.11.0/dv-pod-0.11.0.tgz
     version: 0.11.0
+  - annotations:
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/signKey: |
+        fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+        url: https://obolnetwork.github.io/helm-charts/pubkey.asc
+    apiVersion: v2
+    appVersion: 1.9.0
+    created: "2026-10-17T20:13:57.115919934Z"
+    description: A Helm chart for deploying a single distributed validator pod consisting
+      of a Charon middleware client and validator client.
+    digest: b1aac3d58df0a6695186795e0202a6bc63d4c45e77466fa89703319ab5db9c6f
+    home: https://docs.obol.org/
+    icon: https://raw.githubusercontent.com/ObolNetwork/charon/main/docs/images/charonlogo.svg
+    keywords:
+    - ethereum
+    - blockchain
+    - obol
+    - charon
+    - dvt
+    - distributed-validator
+    - validator-client
+    - dv-pod
+    maintainers:
+    - email: devops@obol.tech
+      name: DV Labs
+    name: dv-pod
+    sources:
+    - https://github.com/ObolNetwork/charon
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/dv-pod-0.10.0/dv-pod-0.10.0.tgz
+    version: 0.10.0
   - annotations:
       artifacthub.io/license: Apache-2.0
       artifacthub.io/signKey: |
@@ -3384,6 +3570,34 @@ entries:
         url: https://obolnetwork.github.io/helm-charts/pubkey.asc
     apiVersion: v2
     appVersion: 2026.3.2
+    created: "2026-10-17T20:14:00.696764892Z"
+    description: OpenClaw gateway deployment (agent runtime) for Kubernetes.
+    digest: c6d5bf2af790ddc1c7ecad31573a196b1a4b8ea4c9e5d152bd8609183cfb2a5d
+    home: https://docs.openclaw.ai
+    keywords:
+    - openclaw
+    - agent
+    - ai
+    - gateway
+    - obol
+    kubeVersion: '>=1.26.0-0'
+    maintainers:
+    - email: platform@obol.tech
+      name: Obol Platform Team
+    name: openclaw
+    sources:
+    - https://docs.openclaw.ai
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/openclaw-0.5.0/openclaw-0.5.0.tgz
+    version: 0.5.0
+  - annotations:
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/signKey: |
+        fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+        url: https://obolnetwork.github.io/helm-charts/pubkey.asc
+    apiVersion: v2
+    appVersion: 2026.3.2
     created: "2026-04-10T08:31:25.538690555Z"
     description: OpenClaw gateway deployment (agent runtime) for Kubernetes.
     digest: 552141e93c1158ce7c8eefbabd5287a622119d2b36e3d0ebf4f911520451bf4e
@@ -3405,6 +3619,62 @@ entries:
     urls:
     - https://github.com/ObolNetwork/helm-charts/releases/download/openclaw-0.4.0/openclaw-0.4.0.tgz
     version: 0.4.0
+  - annotations:
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/signKey: |
+        fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+        url: https://obolnetwork.github.io/helm-charts/pubkey.asc
+    apiVersion: v2
+    appVersion: 2026.3.2
+    created: "2026-10-17T20:14:00.068784951Z"
+    description: OpenClaw gateway deployment (agent runtime) for Kubernetes.
+    digest: a8e83dec508e2a5279d6b6f5a7e429fd40ce4532d55593da08e9013d43a4e665
+    home: https://docs.openclaw.ai
+    keywords:
+    - openclaw
+    - agent
+    - ai
+    - gateway
+    - obol
+    kubeVersion: '>=1.26.0-0'
+    maintainers:
+    - email: platform@obol.tech
+      name: Obol Platform Team
+    name: openclaw
+    sources:
+    - https://docs.openclaw.ai
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/openclaw-0.3.0/openclaw-0.3.0.tgz
+    version: 0.3.0
+  - annotations:
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/signKey: |
+        fingerprint: 7010534E974BDE744608A6D990C7932734D78646
+        url: https://obolnetwork.github.io/helm-charts/pubkey.asc
+    apiVersion: v2
+    appVersion: 2026.3.2
+    created: "2026-10-17T20:13:59.415330376Z"
+    description: OpenClaw gateway deployment (agent runtime) for Kubernetes.
+    digest: 4c973853f90f9c6b63b583a5ff36a5cb7cdf7e392aaf7c0693dba5e4fc788212
+    home: https://docs.openclaw.ai
+    keywords:
+    - openclaw
+    - agent
+    - ai
+    - gateway
+    - obol
+    kubeVersion: '>=1.26.0-0'
+    maintainers:
+    - email: platform@obol.tech
+      name: Obol Platform Team
+    name: openclaw
+    sources:
+    - https://docs.openclaw.ai
+    type: application
+    urls:
+    - https://github.com/ObolNetwork/helm-charts/releases/download/openclaw-0.2.0/openclaw-0.2.0.tgz
+    version: 0.2.0
   - annotations:
       artifacthub.io/license: Apache-2.0
       artifacthub.io/signKey: |
@@ -3835,4 +4105,4 @@ entries:
     urls:
     - https://github.com/ObolNetwork/helm-charts/releases/download/remote-signer-0.1.0/remote-signer-0.1.0.tgz
     version: 0.1.0
-generated: "2026-10-13T13:39:14.96949854Z"
+generated: "2026-10-17T20:14:00.695910341Z"
