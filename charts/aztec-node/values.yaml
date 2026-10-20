@@ -112,7 +112,7 @@ image:
   # -- Image repository
   repository: aztecprotocol/aztec
   # -- Image tag
-  tag: 4.2.0
+  tag: 4.4.0
   # -- Container pull policy
   pullPolicy: IfNotPresent
 
