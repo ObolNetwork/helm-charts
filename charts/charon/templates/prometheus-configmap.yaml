@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: prometheus
+  name: {{ include "release.name" . }}-prometheus
 data:
   prometheus.yaml: |
     global:

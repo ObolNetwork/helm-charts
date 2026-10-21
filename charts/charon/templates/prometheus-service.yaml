@@ -2,14 +2,14 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: prometheus
+  name: {{ include "release.name" . }}-prometheus
 spec:
   ports:
   - port: 9090
     protocol: TCP
     targetPort: 9090
   selector:
-    app: prometheus
+    app: {{ include "release.name" . }}-prometheus
   sessionAffinity: None
   type: ClusterIP
 {{- end }}
