@@ -1,0 +1,46 @@
+{{- if eq (include "chart.monitoringEnabled" .) "true" -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chart.resourceName" . }}-otel-collector
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app: otel-collector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app: otel-collector
+    spec:
+      containers:
+      - name: otel-collector
+        image: otel/opentelemetry-collector-contrib:0.91.0
+        args:
+          - --config=/etc/otel/config.yaml
+        ports:
+        - containerPort: 4318
+          name: otlp-http
+        - containerPort: 8889
+          name: prometheus
+        volumeMounts:
+        - name: config
+          mountPath: /etc/otel/config.yaml
+          subPath: config.yaml
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "chart.resourceName" . }}-otel-collector
+{{- end }}

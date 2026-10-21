@@ -1,0 +1,28 @@
+{{- if eq (include "chart.monitoringEnabled" .) "true" -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.resourceName" . }}-prometheus
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  prometheus.yaml: |
+    global:
+      scrape_interval: 30s
+      evaluation_interval: 30s
+    {{- if .Values.centralMonitoring.enabled }}
+    remote_write:
+      - url: {{ $.Values.centralMonitoring.promEndpoint }}
+        authorization:
+          credentials: {{ $.Values.centralMonitoring.token }}
+    {{- end }}
+    scrape_configs:
+      - job_name: '{{ include "chart.resourceName" . }}'
+        static_configs:
+          - targets: ['{{ include "chart.resourceName" . }}-otel-collector:8889']
+        relabel_configs:
+          - target_label: 'aztec_role'
+            replacement: '{{ .Values.role }}'
+          - target_label: 'aztec_network'
+            replacement: '{{ .Values.networkName }}'
+{{- end }}

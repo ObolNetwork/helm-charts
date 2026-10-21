@@ -1,0 +1,15 @@
+{{- if .Values.centralMonitoring.enabled }}
+{{- if not .Values.centralMonitoring.token }}
+{{- fail ".Values.centralMonitoring.token is required when centralMonitoring is enabled" }}
+{{- end }}
+{{- end }}
+
+{{/*
+Helper to determine if monitoring stack should be deployed.
+Monitoring is enabled if either:
+- monitoring.enabled is true
+- centralMonitoring.enabled is true (auto-enables monitoring)
+*/}}
+{{- define "chart.monitoringEnabled" -}}
+{{- or .Values.monitoring.enabled .Values.centralMonitoring.enabled -}}
+{{- end -}}

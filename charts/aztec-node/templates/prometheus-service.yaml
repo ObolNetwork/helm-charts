@@ -1,0 +1,17 @@
+{{- if eq (include "chart.monitoringEnabled" .) "true" -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "chart.resourceName" . }}-prometheus
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  ports:
+  - port: 9090
+    protocol: TCP
+    targetPort: 9090
+  selector:
+    {{- include "chart.selectorLabels" . | nindent 4 }}
+    app: prometheus
+  type: ClusterIP
+{{- end }}
