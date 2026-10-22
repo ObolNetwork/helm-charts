@@ -192,8 +192,9 @@ charon:
     image:
       # -- Image repository for the DKG sidecar
       repository: "obolnetwork/charon-dkg-sidecar"
-      # -- DKG sidecar image tag. 1.1.0 implements DKG_RUNNER/DEFINITION_SOURCE/status reporting.
-      tag: "1.1.0"
+      # -- DKG sidecar image tag. 193391e is v1.1.0 (DKG_RUNNER/DEFINITION_SOURCE/status
+      # reporting) plus charon v1.11.2 and node 22.23.4 (eMudhra CA fix), pinned by digest.
+      tag: "193391e@sha256:6dcb9af3701e58c1902401f9f6562bd64e412e12d32d9448944f42275fc82e59"
       pullPolicy: "IfNotPresent"
     # -- Initial delay in seconds before the first retry of a polling cycle.
     initialRetryDelaySeconds: 10
@@ -377,7 +378,7 @@ centralMonitoring:
 image:
   repository: obolnetwork/charon
   pullPolicy: IfNotPresent
-  tag: v1.11.0
+  tag: v1.11.2
 
 # -- Credentials to fetch images from private registry
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
