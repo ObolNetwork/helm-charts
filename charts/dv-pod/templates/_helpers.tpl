@@ -69,25 +69,186 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
-Determine the name of the shared ENR secret.
-This secret holds the single ENR private key for the entire cluster.
-Logic:
-1. If .Values.charon.enr.existingSecret.name is set, use that (explicit override).
-2. Else if .Values.secrets.defaultEnrPrivateKey is set, use that as the default.
-3. Else if .Values.charon.enr.privateKey is set or .Values.charon.enr.generate.enabled is true, 
-   the ENR job creates a predictable secret.
-4. Fallback to the predictable secret name.
+Per-release ENR secret name used for new installs.
+*/}}
+{{- define "dv-pod.enrReleaseSecretName" -}}
+{{- printf "%s-enr-key" (include "dv-pod.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Name of the Secret holding this node's ENR private key (its charon identity).
+An existing identity is never replaced, and two releases never share one:
+1. charon.enr.existingSecret.name, if set (explicit).
+2. Else, on upgrade, whatever Secret this release's StatefulSet already mounts (sticky identity).
+3. Else the legacy shared name (secrets.defaultEnrPrivateKey, "charon-enr-private-key") if that Secret
+   exists in the namespace and no other StatefulSet mounts it (pre-created for import, or a pre-0.22 install).
+4. Else "<fullname>-enr-key".
+Steps 2 and 3 use `lookup`, which is empty under `helm template`/`--dry-run`/GitOps renderers; there the
+name falls through to step 4 and the ENR hook Job performs the same migration check at runtime, copying
+the legacy identity into "<fullname>-enr-key" instead of generating a new one.
 */}}
 {{- define "dv-pod.enrSecretName" -}}
+{{- $release := include "dv-pod.enrReleaseSecretName" . -}}
+{{- $legacy := .Values.secrets.defaultEnrPrivateKey -}}
+{{- $sts := include "dv-pod.fullname" . -}}
+{{- $name := "" -}}
 {{- if .Values.charon.enr.existingSecret.name -}}
-{{- .Values.charon.enr.existingSecret.name -}}
-{{- else if .Values.secrets.defaultEnrPrivateKey -}}
-{{- .Values.secrets.defaultEnrPrivateKey -}}
-{{- else if or .Values.charon.enr.privateKey .Values.charon.enr.generate.enabled -}}
-{{- printf "%s-enr-key" (include "dv-pod.fullname" .) -}}
+{{- $name = .Values.charon.enr.existingSecret.name -}}
 {{- else -}}
-{{- printf "%s-enr-key" (include "dv-pod.fullname" .) -}}
+{{- $own := lookup "apps/v1" "StatefulSet" .Release.Namespace $sts -}}
+{{- if $own -}}
+{{- range $own.spec.template.spec.volumes -}}
+{{- if and (eq .name "charon-enr-private-key") .secret -}}
+{{- $name = .secret.secretName -}}
 {{- end -}}
+{{- end -}}
+{{- end -}}
+{{- if and (not $name) $legacy (ne $legacy $release) (lookup "v1" "Secret" .Release.Namespace $legacy) -}}
+{{- $claimed := false -}}
+{{- $all := lookup "apps/v1" "StatefulSet" .Release.Namespace "" -}}
+{{- range ($all.items | default list) -}}
+{{- if ne .metadata.name $sts -}}
+{{- range .spec.template.spec.volumes -}}
+{{- if and (eq .name "charon-enr-private-key") .secret (eq .secret.secretName $legacy) -}}
+{{- $claimed = true -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- if not $claimed -}}
+{{- $name = $legacy -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- $name | default $release -}}
+{{- end -}}
+
+{{/*
+Name of the ConfigMap holding this node's public ENR (key "enr"), written by the ENR hook Job.
+Lets agents and humans read the ENR without access to Secrets.
+*/}}
+{{- define "dv-pod.enrConfigMapName" -}}
+{{- printf "%s-enr" (include "dv-pod.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Name of the DKG status ConfigMap written by the sidecar.
+*/}}
+{{- define "dv-pod.statusConfigMapName" -}}
+{{- printf "%s-dkg-status" (include "dv-pod.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+"true" when the sidecar should publish DKG status to the status ConfigMap. Needs the chart's
+ServiceAccount and RBAC, since the sidecar authenticates with the pod's service account token.
+*/}}
+{{- define "dv-pod.statusEnabled" -}}
+{{- if and .Values.dkg.status.enabled .Values.charon.dkgSidecar.enabled .Values.serviceAccount.enabled .Values.rbac.enabled -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
+Normalise a boolean-ish value: true, "true" -> "true"; false, "false", "", null -> "".
+Older values files pass charon.builderApi / directConnectionEnabled as strings.
+*/}}
+{{- define "dv-pod.truthy" -}}
+{{- if kindIs "bool" . -}}
+{{- if . }}true{{ end -}}
+{{- else if kindIs "string" . -}}
+{{- if eq (lower (trim .)) "true" }}true{{ end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Effective participation mode. `auto` keeps the pre-0.22 inference:
+configMaps.clusterLock -> lock, charon.lockHash -> lockHash, any dkg.definition source -> definition,
+otherwise launchpad (poll the Obol API by operator address).
+*/}}
+{{- define "dv-pod.mode" -}}
+{{- $mode := .Values.mode | default "auto" -}}
+{{- if ne $mode "auto" -}}
+{{- $mode -}}
+{{- else if .Values.configMaps.clusterLock -}}
+lock
+{{- else if .Values.charon.lockHash -}}
+lockHash
+{{- else if or .Values.dkg.definition.configHash .Values.dkg.definition.url .Values.dkg.definition.configMap -}}
+definition
+{{- else -}}
+launchpad
+{{- end -}}
+{{- end -}}
+
+{{/*
+"true" when this release may run a DKG ceremony (launchpad or definition mode, with the sidecar enabled).
+*/}}
+{{- define "dv-pod.runsDkg" -}}
+{{- if and .Values.charon.dkgSidecar.enabled (has (include "dv-pod.mode" .) (list "launchpad" "definition")) -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
+DEFINITION_SOURCE for the sidecar (empty = leave the sidecar default, "auto").
+*/}}
+{{- define "dv-pod.definitionSource" -}}
+{{- $mode := include "dv-pod.mode" . -}}
+{{- if eq $mode "definition" -}}
+{{- if .Values.dkg.definition.configHash -}}
+config-hash
+{{- else if .Values.dkg.definition.url -}}
+url
+{{- else if .Values.dkg.definition.configMap -}}
+file
+{{- end -}}
+{{- else if and (eq $mode "launchpad") (eq (.Values.mode | default "auto") "launchpad") -}}
+operator
+{{- end -}}
+{{- end -}}
+
+{{/*
+Obol API base URL (no trailing slash), used for `charon dkg --publish-address`.
+*/}}
+{{- define "dv-pod.apiBaseUrl" -}}
+{{- .Values.charon.dkgSidecar.apiEndpoint | trimSuffix "/" | trimSuffix "/v1" -}}
+{{- end -}}
+
+{{/*
+Sidecar image reference.
+*/}}
+{{- define "dv-pod.sidecarImage" -}}
+{{- printf "%s:%s" .Values.charon.dkgSidecar.image.repository (.Values.charon.dkgSidecar.image.tag | default .Chart.AppVersion) -}}
+{{- end -}}
+
+{{/*
+Projected service account token, mounted only into the sidecar containers that write the status
+ConfigMap (the pod sets automountServiceAccountToken: false, so charon and the VC get no token).
+*/}}
+{{- define "dv-pod.kubeApiAccessVolume" -}}
+- name: kube-api-access
+  projected:
+    defaultMode: 0444
+    sources:
+      - serviceAccountToken:
+          path: token
+          expirationSeconds: 3607
+      - configMap:
+          name: kube-root-ca.crt
+          items:
+            - key: ca.crt
+              path: ca.crt
+      - downwardAPI:
+          items:
+            - path: namespace
+              fieldRef:
+                fieldPath: metadata.namespace
+{{- end -}}
+
+{{- define "dv-pod.kubeApiAccessMount" -}}
+- name: kube-api-access
+  mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+  readOnly: true
 {{- end -}}
 
 {{/*
@@ -106,17 +267,22 @@ Return the data key for the ENR public key within the shared secret.
 
 {{/*
 Determine if the ENR generation job should be created.
-The job should be created if:
-1. Generate is enabled AND
-2. No private key is directly provided AND
-3. ENR job is enabled
+The job should be created if the ENR job is enabled AND either generation is enabled
+or a private key is provided (the job derives the public ENR and creates the secret).
 Note: The job will run even if an existing secret is specified, as it can handle incomplete secrets
 (secrets with only private key missing the public ENR field)
 */}}
 {{- define "dv-pod.shouldCreateEnrJob" -}}
-{{- if and .Values.charon.enr.generate.enabled (not .Values.charon.enr.privateKey) .Values.charon.enrJob.enabled -}}
+{{- if and .Values.charon.enrJob.enabled (or .Values.charon.enr.generate.enabled .Values.charon.enr.privateKey) -}}
 true
 {{- end -}}
+{{- end -}}
+
+{{/*
+Name of the hook Secret that carries charon.enr.privateKey to the ENR job.
+*/}}
+{{- define "dv-pod.enrProvidedKeySecretName" -}}
+{{- printf "%s-enr-provided-key" (include "dv-pod.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
@@ -136,7 +302,17 @@ Create comma-separated list of primary beacon node endpoints
 {{- define "dv-pod.beaconNodeEndpoints" -}}
 {{- if .Values.charon.beaconNodeEndpoints -}}
 {{- join "," .Values.charon.beaconNodeEndpoints -}}
+{{- else -}}
+{{- include "dv-pod.obolStackBeaconNode" . -}}
 {{- end -}}
+{{- end -}}
+
+{{/*
+Beacon node of the Obol Stack's ethereum deployment for `network`. `obol network install ethereum
+--network <n>` names the first deployment of each network after it (namespace ethereum-<n>).
+*/}}
+{{- define "dv-pod.obolStackBeaconNode" -}}
+{{- printf "http://ethereum-beacon.ethereum-%s.svc.cluster.local:5052" (include "dv-pod.network" .) -}}
 {{- end -}}
 
 {{/*
@@ -145,6 +321,13 @@ Create comma-separated list of fallback beacon node endpoints
 {{- define "dv-pod.fallbackBeaconNodeEndpoints" -}}
 {{- if .Values.charon.fallbackBeaconNodeEndpoints -}}
 {{- join "," .Values.charon.fallbackBeaconNodeEndpoints -}}
+{{- else if .Values.charon.publicnodeFallback -}}
+{{- $network := include "dv-pod.network" . -}}
+{{- if eq $network "mainnet" -}}
+https://ethereum-beacon-api.publicnode.com
+{{- else -}}
+{{- printf "https://ethereum-%s-beacon-api.publicnode.com" $network -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}
 
@@ -195,4 +378,47 @@ Derives chainId from the network name
 */}}
 {{- define "dv-pod.chainId" -}}
 {{- include "dv-pod.chainIdFromNetwork" . -}}
+{{- end -}}
+
+{{/*
+Selector labels for the central-monitoring Prometheus. Must not overlap dv-pod.selectorLabels,
+which select the charon StatefulSet pods (Service, PDB, ServiceMonitor).
+*/}}
+{{- define "dv-pod.prometheusSelectorLabels" -}}
+app.kubernetes.io/name: {{ include "dv-pod.name" . }}-prometheus
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{- define "dv-pod.prometheusLabels" -}}
+helm.sh/chart: {{ include "dv-pod.chart" . }}
+{{ include "dv-pod.prometheusSelectorLabels" . }}
+app.kubernetes.io/component: prometheus
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}
+
+{{/*
+Shell snippet: copy the ENR private key into /charon-data, where `charon dkg` requires it.
+Refuses to continue if a different key is already there (identity mismatch).
+*/}}
+{{- define "dv-pod.stageEnrKey" -}}
+ENR_SRC="/enr-from-job/{{ include "dv-pod.enrSecretDataKey" . }}"
+ENR_DST="/charon-data/charon-enr-private-key"
+if [ -f "$ENR_DST" ]; then
+  if [ "$(cat "$ENR_DST")" != "$(cat "$ENR_SRC")" ]; then
+    echo "ERROR: $ENR_DST differs from the ENR private key in Secret {{ include "dv-pod.enrSecretName" . }}."
+    echo "This node would join the DKG with the wrong identity. Resolve manually; nothing was changed."
+    exit 1
+  fi
+else
+  cp "$ENR_SRC" "$ENR_DST" && chmod 600 "$ENR_DST"
+fi
+{{- end -}}
+
+{{/*
+UDP (QUIC) listen port, parsed from the first charon.p2pUdpAddress entry ("" when UDP is off).
+*/}}
+{{- define "dv-pod.p2pUdpPort" -}}
+{{- with .Values.charon.p2pUdpAddress -}}
+{{- regexFind "[0-9]+$" (first (splitList "," .)) -}}
+{{- end -}}
 {{- end -}}

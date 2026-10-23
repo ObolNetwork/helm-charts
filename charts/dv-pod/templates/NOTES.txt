@@ -1,75 +1,93 @@
-{{- define "dv-pod.clusterNotes" -}}
-Your Obol distributed validator pod "{{ template "dv-pod.fullname" . }}" has been deployed.
+{{- $ns := .Release.Namespace -}}
+{{- $full := include "dv-pod.fullname" . -}}
+{{- $mode := include "dv-pod.mode" . -}}
+{{- $runner := .Values.dkg.runner | default "charon" -}}
+{{- $pod := printf "%s-0" $full -}}
+{{- $enrCm := include "dv-pod.enrConfigMapName" . -}}
+{{- $statusCm := include "dv-pod.statusConfigMapName" . -}}
+dv-pod "{{ $full }}" deployed in namespace "{{ $ns }}".
+  network: {{ .Values.network }}   mode: {{ $mode }}{{ if eq (.Values.mode | default "auto") "auto" }} (inferred from mode=auto){{ end }}   dkg.runner: {{ $runner }}
+  ENR secret: {{ include "dv-pod.enrSecretName" . }}   pod: {{ $pod }}
 
-⚠️ **NAMESPACE REQUIREMENT**: ENR secrets MUST be in the same namespace as this Helm release ({{ .Release.Namespace }}).
-   If you have ENR secrets in a different namespace, they will NOT be detected and new ones will be generated.
+Everything below is copy-paste ready. None of it needs access to Secrets.
 
-1. ENR (Ethereum Node Record) Configuration:
-   {{- if .Values.charon.enr.existingSecret.name }}
-   Using existing ENR secret: {{ .Values.charon.enr.existingSecret.name }}
-   {{- else if (include "dv-pod.enrSecretName" .) }}
-   ENR secret name: {{ include "dv-pod.enrSecretName" . }}
-   {{- end }}
+1. This node's public ENR (written by the ENR job; available a few seconds after install)
+{{- with (lookup "v1" "ConfigMap" $ns $enrCm) }}
+{{- with .data }}
 
-   {{- if eq (include "dv-pod.shouldCreateEnrJob" .) "true" }}
-   The ENR generation job will create a new ENR private key and derive the public ENR.
+     {{ .enr }}
+{{- end }}
+{{- end }}
+
+   kubectl get configmap {{ $enrCm }} -n {{ $ns }} -o jsonpath='{.data.enr}'
+
+2. DKG / participation status
+{{- if eq (include "dv-pod.statusEnabled" .) "true" }}
+   kubectl get configmap {{ $statusCm }} -n {{ $ns }} -o jsonpath='{.data.phase}{"\n"}{.data.message}{"\n"}'
+   kubectl get configmap {{ $statusCm }} -n {{ $ns }} -o yaml      # all keys: phase, signatures, configHash, lockHash, ...
+   Phases: Initializing, WaitingForInvite, WaitingForSignatures, DefinitionReady, RunningDKG, Complete, LockPresent, Failed
+{{- else }}
+   Status ConfigMap disabled (dkg.status.enabled, serviceAccount.enabled and rbac.enabled must all be true); use the logs below.
+{{- end }}
+{{- if .Values.statusReaders }}
+   Read access (get/watch by name; no list) granted to:{{ range .Values.statusReaders }} {{ .namespace }}/{{ .serviceAccount }}{{ end }}
+   An agent with that access reads with get/describe by name, e.g. kubectl describe configmap {{ $statusCm }} -n {{ $ns }}
+{{- end }}
+   kubectl get pod {{ $pod }} -n {{ $ns }}        # Init:N/M while waiting for the DKG, then Running
+{{- if .Values.charon.dkgSidecar.enabled }}
+   kubectl logs {{ $pod }} -n {{ $ns }} -c dkg-sidecar -f
+{{- end }}
+{{- if eq (include "dv-pod.runsDkg" .) "true" }}{{ if eq $runner "charon" }}
+   kubectl logs {{ $pod }} -n {{ $ns }} -c charon-dkg -f       # the DKG ceremony itself
+{{- end }}{{ end }}
+   kubectl logs {{ $pod }} -n {{ $ns }} -c {{ .Chart.Name }} -f   # charon, once the cluster-lock exists
+
+3. Next steps for mode "{{ $mode }}"
+{{- if eq $mode "launchpad" }}
+   a. Open https://launchpad.obol.org with operator wallet {{ .Values.charon.operatorAddress | default "<charon.operatorAddress>" }}.
+   b. Create the cluster or accept the invite, paste THIS node's ENR (step 1) and sign. The chart never signs.
+   c. The sidecar polls {{ .Values.charon.dkgSidecar.apiEndpoint }} until every operator has signed{{ with .Values.charon.dkgSidecar.targetConfigHash }} definition {{ . }}{{ end }},
+      then the DKG runs automatically. All operators' pods must be up at the same time for the DKG.
+{{- else if eq $mode "definition" }}
+   a. Make sure this node's ENR (step 1) is one of the operators in the cluster definition
+      {{- if .Values.dkg.definition.configHash }} {{ .Values.dkg.definition.configHash }}{{ else if .Values.dkg.definition.url }} at {{ .Values.dkg.definition.url }}{{ else }} in ConfigMap {{ .Values.dkg.definition.configMap }}{{ end }}.
+   b. Operators listed with an address must sign it on the Launchpad; ENR-only definitions need no signatures.
+   c. Once ready, the DKG runs automatically. All operators' pods must be up at the same time.
+{{- else if eq $mode "lock" }}
+   The cluster-lock comes from ConfigMap {{ .Values.configMaps.clusterLock }}; no DKG runs.
+   {{- if .Values.validatorClient.keystores.secretName }}
+   Validator key shares come from Secret {{ .Values.validatorClient.keystores.secretName }}.
    {{- else }}
-   The ENR generation job detected an existing secret and will use it.
+   WARNING: validatorClient.keystores.secretName is not set; the VC import expects key shares in /charon-data/validator_keys.
    {{- end }}
+   The ENR secret must hold the identity that appears in the lock, or charon will not start.
+{{- else if eq $mode "lockHash" }}
+   The sidecar fetches cluster-lock {{ .Values.charon.lockHash }} from the Obol API; no DKG runs.
+   Validator key shares must come from validatorClient.keystores.secretName (currently: {{ .Values.validatorClient.keystores.secretName | default "unset" }}).
+{{- end }}
 
-   {{- $enrSecret := (lookup "v1" "Secret" .Release.Namespace (include "dv-pod.enrSecretName" .)) }}
-   {{- if $enrSecret }}
-   {{- $enrValue := index $enrSecret.data "enr" }}
-   {{- if $enrValue }}
+4. Once charon is running: verify the node
+   kubectl exec {{ $pod }} -n {{ $ns }} -c {{ .Chart.Name }} -- charon alpha test peers --lock-file=/charon-data/cluster-lock.json --private-key-file={{ .Values.charon.privateKeyFile }}
+   kubectl exec {{ $pod }} -n {{ $ns }} -c {{ .Chart.Name }} -- charon alpha test beacon --endpoints={{ include "dv-pod.beaconNodeEndpoints" . }}
+   kubectl get pod {{ $pod }} -n {{ $ns }} -o jsonpath='{.status.containerStatuses[?(@.name=="{{ .Chart.Name }}")].ready}'   # /readyz
 
-   ********************************************************************************
-   ⭐⭐⭐ PUBLIC ENR (copy this value for cluster setup) ⭐⭐⭐
-   ********************************************************************************
+5. Back up after the DKG (cluster-lock + key shares; the PVC is kept on uninstall)
+   kubectl cp {{ $ns }}/{{ $pod }}:/charon-data ./charon-backup -c {{ .Chart.Name }}
+   (in the Obol Stack: obol kubectl cp ...). See the chart README, "Backing up charon-data".
 
-   {{ $enrValue | b64dec }}
-
-   ********************************************************************************
-   {{- else }}
-   [ENR secret exists but public ENR field is missing]
-   To retrieve manually: kubectl get secret -n {{ .Release.Namespace }} {{ include "dv-pod.enrSecretName" . }} -o jsonpath='{.data.enr}' | base64 --decode
-   {{- end }}
-   {{- else }}
-   [ENR generation in progress - secret not yet available]
-   To retrieve when ready: kubectl get secret -n {{ .Release.Namespace }} {{ include "dv-pod.enrSecretName" . }} -o jsonpath='{.data.enr}' | base64 --decode
-   {{- end }}
-
-   {{- if not .Values.configMaps.clusterlock }}
-   {{- if not .Values.charon.lockHash }}
-   **IMPORTANT ACTION REQUIRED:** You **MUST** take this public ENR string and submit it during the cluster formation process on the Obol Launchpad (https://launchpad.obol.org/) for the operator address '{{ .Values.charon.operatorAddress }}'.
-   {{- end }}
-   {{- end }}
-
-2. Cluster Orchestration Process:
-   The Charon node includes an orchestrator init container. This orchestrator will:
-   a. Use the ENR (obtained as described in step 1) to identify this node.
-   b. Poll the Obol API ({{ .Values.charon.dkgSidecar.apiEndpoint }}) for a cluster definition associated with operator '{{ .Values.charon.operatorAddress }}' where this node's ENR is registered and signed by your operator.
-   c. Wait for that cluster definition to be fully signed by ALL participating operators.
-   d. Once fully signed, it will initiate the DKG (Distributed Key Generation) process using 'charon dkg'. DKG artifacts (like 'cluster-lock.json') will be stored in '/charon-data/'.
-   e. After successful DKG, the main Charon node will start using the generated '/charon-data/cluster-lock.json'.
-
-   Monitor the orchestrator logs:
-     kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ template "dv-pod.name" . }},app.kubernetes.io/instance={{ .Release.Name }} -c dkg-sidecar -f
-
-3. Charon Node Status:
-   Once orchestration is complete, the main Charon container ('{{ .Chart.Name }}') will start.
-   Monitor its logs:
-     kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ template "dv-pod.name" . }},app.kubernetes.io/instance={{ .Release.Name }} -c {{ .Chart.Name }} -f
-
-   {{- if .Values.persistence.enabled }}
-   Persistence is ENABLED.
-   DKG artifacts and other Charon data are stored in a PersistentVolumeClaim, which should persist across pod restarts.
-   PVC Name: charon-data-{{ template "dv-pod.fullname" . }}-0 (for StatefulSet pod 0)
-   {{- else}}
-   WARNING: Persistence is DISABLED (.Values.persistence.enabled is false).
-   DKG artifacts and Charon data will be stored in an emptyDir volume and will be LOST if the pod restarts. It is STRONGLY recommended to enable persistence for any non-testing deployment.
-   {{- end }}
-
-For troubleshooting and more details, refer to the Obol Network documentation: https://docs.obol.tech/
-{{- end -}}
-
-{{- include "dv-pod.clusterNotes" . }}
+Beacon node: {{ include "dv-pod.beaconNodeEndpoints" . }}
+{{- if not .Values.charon.beaconNodeEndpoints }}
+(default: the Obol Stack's {{ include "dv-pod.network" . }} node from `obol network install ethereum --network {{ include "dv-pod.network" . }}`.
+Outside the Stack, or for a deployment with a different id, set charon.beaconNodeEndpoints.)
+{{- end }}
+{{- with include "dv-pod.fallbackBeaconNodeEndpoints" . }}
+Fallback beacon node: {{ . }}
+{{- end }}
+{{- if not .Values.persistence.enabled }}
+WARNING: persistence is disabled; DKG output (cluster-lock, key shares) is lost when the pod restarts.
+{{- end }}
+{{- if or (eq (include "dv-pod.runsDkg" .) "true") (eq $mode "lockHash") }}{{ if hasPrefix "v1.1." .Values.charon.dkgSidecar.image.tag }}
+NOTE: {{ include "dv-pod.sidecarImage" . }} is required for dkg.runner=charon, definition mode and status reporting.
+If the image cannot be pulled yet, it has not been released; see the chart README.
+{{- end }}{{ end }}
+Troubleshooting: https://github.com/ObolNetwork/helm-charts/blob/main/charts/dv-pod/TROUBLESHOOT.md

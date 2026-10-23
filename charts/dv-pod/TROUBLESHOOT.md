@@ -54,3 +54,21 @@ After recovery, you can share the relevant files with your cluster peers:
 - The `deposit-data.json` is needed by whoever will submit the validator deposits
 
 **Security Note**: Handle validator keystores and passwords with extreme care. Never share keystores over insecure channels.
+
+## DKG and identity
+
+- **Where is it stuck?** `kubectl get cm <release>-dkg-status -o jsonpath='{.data.phase} {.data.message}'`, then the
+  logs of the init container named in `kubectl get pod <release>-0` (`dkg-sidecar`, `charon-dkg`, `dkg-report`).
+- **`charon-dkg` keeps retrying**: every operator's pod must be running the DKG at the same time, with the same charon
+  minor version. Check peers' status and that relays (`https://*.relay.obol.tech`, TCP 3610) are reachable.
+- **`charon-dkg` says the data dir contains `validator_keys/` but no lock**: an earlier DKG wrote partial output.
+  The chart never deletes key material. Back up `/charon-data`, compare with your peers (did the DKG complete for
+  them? is the lock published on the Obol API?), then clean up by hand.
+- **"differs from the ENR private key in Secret"**: `/charon-data/charon-enr-private-key` was written with another
+  identity. Find which identity the cluster definition/lock lists before changing anything.
+- **ENR job "refusing to overwrite"**: the ENR Secret exists without the private key field. Fix the Secret or
+  delete it (only if this identity is not in any cluster).
+- **Two releases in one namespace shared `charon-enr-private-key`** (charts < 0.22): one of them has the wrong
+  identity. Keep the Secret with the release whose ENR is in the cluster lock, and give the other release its own
+  identity via `charon.enr.existingSecret.name`.
+- **`ErrImagePull` for `charon-dkg-sidecar:1.1.0`**: the tag isn't published yet; see the README.

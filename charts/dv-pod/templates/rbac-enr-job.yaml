@@ -1,4 +1,4 @@
-{{- if .Values.charon.enr.generate.enabled }}
+{{- if eq (include "dv-pod.shouldCreateEnrJob" .) "true" }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -23,17 +23,37 @@ metadata:
     "helm.sh/hook-weight": "-15"
     "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded"
 rules:
+# Scoped to the ENR secret(s) only, so the job can't read other secrets (e.g. validator keystores) in the namespace.
+# The legacy shared name is included so an existing identity can be migrated instead of regenerated.
 - apiGroups: [""]
   resources: ["secrets"]
-  verbs: ["get", "list"]  # For checking existence
-- apiGroups: [""]
-  resources: ["secrets"]
-  resourceNames: 
+  resourceNames:
     - {{ include "dv-pod.enrSecretName" . | quote }}
-  verbs: ["update", "patch"]  # For updating existing secret
+  verbs: ["get", "update", "patch"]
+{{- $legacy := .Values.secrets.defaultEnrPrivateKey }}
+{{- if and $legacy (not .Values.charon.enr.existingSecret.name) (ne $legacy (include "dv-pod.enrSecretName" .)) }}
 - apiGroups: [""]
   resources: ["secrets"]
-  verbs: ["create"]  # For initial creation only
+  resourceNames:
+    - {{ $legacy | quote }}
+  verbs: ["get"]
+{{- end }}
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["create"]  # create can't be restricted by resourceNames
+# Public ENR ConfigMap
+- apiGroups: [""]
+  resources: ["configmaps"]
+  resourceNames:
+    - {{ include "dv-pod.enrConfigMapName" . | quote }}
+  verbs: ["get", "update", "patch"]
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["create"]
+# Read-only: which StatefulSet already uses the legacy ENR secret (never share an identity between releases)
+- apiGroups: ["apps"]
+  resources: ["statefulsets"]
+  verbs: ["get", "list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

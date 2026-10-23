@@ -1,0 +1,9 @@
+mode: lockHash
+network: sepolia
+charon:
+  beaconNodeEndpoints: ["http://beacon:5052"]
+  lockHash: "0x1111111111111111111111111111111111111111111111111111111111111111"
+validatorClient:
+  type: lodestar
+  keystores:
+    secretName: validator-keys

@@ -1,0 +1,12 @@
+mode: launchpad
+network: hoodi
+charon:
+  beaconNodeEndpoints: ["http://beacon:5052"]
+  operatorAddress: "0x0000000000000000000000000000000000000001"
+statusReaders:
+  - namespace: hermes-obol-agent
+    serviceAccount: hermes
+serviceMonitor:
+  enabled: true
+  labels:
+    release: monitoring

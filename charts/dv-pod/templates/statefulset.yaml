@@ -1,5 +1,10 @@
 {{- $root := . -}}
 {{- include "dv-pod.validateValidatorClientType" . -}}
+{{- $mode := include "dv-pod.mode" . -}}
+{{- $runner := .Values.dkg.runner | default "charon" -}}
+{{- $runsDkg := include "dv-pod.runsDkg" . -}}
+{{- $status := include "dv-pod.statusEnabled" . -}}
+{{- $builderApi := include "dv-pod.truthy" .Values.charon.builderApi -}}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -29,6 +34,9 @@ spec:
       {{- if or .Values.serviceAccount.enabled }}
       serviceAccountName: {{ include "dv-pod.serviceAccountName" . }}
       {{- end }}
+      # Charon and the validator client never call the Kubernetes API. When DKG status reporting is on,
+      # a token is projected only into the sidecar containers (volume kube-api-access).
+      automountServiceAccountToken: false
       {{- if .Values.priorityClassName }}
       priorityClassName: {{ .Values.priorityClassName | quote }}
       {{- end }}
@@ -49,38 +57,41 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       initContainers:
-        # DKG Sidecar Init Container
-        # This container orchestrates the Distributed Key Generation (DKG) process for Charon clusters.
-        # 
-        # Behavior:
-        # 1. If /charon-data/cluster-lock.json exists: Exits immediately (cluster already initialized)
-        # 2. If /charon-data/cluster-definition.json exists but no cluster-lock.json: Runs DKG with existing definition
-        # 3. If neither exists: Polls Obol API for cluster invites and runs DKG when ready
+        # DKG init containers (see `mode` and `dkg.runner` in values.yaml). Effective mode: {{ include "dv-pod.mode" . }}
         #
-        # To skip this container entirely:
-        # - Create a configMap with your cluster-lock.json and reference it in values.yaml
-        # - The container will detect the existing lock file and exit gracefully
+        # dkg-sidecar: prepares participation. Exits immediately if /charon-data/cluster-lock.json exists
+        # (or was mounted from configMaps.clusterLock); fetches the lock for charon.lockHash; otherwise
+        # obtains a fully signed cluster definition (Launchpad polling by operator address, or the
+        # dkg.definition source) and, with dkg.runner=sidecar, also runs the DKG itself.
+        # charon-dkg (dkg.runner=charon): runs `charon dkg` with the node's own charon image.
+        # dkg-report (dkg.runner=charon): records the outcome in the status ConfigMap.
         {{- if .Values.charon.dkgSidecar.enabled }}
         - name: dkg-sidecar
-          image: "{{ .Values.charon.dkgSidecar.image.repository }}:{{ .Values.charon.dkgSidecar.image.tag | default .Chart.AppVersion }}"
+          image: {{ include "dv-pod.sidecarImage" . | quote }}
           imagePullPolicy: {{ .Values.charon.dkgSidecar.image.pullPolicy }}
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
-          args:
-            - "{{ .Values.charon.operatorAddress }}"
-            - "/enr-from-job/{{ include "dv-pod.enrSecretPublicDataKey" . }}"
-          {{- if .Values.charon.lockHash }}
+          {{- if or (eq $mode "lockHash") (eq $runner "sidecar") }}
           command:
             - sh
             - -c
             - |
+              {{- if eq $mode "lockHash" }}
               # Write lockHash to file for DKG sidecar
-              echo "{{ .Values.charon.lockHash }}" > /charon-data/lockhash
-              # Execute the original command with the original args
-              exec node /app/dist/dkg-sidecar.js {{ .Values.charon.operatorAddress }} /enr-from-job/{{ include "dv-pod.enrSecretPublicDataKey" . }}
+              echo {{ .Values.charon.lockHash | quote }} > /charon-data/lockhash
+              {{- else }}
+              # charon dkg reads the ENR private key from its data dir
+              {{- include "dv-pod.stageEnrKey" . | nindent 14 }}
+              {{- end }}
+              exec node /app/dist/index.js
           {{- end }}
           env:
+            # Passed as env rather than positional args: an empty positional arg shifts the ENR path into the operator address slot.
+            - name: OPERATOR_ADDRESS
+              value: {{ .Values.charon.operatorAddress | quote }}
+            - name: ENR_FILE_PATH
+              value: "/enr-from-job/{{ include "dv-pod.enrSecretPublicDataKey" . }}"
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -107,9 +118,31 @@ spec:
               value: "/enr-from-job/{{ include "dv-pod.enrSecretDataKey" . }}"
             - name: CHAIN_ID
               value: "{{ include "dv-pod.chainId" . }}"
-            {{- if .Values.charon.dkgSidecar.targetConfigHash }}
+            {{- if and .Values.charon.dkgSidecar.targetConfigHash (eq $mode "launchpad") }}
             - name: TARGET_CONFIG_HASH
               value: "{{ .Values.charon.dkgSidecar.targetConfigHash }}"
+            {{- end }}
+            - name: DKG_RUNNER
+              value: {{ ternary "external" "sidecar" (eq $runner "charon") | quote }}
+            {{- with include "dv-pod.definitionSource" . }}
+            - name: DEFINITION_SOURCE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- if eq $mode "definition" }}
+            {{- if .Values.dkg.definition.configHash }}
+            - name: DEFINITION_CONFIG_HASH
+              value: {{ .Values.dkg.definition.configHash | quote }}
+            {{- else if .Values.dkg.definition.url }}
+            - name: DEFINITION_URL
+              value: {{ .Values.dkg.definition.url | quote }}
+            {{- else if .Values.dkg.definition.configMap }}
+            - name: DEFINITION_INPUT_FILE
+              value: "/definition-input/{{ .Values.dkg.definition.configMapKey }}"
+            {{- end }}
+            {{- end }}
+            {{- if $status }}
+            - name: STATUS_CONFIGMAP
+              value: {{ include "dv-pod.statusConfigMapName" . | quote }}
             {{- end }}
           volumeMounts:
             - name: charon-enr-private-key
@@ -124,8 +157,172 @@ spec:
               subPath: cluster-lock.json
               readOnly: true
             {{- end }}
+            {{- if and (eq $mode "definition") .Values.dkg.definition.configMap }}
+            - name: cluster-definition-input
+              mountPath: /definition-input
+              readOnly: true
+            {{- end }}
+            {{- if $status }}
+            {{- include "dv-pod.kubeApiAccessMount" . | nindent 12 }}
+            {{- end }}
           resources:
             {{- toYaml .Values.charon.dkgSidecar.resources | nindent 12 }}
+        {{- if and $runsDkg (eq $runner "charon") }}
+        # Runs `charon dkg` with the node's own charon image (same version as `charon run`), retrying until
+        # every peer is online. Skipped once cluster-lock.json exists. Never deletes anything from /charon-data.
+        - name: charon-dkg
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -u
+              DATA=/charon-data
+              DEF="$DATA/cluster-definition.json"
+              LOCK="$DATA/cluster-lock.json"
+              if [ -f "$LOCK" ]; then
+                echo "cluster-lock.json already present; skipping DKG."
+                exit 0
+              fi
+              if [ ! -f "$DEF" ]; then
+                echo "ERROR: neither $LOCK nor $DEF exists; the dkg-sidecar should have written the definition."
+                echo "Check: kubectl logs $NODE_NAME -c dkg-sidecar"
+                exit 1
+              fi
+              {{- include "dv-pod.stageEnrKey" . | nindent 14 }}
+              # charon dkg refuses a data dir with partial output; that needs a human (back up first, see README).
+              partial_output() {
+                [ -n "$(ls -A "$DATA/validator_keys" 2>/dev/null)" ] || ls "$DATA"/deposit-data* >/dev/null 2>&1
+              }
+              if partial_output; then
+                echo "ERROR: $DATA contains validator_keys/ or deposit-data from an earlier DKG but no cluster-lock.json."
+                echo "Refusing to continue. Back up $DATA (see the chart README) and resolve manually."
+                exit 1
+              fi
+              attempt=0
+              while true; do
+                attempt=$((attempt + 1))
+                echo "Starting charon dkg (attempt $attempt). All operators must run the DKG at the same time."
+                charon dkg \
+                  --definition-file="$DEF" \
+                  --data-dir="$DATA" \
+                  {{- if .Values.dkg.publish }}
+                  --publish \
+                  --publish-address={{ printf "%s/v1" (include "dv-pod.apiBaseUrl" .) | quote }} \
+                  {{- end }}
+                  {{- with .Values.dkg.timeout }}
+                  --timeout={{ . | quote }} \
+                  {{- end }}
+                  {{- with .Values.charon.nickname }}
+                  --nickname={{ . | quote }} \
+                  {{- end }}
+                  {{- with .Values.charon.executionClientRpcEndpoint }}
+                  --execution-client-rpc-endpoint={{ . | quote }} \
+                  {{- end }}
+                  {{- with .Values.charon.p2pRelays }}
+                  --p2p-relays={{ . | quote }} \
+                  {{- end }}
+                  {{- with .Values.charon.p2pTcpAddress }}
+                  --p2p-tcp-address={{ . | quote }} \
+                  {{- end }}
+                  {{- with .Values.charon.p2pUdpAddress }}
+                  --p2p-udp-address={{ . | quote }} \
+                  {{- end }}
+                  {{- if include "dv-pod.truthy" .Values.charon.directConnectionEnabled }}
+                  --p2p-external-hostname="${NODE_NAME}.{{ include "dv-pod.fullname" . }}.{{ .Release.Namespace }}.svc" \
+                  {{- else if .Values.charon.p2pExternalHostname }}
+                  --p2p-external-hostname={{ .Values.charon.p2pExternalHostname | quote }} \
+                  {{- end }}
+                  {{- with .Values.charon.p2pExternalIp }}
+                  --p2p-external-ip={{ . | quote }} \
+                  {{- end }}
+                  {{- range .Values.dkg.extraArgs }}
+                  {{ . | quote }} \
+                  {{- end }}
+                  {{- with .Values.charon.logFormat }}
+                  --log-format={{ . | quote }} \
+                  {{- end }}
+                  --log-level={{ .Values.charon.logLevel | default "info" | quote }}
+                if [ -f "$LOCK" ]; then
+                  echo "DKG complete: $LOCK written."
+                  exit 0
+                fi
+                if partial_output; then
+                  echo "ERROR: charon dkg left partial output without a cluster-lock.json. Not retrying; back up $DATA and resolve manually."
+                  exit 1
+                fi
+                echo "charon dkg did not complete (peers offline or timeout); retrying in {{ .Values.dkg.retryDelaySeconds }}s."
+                sleep {{ .Values.dkg.retryDelaySeconds }}
+              done
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          volumeMounts:
+            - name: charon-enr-private-key
+              mountPath: /enr-from-job
+              readOnly: true
+            - name: charon-data
+              mountPath: /charon-data
+          resources:
+            {{- toYaml .Values.dkg.resources | nindent 12 }}
+        # Records the DKG result (status phase Complete, lock hash, validator count) for agents watching the
+        # status ConfigMap.
+        - name: dkg-report
+          image: {{ include "dv-pod.sidecarImage" . | quote }}
+          imagePullPolicy: {{ .Values.charon.dkgSidecar.image.pullPolicy }}
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: SIDECAR_ACTION
+              value: report
+            - name: OPERATOR_ADDRESS
+              value: {{ .Values.charon.operatorAddress | quote }}
+            - name: ENR_FILE_PATH
+              value: "/enr-from-job/{{ include "dv-pod.enrSecretPublicDataKey" . }}"
+            - name: CHARON_NODE_ID_DIR
+              value: "/charon-data"
+            - name: OUTPUT_DEFINITION_FILE
+              value: "/charon-data/cluster-definition.json"
+            - name: API_ENDPOINT
+              value: "{{ .Values.charon.dkgSidecar.apiEndpoint }}"
+            - name: CHAIN_ID
+              value: "{{ include "dv-pod.chainId" . }}"
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            {{- if $status }}
+            - name: STATUS_CONFIGMAP
+              value: {{ include "dv-pod.statusConfigMapName" . | quote }}
+            {{- end }}
+          volumeMounts:
+            - name: charon-enr-private-key
+              mountPath: /enr-from-job
+              readOnly: true
+            - name: charon-data
+              mountPath: /charon-data
+              readOnly: true
+            {{- if $status }}
+            {{- include "dv-pod.kubeApiAccessMount" . | nindent 12 }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.charon.dkgSidecar.resources | nindent 12 }}
+        {{- end }}
         {{- end }}
         {{- if .Values.validatorClient.enabled }}
         # Keystore Import Init Container
@@ -341,7 +538,7 @@ spec:
         # Follows Obol reference: https://github.com/ObolNetwork/charon-distributed-validator-node/blob/main/prysm/run.sh
         {{- if and .Values.validatorClient.enabled (eq .Values.validatorClient.type "prysm") }}
         - name: prysm-wallet-import
-          image: {{ .Values.validatorClient.image.repository | default "gcr.io/prysmaticlabs/prysm/validator" }}:{{ .Values.validatorClient.image.tag | default "v7.1.3" }}
+          image: {{ .Values.validatorClient.image.repository | default "gcr.io/prysmaticlabs/prysm/validator" }}:{{ .Values.validatorClient.image.tag | default "v7.2.1" }}
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -371,9 +568,7 @@ spec:
                 --wallet-dir=/validator-data/wallet \
                 --wallet-password-file=/validator-data/wallet-password.txt \
                 --keymanager-kind=direct \
-                {{- if .Values.validatorClient.config.prysm.acceptTermsOfUse }}
                 --accept-terms-of-use \
-                {{- end }}
                 || { echo "ERROR: Wallet creation failed"; exit 1; }
 
               echo "Wallet created successfully"
@@ -406,9 +601,7 @@ spec:
                   --keys-dir=/tmp/tmpkeys \
                   --account-password-file="$password_file" \
                   --wallet-password-file=/validator-data/wallet-password.txt \
-                  {{- if .Values.validatorClient.config.prysm.acceptTermsOfUse }}
                   --accept-terms-of-use \
-                  {{- end }}
                   || { echo "ERROR: Failed to import $(basename $keystore_file)"; exit 1; }
 
                 # Remove the keystore from tmpkeys for next iteration
@@ -435,7 +628,8 @@ spec:
         # Follows Obol reference: https://github.com/ObolNetwork/charon-distributed-validator-node/blob/main/nimbus/run.sh
         {{- if and .Values.validatorClient.enabled (eq .Values.validatorClient.type "nimbus") }}
         - name: nimbus-import
-          image: {{ .Values.validatorClient.image.repository | default "statusim/nimbus-eth2" }}:{{ .Values.validatorClient.image.tag | default "multiarch-v26.3.1" }}
+          # The import uses nimbus_beacon_node, which is only in the nimbus-eth2 image (not the VC image).
+          image: statusim/nimbus-eth2:{{ .Values.validatorClient.image.tag | default "multiarch-v26.10.0" }}
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -514,8 +708,8 @@ spec:
               {{- if and .Values.charon.beaconNodeHeaders (not .Values.charon.beaconNodeHeadersSecretName) }}
               --beacon-node-headers={{ .Values.charon.beaconNodeHeaders | quote }}
               {{- end }}
-              {{- if .Values.charon.fallbackBeaconNodeEndpoints }}
-              --fallback-beacon-node-endpoints={{ include "dv-pod.fallbackBeaconNodeEndpoints" . }}
+              {{- with include "dv-pod.fallbackBeaconNodeEndpoints" . }}
+              --fallback-beacon-node-endpoints={{ . }}
               {{- end }}
               {{- if .Values.charon.lockFile }}
               --lock-file={{ .Values.charon.lockFile }}
@@ -523,8 +717,8 @@ spec:
               {{- if .Values.charon.nickname }}
               --nickname={{ .Values.charon.nickname }}
               {{- end }}
-              {{- if .Values.charon.builderApi }}
-              --builder-api={{ .Values.charon.builderApi }}
+              {{- if $builderApi }}
+              --builder-api=true
               {{- end }}
               {{- if .Values.charon.featureSet }}
               --feature-set={{ .Values.charon.featureSet }}
@@ -551,7 +745,7 @@ spec:
               --loki-service="${NODE_NAME}"
               {{- end }}
               {{- if .Values.charon.monitoringAddress }}
-              --monitoring-address=0.0.0.0:3620
+              --monitoring-address={{ .Values.charon.monitoringAddress }}
               {{- end }}
               {{- if .Values.charon.noVerify }}
               --no-verify={{ .Values.charon.noVerify }}
@@ -565,9 +759,9 @@ spec:
               {{- if .Values.charon.p2pDisableReuseport }}
               --p2p-disable-reuseport={{ .Values.charon.p2pDisableReuseport }}
               {{- end }}
-              {{- if .Values.charon.directConnectionEnabled }}
-              --p2p-external-hostname="${NODE_NAME}"
-              {{- else }}
+              {{- if include "dv-pod.truthy" .Values.charon.directConnectionEnabled }}
+              --p2p-external-hostname="${NODE_NAME}.{{ include "dv-pod.fullname" . }}.{{ .Release.Namespace }}.svc"
+              {{- else if .Values.charon.p2pExternalHostname }}
               --p2p-external-hostname={{ .Values.charon.p2pExternalHostname }}
               {{- end }}
               {{- if .Values.charon.p2pExternalIp }}
@@ -578,6 +772,9 @@ spec:
               {{- end }}
               {{- if .Values.charon.p2pTcpAddress }}
               --p2p-tcp-address={{ .Values.charon.p2pTcpAddress }}
+              {{- end }}
+              {{- if .Values.charon.p2pUdpAddress }}
+              --p2p-udp-address={{ .Values.charon.p2pUdpAddress }}
               {{- end }}
               --private-key-file="{{ .Values.charon.privateKeyFile }}"
               {{- if .Values.charon.validatorApiAddress }}
@@ -606,6 +803,11 @@ spec:
             - containerPort: {{ .Values.service.ports.p2pTcp.targetPort }}
               name: p2p-tcp
               protocol: TCP
+            {{- with include "dv-pod.p2pUdpPort" . }}
+            - containerPort: {{ . }}
+              name: p2p-udp
+              protocol: UDP
+            {{- end }}
             - containerPort: 3620
               name: monitoring
               protocol: TCP
@@ -621,6 +823,12 @@ spec:
           readinessProbe:
             initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            {{- with .Values.readinessProbe.timeoutSeconds }}
+            timeoutSeconds: {{ . }}
+            {{- end }}
+            {{- with .Values.readinessProbe.failureThreshold }}
+            failureThreshold: {{ . }}
+            {{- end }}
             httpGet:
               path: {{ .Values.readinessProbe.httpGet.path }}
               port: {{ .Values.readinessProbe.httpGet.port }}
@@ -648,16 +856,18 @@ spec:
         # Validator Client Container
         - name: validator-client
           {{- if eq .Values.validatorClient.type "lighthouse" }}
-          image: {{ .Values.validatorClient.image.repository | default "sigp/lighthouse" }}:{{ .Values.validatorClient.image.tag | default "v8.1.3" }}
+          image: {{ .Values.validatorClient.image.repository | default "sigp/lighthouse" }}:{{ .Values.validatorClient.image.tag | default "v8.2.3" }}
           command:
             - lighthouse
             - validator_client
             - --beacon-nodes=http://localhost:3600
             - --suggested-fee-recipient=0x0000000000000000000000000000000000000000
             - --network={{ include "dv-pod.network" . }}
-            - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
+            {{- with .Values.validatorClient.config.graffiti }}
+            - {{ printf "--graffiti=%s" . | quote }}
+            {{- end }}
             - --datadir=/validator-data
-            {{- if .Values.charon.builderApi }}
+            {{- if $builderApi }}
             - --builder-proposals
             {{- end }}
             - --init-slashing-protection
@@ -669,16 +879,18 @@ spec:
             - {{ . }}
             {{- end }}
           {{- else if eq .Values.validatorClient.type "teku" }}
-          image: {{ .Values.validatorClient.image.repository | default "consensys/teku" }}:{{ .Values.validatorClient.image.tag | default "26.4.0" }}
+          image: {{ .Values.validatorClient.image.repository | default "consensys/teku" }}:{{ .Values.validatorClient.image.tag | default "26.10.0" }}
           command:
             - /opt/teku/bin/teku
             - validator-client
             - --network={{ include "dv-pod.network" . }}
             - --beacon-node-api-endpoint=http://localhost:3600
-            {{- if .Values.charon.builderApi }}
+            {{- if $builderApi }}
             - --validators-builder-registration-default-enabled=true
             {{- end }}
-            - --validators-graffiti={{ .Values.validatorClient.config.graffiti | quote }}
+            {{- with .Values.validatorClient.config.graffiti }}
+            - {{ printf "--validators-graffiti=%s" . | quote }}
+            {{- end }}
             - --data-path=/validator-data
             - --validator-keys=/validator-data/keys:/validator-data/passwords
             - --validators-keystore-locking-enabled=false
@@ -695,7 +907,7 @@ spec:
             - {{ . }}
             {{- end }}
           {{- else if eq .Values.validatorClient.type "prysm" }}
-          image: {{ .Values.validatorClient.image.repository | default "gcr.io/prysmaticlabs/prysm/validator" }}:{{ .Values.validatorClient.image.tag | default "v7.1.3" }}
+          image: {{ .Values.validatorClient.image.repository | default "gcr.io/prysmaticlabs/prysm/validator" }}:{{ .Values.validatorClient.image.tag | default "v7.2.1" }}
           command:
             - /app/cmd/validator/validator
             - --beacon-rest-api-provider=http://localhost:3600
@@ -708,8 +920,10 @@ spec:
             {{- else if eq $network "sepolia" }}
             - --sepolia
             {{- end }}
-            - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
-            {{- if .Values.charon.builderApi }}
+            {{- with .Values.validatorClient.config.graffiti }}
+            - {{ printf "--graffiti=%s" . | quote }}
+            {{- end }}
+            {{- if $builderApi }}
             - --enable-builder
             {{- end }}
             - --datadir=/validator-data
@@ -725,14 +939,16 @@ spec:
             - {{ . }}
             {{- end }}
           {{- else if eq .Values.validatorClient.type "nimbus" }}
-          image: {{ .Values.validatorClient.image.repository | default "statusim/nimbus-validator-client" }}:{{ .Values.validatorClient.image.tag | default "multiarch-v26.3.1" }}
+          image: {{ .Values.validatorClient.image.repository | default "statusim/nimbus-validator-client" }}:{{ .Values.validatorClient.image.tag | default "multiarch-v26.10.0" }}
           command:
             - /home/user/nimbus_validator_client
             - --beacon-node=http://localhost:3600
-            {{- if .Values.charon.builderApi }}
+            {{- if $builderApi }}
             - --payload-builder=true
             {{- end }}
-            - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
+            {{- with .Values.validatorClient.config.graffiti }}
+            - {{ printf "--graffiti=%s" . | quote }}
+            {{- end }}
             - --data-dir=/validator-data
             - --metrics
             - --metrics-address=0.0.0.0
@@ -742,18 +958,20 @@ spec:
             - {{ . }}
             {{- end }}
           {{- else if eq .Values.validatorClient.type "lodestar" }}
-          image: {{ .Values.validatorClient.image.repository | default "chainsafe/lodestar" }}:{{ .Values.validatorClient.image.tag | default "v1.41.1" }}
+          image: {{ .Values.validatorClient.image.repository | default "chainsafe/lodestar" }}:{{ .Values.validatorClient.image.tag | default "v1.50.1" }}
           command:
             - node
             - /usr/app/packages/cli/bin/lodestar
             - validator
             - --beacon-nodes=http://localhost:3600
             - --network={{ include "dv-pod.network" . }}
-            {{- if .Values.charon.builderApi }}
-            - --builder="true" 
-            - --builder.selection="builderonly"
+            {{- if $builderApi }}
+            - --builder=true
+            - --builder.selection=builderonly
             {{- end }}
-            - --graffiti={{ .Values.validatorClient.config.graffiti | quote }}
+            {{- with .Values.validatorClient.config.graffiti }}
+            - {{ printf "--graffiti=%s" . | quote }}
+            {{- end }}
             - --dataDir=/validator-data
             - --keystoresDir=/validator-data/keystores
             - --secretsDir=/validator-data/secrets
@@ -798,6 +1016,17 @@ spec:
         - name: cluster-lock
           emptyDir: {}
         {{- end }}
+        {{- if and (eq $mode "definition") .Values.dkg.definition.configMap }}
+        - name: cluster-definition-input
+          configMap:
+            name: {{ .Values.dkg.definition.configMap }}
+            items:
+              - key: {{ .Values.dkg.definition.configMapKey }}
+                path: {{ .Values.dkg.definition.configMapKey }}
+        {{- end }}
+        {{- if $status }}
+        {{- include "dv-pod.kubeApiAccessVolume" . | nindent 8 }}
+        {{- end }}
         # Volume for the shared ENR private key and public ENR
         - name: charon-enr-private-key
           secret:
@@ -820,6 +1049,12 @@ spec:
           emptyDir: {}
         {{- end }}
         # Note: validator-data volume is always provided via PVC to prevent slashing
+  {{- with .Values.persistence.retentionPolicy }}
+  # Keep the PVCs (cluster-lock, key shares, slashing protection) when the StatefulSet is deleted or scaled down.
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: {{ .whenDeleted | default "Retain" }}
+    whenScaled: {{ .whenScaled | default "Retain" }}
+  {{- end }}
   volumeClaimTemplates:
     {{- if .Values.persistence.enabled }}
     - metadata:

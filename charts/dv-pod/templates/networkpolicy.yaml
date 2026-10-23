@@ -13,14 +13,29 @@ spec:
     - Ingress
     - Egress
   ingress:
-    # Allow Charon P2P traffic
+    # Allow Charon P2P traffic from other dv-pod nodes in this Kubernetes cluster (any namespace)
+    {{- $udpPort := include "dv-pod.p2pUdpPort" . }}
     - from:
-        - podSelector:
+        - namespaceSelector: {}
+          podSelector:
             matchLabels:
-              {{- include "dv-pod.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/name: {{ include "dv-pod.name" . }}
+        {{- if or (include "dv-pod.truthy" .Values.p2pService.enabled) .Values.networkPolicy.p2p.allowInbound }}
+        # Inbound peers from outside the cluster (p2pService / external address)
+        - ipBlock:
+            cidr: {{ .Values.networkPolicy.p2p.cidr | default "0.0.0.0/0" }}
+            {{- with .Values.networkPolicy.p2p.except }}
+            except:
+              {{- toYaml . | nindent 14 }}
+            {{- end }}
+        {{- end }}
       ports:
         - protocol: TCP
-          port: 3610
+          port: {{ .Values.service.ports.p2pTcp.targetPort }}
+        {{- if $udpPort }}
+        - protocol: UDP
+          port: {{ $udpPort }}
+        {{- end }}
     # Allow validator API access from validator clients
     - from:
         {{- if .Values.networkPolicy.validatorClientSelector }}
@@ -45,6 +60,12 @@ spec:
         - namespaceSelector:
             {{- toYaml .Values.networkPolicy.monitoring.namespaceSelector | nindent 12 }}
         {{- end }}
+        {{- /* With no selectors the rule already admits every source; extra peers would only narrow it. */}}
+        {{- if or .Values.networkPolicy.monitoring.podSelector .Values.networkPolicy.monitoring.namespaceSelector }}
+        {{- with .Values.networkPolicy.monitoring.extraFrom }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- end }}
       ports:
         - protocol: TCP
           port: 3620
@@ -58,7 +79,7 @@ spec:
     - to:
         - namespaceSelector:
             matchLabels:
-              name: kube-system
+              kubernetes.io/metadata.name: kube-system
       ports:
         - protocol: UDP
           port: 53
@@ -85,14 +106,47 @@ spec:
           port: {{ .Values.networkPolicy.beaconNodes.port }}
           {{- end }}
     {{- end }}
-    # Allow Charon P2P communication
+    # Allow Charon P2P communication with other dv-pod nodes in this Kubernetes cluster
     - to:
-        - podSelector:
+        - namespaceSelector: {}
+          podSelector:
             matchLabels:
-              {{- include "dv-pod.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/name: {{ include "dv-pod.name" . }}
       ports:
         - protocol: TCP
-          port: 3610
+          port: {{ .Values.service.ports.p2pTcp.targetPort }}
+        {{- if $udpPort }}
+        - protocol: UDP
+          port: {{ $udpPort }}
+        {{- end }}
+    {{- if .Values.networkPolicy.p2p.enabled }}
+    # Allow Charon P2P to peers and relays outside the cluster (libp2p TCP, and UDP/QUIC)
+    - to:
+        - ipBlock:
+            cidr: {{ .Values.networkPolicy.p2p.cidr | default "0.0.0.0/0" }}
+            {{- with .Values.networkPolicy.p2p.except }}
+            except:
+              {{- toYaml . | nindent 14 }}
+            {{- end }}
+      ports:
+        {{- range .Values.networkPolicy.p2p.ports }}
+        - protocol: TCP
+          port: {{ . }}
+        - protocol: UDP
+          port: {{ . }}
+        {{- end }}
+    {{- end }}
+    {{- if and (eq (include "dv-pod.statusEnabled" .) "true") .Values.networkPolicy.kubeApi.enabled }}
+    # Allow the DKG sidecar to reach the Kubernetes API (status ConfigMap)
+    - to:
+        - ipBlock:
+            cidr: {{ .Values.networkPolicy.kubeApi.cidr | default "0.0.0.0/0" }}
+      ports:
+        {{- range .Values.networkPolicy.kubeApi.ports }}
+        - protocol: TCP
+          port: {{ . }}
+        {{- end }}
+    {{- end }}
     # Allow access to Obol API for DKG
     {{- if .Values.networkPolicy.obolApi.enabled }}
     - to:

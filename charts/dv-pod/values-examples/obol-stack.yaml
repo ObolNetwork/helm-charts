@@ -1,0 +1,53 @@
+# dv-pod in the Obol Stack (k3d, single node).
+#
+# The Stack runs its own Ethereum node (`obol network install ethereum`), a Prometheus that selects
+# ServiceMonitors labelled `release: monitoring`, and the Hermes agent in namespace hermes-obol-agent.
+# The beacon node defaults to the Stack's node for `network` (ethereum-<network>, the id that
+# `obol network install ethereum --network <network>` gives the first deployment). Check with `obol network list`.
+#
+# Launchpad route (default here):
+#   obol helm upgrade --install my-dv-pod obol/dv-pod -n dv-pod --create-namespace \
+#     -f obol-stack.yaml --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS
+# Direct route (cluster definition from `charon create dkg --publish`):
+#   ... -f obol-stack.yaml --set mode=definition --set dkg.definition.configHash=0xCONFIG_HASH
+#
+# Then read the ENR / status without Secrets:
+#   obol kubectl get cm my-dv-pod-enr -n dv-pod -o jsonpath='{.data.enr}'
+#   obol kubectl get cm my-dv-pod-dkg-status -n dv-pod -o jsonpath='{.data.phase}'
+
+network: mainnet   # hoodi for a testnet run
+
+mode: launchpad
+
+charon:
+  operatorAddress: "" # set with --set charon.operatorAddress=0x...
+  # beaconNodeEndpoints: unset = http://ethereum-beacon.ethereum-<network>.svc.cluster.local:5052
+  # Fall back to publicnode.com for `network` while the local beacon node syncs.
+  publicnodeFallback: true
+  # The Stack runs no MEV-boost: its beacon node builds blocks locally until Gloas, and from Gloas
+  # builder bids arrive in-protocol (p2p). Keep this false; with true, charon only proposes builder blocks.
+  builderApi: false
+  nickname: "obol-stack"
+
+# Let the Hermes agent read this release's DKG status and ENR ConfigMaps (get/watch by name only).
+# Its service account is `hermes` (not `hermes-obol-agent`).
+statusReaders:
+  - namespace: hermes-obol-agent
+    serviceAccount: hermes
+
+serviceMonitor:
+  enabled: true
+  labels:
+    release: monitoring
+
+# If you enable networkPolicy, keep Prometheus and Hermes able to scrape 3620:
+# networkPolicy:
+#   enabled: true
+#   monitoring:
+#     namespaceSelector:
+#       matchLabels:
+#         kubernetes.io/metadata.name: monitoring
+#     extraFrom:
+#       - namespaceSelector:
+#           matchLabels:
+#             kubernetes.io/metadata.name: hermes-obol-agent

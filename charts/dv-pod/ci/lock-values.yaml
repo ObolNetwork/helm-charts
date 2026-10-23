@@ -1,0 +1,14 @@
+mode: lock
+network: mainnet
+configMaps:
+  clusterLock: cluster-lock
+validatorClient:
+  type: teku
+  keystores:
+    secretName: validator-keys
+charon:
+  beaconNodeEndpoints: ["http://beacon:5052"]
+  p2pUdpAddress: "0.0.0.0:3610"
+  featureSetEnable: quic
+p2pService:
+  enabled: true
