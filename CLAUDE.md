@@ -8,11 +8,11 @@ For the simpler Docker Compose launcher, see `ObolNetwork/charon-distributed-val
 
 | Chart | Version | App | Purpose |
 |-------|---------|-----|---------|
-| **`dv-pod`** ⭐ | 0.22.0 | Charon 1.11.0 | **Flagship.** Single DV node: Charon + VC, with automatic DKG orchestration. The default recommendation for "run a DV on k8s". |
+| **`dv-pod`** ⭐ | 0.22.0 | Charon 1.11.3 | **Flagship.** Single DV node: Charon + VC, with automatic DKG orchestration. The default recommendation for "run a DV on k8s". |
 | `obol-app` | 0.1.1 | latest | General-purpose "run any Docker image on the [Obol Stack](https://obol.org/stack)" chart. Not DV-specific — the Stack's generic service-deploy mechanism. |
-| `charon` | 0.5.3 | 1.9.3 | Standalone Charon middleware (no VC). For bespoke stacks that wire their own VC. |
-| `charon-cluster` | 0.4.3 | 1.9.3 | Multiple Charon instances in one release. Intended for test/local setups; **not** the production-operator path. |
-| `charon-relay` | 0.5.0 | 1.9.3 | Hosts a Charon [p2p relay](https://docs.obol.org/learn/charon/charon-cli-reference#host-a-relay). |
+| `charon` | 0.7.1 | 1.11.3 | Standalone Charon middleware (no VC). For bespoke stacks that wire their own VC. |
+| `charon-cluster` | 0.6.1 | 1.11.3 | Multiple Charon instances in one release. Intended for test/local setups; **not** the production-operator path. |
+| `charon-relay` | 0.9.1 | 1.11.3 | Hosts a Charon [p2p relay](https://docs.obol.org/learn/charon/charon-cli-reference#host-a-relay). |
 | `remote-signer` | 0.4.0 | v0.4.0 | Lightweight Ethereum remote signer. |
 | `aztec-node` | 2.2.1 | 4.1.3 | Aztec node (Full Node / Sequencer / Prover). Part of Obol Stack's Aztec support. |
 | `openclaw` | 0.4.0 | 2026.3.2 | OpenClaw gateway (agent runtime). Note: the openclaw *skills* framework is being deprecated in favour of the `skills` repo designed for Claude agents; this chart remains for current operators. |
@@ -80,7 +80,7 @@ For DV workloads keep using `dv-pod`; for everything else on the Stack (agents, 
 
 ## Versioning
 
-All Charon-based charts (`dv-pod`, `charon`, `charon-cluster`, `charon-relay`) ship with `appVersion: 1.9.3` (current Charon release at time of writing). Bump `charon.image.tag` in values, or let the chart track its pinned appVersion. Chart versions (SemVer) are independent of appVersion.
+All Charon-based charts (`dv-pod`, `charon`, `charon-cluster`, `charon-relay`) ship with `appVersion: 1.11.3` (current Charon release at time of writing). Bump `charon.image.tag` in values, or let the chart track its pinned appVersion. Chart versions (SemVer) are independent of appVersion.
 
 ## Development
 
