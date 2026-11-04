@@ -72,8 +72,8 @@
 {{- end }}
 
 {{- if .Values.centralMonitoring.enabled }}
-{{- if not .Values.centralMonitoring.token }}
-{{- fail ".Values.centralMonitoring.token is required" }}
+{{- if not (or .Values.centralMonitoring.existingSecret .Values.centralMonitoring.token) }}
+{{- fail "centralMonitoring.enabled requires centralMonitoring.existingSecret (preferred) or centralMonitoring.token" }}
 {{- end }}
 {{- end }}
 

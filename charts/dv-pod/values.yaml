@@ -371,8 +371,16 @@ centralMonitoring:
   enabled: false
   # -- https endpoint to obol central prometheus
   promEndpoint: "https://vm.monitoring.gcp.obol.tech/write"
-  # -- The authentication token to the central prometheus
+  # -- The authentication token to the central prometheus. Prefer `existingSecret`: a token set here is stored
+  # in the Helm release and printed by `helm get values`.
   token: ""
+  # -- Name of an existing Secret holding the token; takes precedence over `token`. Create it from a file so the
+  # token never passes through a Helm value or a shell argument:
+  # kubectl create secret generic obol-monitoring -n <namespace> --from-file=token=<file>
+  # Prometheus re-reads the token on every write, so rotating it in the Secret needs no restart.
+  existingSecret: ""
+  # -- Key in `existingSecret` that holds the token
+  existingSecretKey: token
 
 # -- Charon image repository, pull policy, and tag version
 image:

@@ -332,6 +332,18 @@ https://ethereum-beacon-api.publicnode.com
 {{- end -}}
 
 {{/*
+Obol launchpad for `network`: mainnet is launchpad.obol.org, testnets are <network>.launchpad.obol.org.
+*/}}
+{{- define "dv-pod.launchpadURL" -}}
+{{- $network := include "dv-pod.network" . -}}
+{{- if eq $network "mainnet" -}}
+https://launchpad.obol.org
+{{- else -}}
+{{- printf "https://%s.launchpad.obol.org" $network -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Validate validator client type
 */}}
 {{- define "dv-pod.validateValidatorClientType" -}}

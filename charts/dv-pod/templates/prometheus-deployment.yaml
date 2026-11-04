@@ -50,7 +50,14 @@ spec:
           name: {{ include "dv-pod.fullname" . }}-prometheus
       - name: token
         secret:
+          {{- with .Values.centralMonitoring.existingSecret }}
+          secretName: {{ . }}
+          items:
+          - key: {{ $.Values.centralMonitoring.existingSecretKey | default "token" }}
+            path: token
+          {{- else }}
           secretName: {{ include "dv-pod.fullname" . }}-prometheus
+          {{- end }}
       - name: data
         emptyDir: {}
 {{- end }}
