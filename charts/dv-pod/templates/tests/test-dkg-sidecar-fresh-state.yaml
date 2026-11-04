@@ -24,7 +24,7 @@ spec:
   initContainers:
     # First, prepare the ENR from the secret
     - name: prepare-enr
-      image: busybox
+      image: busybox:1.37.0
       command: 
         - sh
         - -c
@@ -80,7 +80,7 @@ spec:
           mountPath: /enr-from-job
   containers:
     - name: charon-dummy-success-check
-      image: busybox
+      image: busybox:1.37.0
       command: ['sh', '-c', 'echo DKG sidecar init container completed (unexpected for infinite FRESH poll); exit 1']
 
   volumes:
