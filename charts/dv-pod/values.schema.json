@@ -545,6 +545,13 @@
         },
         "token": {
           "type": "string"
+        },
+        "existingSecret": {
+          "type": "string"
+        },
+        "existingSecretKey": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "additionalProperties": false

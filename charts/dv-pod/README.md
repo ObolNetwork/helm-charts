@@ -2,7 +2,7 @@
 DV-Pod
 ===========
 
-![Version: 0.22.0](https://img.shields.io/badge/Version-0.22.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.11.3](https://img.shields.io/badge/AppVersion-1.11.3-informational?style=flat-square)
+![Version: 0.22.1](https://img.shields.io/badge/Version-0.22.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.11.3](https://img.shields.io/badge/AppVersion-1.11.3-informational?style=flat-square)
 
 A Helm chart for deploying a single distributed validator pod consisting of a Charon middleware client and validator client.
 
@@ -403,10 +403,12 @@ The command removes the Kubernetes components associated with the chart and dele
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | affinity | object | `{}` | Affinity for pod assignment # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity # # Example: # affinity: #   podAntiAffinity: #     requiredDuringSchedulingIgnoredDuringExecution: #     - labelSelector: #         matchExpressions: #         - key: app.kubernetes.io/name #           operator: In #           values: #           - charon #       topologyKey: kubernetes.io/hostname # |
-| centralMonitoring | object | `{"enabled":false,"promEndpoint":"https://vm.monitoring.gcp.obol.tech/write","token":""}` | Central Monitoring |
+| centralMonitoring | object | `{"enabled":false,"existingSecret":"","existingSecretKey":"token","promEndpoint":"https://vm.monitoring.gcp.obol.tech/write","token":""}` | Central Monitoring |
 | centralMonitoring.enabled | bool | `false` | Specifies whether central monitoring should be enabled |
+| centralMonitoring.existingSecret | string | `""` | Name of an existing Secret holding the token; takes precedence over `token`. Create it from a file so the token never passes through a Helm value or a shell argument: kubectl create secret generic obol-monitoring -n <namespace> --from-file=token=<file> Prometheus re-reads the token on every write, so rotating it in the Secret needs no restart. |
+| centralMonitoring.existingSecretKey | string | `"token"` | Key in `existingSecret` that holds the token |
 | centralMonitoring.promEndpoint | string | `"https://vm.monitoring.gcp.obol.tech/write"` | https endpoint to obol central prometheus |
-| centralMonitoring.token | string | `""` | The authentication token to the central prometheus |
+| centralMonitoring.token | string | `""` | The authentication token to the central prometheus. Prefer `existingSecret`: a token set here is stored in the Helm release and printed by `helm get values`. |
 | charon.beaconNodeEndpoints | list | `[]` | Beacon node endpoints (your own synced consensus client's beacon API). Empty means the Obol Stack's node for `network`: http://ethereum-beacon.ethereum-<network>.svc.cluster.local:5052, which is what `obol network install ethereum --network <network>` creates (its first deployment's id is the network name). Set this outside the Stack, or for a Stack deployment with another id (`obol network list`). All beacon nodes specified here will be called for every charon request, if you want to leverage fallback behaviour place secondary beacon nodes in charon.fallbackBeaconNodeEndpoints[] |
 | charon.beaconNodeHeaders | string | `""` | Beacon node authentication headers WARNING: These headers will be sent to ALL beacon nodes, which could leak credentials Format: "Authorization=Basic <base64_encoded_credentials>" To generate: echo -n "username:password" | base64 Example: "Authorization=Basic am9objpkb2U=" |
 | charon.beaconNodeHeadersSecretKey | string | `"headers"` | Optional: Key within the charon.beaconNodeHeaders secret to read from |

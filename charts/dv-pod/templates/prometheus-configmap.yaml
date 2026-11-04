@@ -18,6 +18,7 @@ data:
       - job_name: '{{ $.Release.Name }}'
         static_configs:
           - targets: ['{{ include "release.name" . }}:{{ .Values.service.ports.monitoring.port }}']
+{{- if not .Values.centralMonitoring.existingSecret }}
 ---
 apiVersion: v1
 kind: Secret
@@ -28,4 +29,5 @@ metadata:
 type: Opaque
 stringData:
   token: {{ .Values.centralMonitoring.token | quote }}
+{{- end }}
 {{- end }}

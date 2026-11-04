@@ -44,7 +44,7 @@ Everything below is copy-paste ready. None of it needs access to Secrets.
 
 3. Next steps for mode "{{ $mode }}"
 {{- if eq $mode "launchpad" }}
-   a. Open https://launchpad.obol.org with operator wallet {{ .Values.charon.operatorAddress | default "<charon.operatorAddress>" }}.
+   a. Open {{ include "dv-pod.launchpadURL" . }} with operator wallet {{ .Values.charon.operatorAddress | default "<charon.operatorAddress>" }}.
    b. Create the cluster or accept the invite, paste THIS node's ENR (step 1) and sign. The chart never signs.
    c. The sidecar polls {{ .Values.charon.dkgSidecar.apiEndpoint }} until every operator has signed{{ with .Values.charon.dkgSidecar.targetConfigHash }} definition {{ . }}{{ end }},
       then the DKG runs automatically. All operators' pods must be up at the same time for the DKG.
