@@ -19,7 +19,7 @@ spec:
   restartPolicy: Never
   containers:
     - name: verify-target-config-hash
-      image: busybox
+      image: busybox:1.37.0
       command:
         - sh
         - -c
