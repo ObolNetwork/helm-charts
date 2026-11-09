@@ -439,11 +439,17 @@ securityContext:
   fsGroup: 1000
   fsGroupChangePolicy: OnRootMismatch
 
-# -- The security context for containers
+# -- The security context for the charon container. Charon has an empty tmpfs mounted over
+# /charon-data/validator_keys to hide the key shares; keep it non-root and without CAP_SYS_ADMIN so it can't unmount it.
 # @default -- See `values.yaml`
 containerSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000  # the charon image's user; needed for runAsNonRoot since the image sets USER by name
+  runAsGroup: 1000
   allowPrivilegeEscalation: false
-  readOnlyRootFilesystem: false  # Charon needs to write to data directory
+  readOnlyRootFilesystem: false
+  seccompProfile:
+    type: RuntimeDefault
   capabilities:
     drop:
     - ALL

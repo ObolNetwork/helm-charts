@@ -8,7 +8,7 @@ For the simpler Docker Compose launcher, see `ObolNetwork/charon-distributed-val
 
 | Chart | Version | App | Purpose |
 |-------|---------|-----|---------|
-| **`dv-pod`** ⭐ | 0.22.1 | Charon 1.11.3 | **Flagship.** Single DV node: Charon + VC, with automatic DKG orchestration. The default recommendation for "run a DV on k8s". |
+| **`dv-pod`** ⭐ | 0.23.0 | Charon 1.11.3 | **Flagship.** Single DV node: Charon + VC, with automatic DKG orchestration. The default recommendation for "run a DV on k8s". |
 | `obol-app` | 0.1.1 | latest | General-purpose "run any Docker image on the [Obol Stack](https://obol.org/stack)" chart. Not DV-specific — the Stack's generic service-deploy mechanism. |
 | `charon` | 0.7.1 | 1.11.3 | Standalone Charon middleware (no VC). For bespoke stacks that wire their own VC. |
 | `charon-cluster` | 0.6.1 | 1.11.3 | Multiple Charon instances in one release. Intended for test/local setups; **not** the production-operator path. |

@@ -20,6 +20,10 @@ After a successful Distributed Key Generation (DKG) ceremony, you may need to re
    - `<namespace>` - Your Kubernetes namespace (e.g., `obol-stack-test-cluster`)
    - `<pod-name>` - The dv-pod pod name (e.g., `<release-name>-0`)
 
+   Use `-c validator-client`, not `-c dv-pod`: the charon container can't see `validator_keys/`, so a copy from it
+   has no key shares. With `validatorClient.enabled: false`, use the short-lived pod in the README's
+   "Backing up charon-data" section.
+
 3. **Verify the recovery:**
    ```bash
    ls -la ~/charon-recovery/.charon
