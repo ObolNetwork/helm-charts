@@ -2,7 +2,7 @@
 DV-Pod
 ===========
 
-![Version: 0.22.1](https://img.shields.io/badge/Version-0.22.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.11.3](https://img.shields.io/badge/AppVersion-1.11.3-informational?style=flat-square)
+![Version: 0.23.0](https://img.shields.io/badge/Version-0.23.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.11.3](https://img.shields.io/badge/AppVersion-1.11.3-informational?style=flat-square)
 
 A Helm chart for deploying a single distributed validator pod consisting of a Charon middleware client and validator client.
 
@@ -201,15 +201,46 @@ at runtime and copies an existing identity into `<fullname>-enr-key` instead of 
 - PVCs are retained when the StatefulSet is deleted or scaled down (`persistence.retentionPolicy`).
 - The pod no longer mounts a service account token into charon or the validator client.
 
+## Upgrading from chart < 0.23
+
+- The charon container no longer sees the key shares: an empty read-only tmpfs covers `/charon-data/validator_keys`
+  (`charon run` never reads them). A `prepare-charon-data` init container creates that directory once
+  `cluster-lock.json` exists. Back up from the `validator-client` container (below): `kubectl cp … -c dv-pod`
+  now copies an empty `validator_keys/`.
+- Charon commands that need the key shares (`charon exit sign`, `charon edit …`) no longer work through
+  `kubectl exec -c dv-pod`; run them from a backup copy of `charon-data` instead.
+- `containerSecurityContext` now sets `runAsNonRoot`, `runAsUser: 1000` and `seccompProfile: RuntimeDefault`. If you
+  override it, keep charon non-root and without `CAP_SYS_ADMIN`, or it could unmount the tmpfs. `helm upgrade
+  --reuse-values` keeps the old release's values, including the old `containerSecurityContext`; use
+  `--reset-then-reuse-values` (Helm 3.14+) to pick up the new defaults.
+
 ## Backing up charon-data
 
 After the DKG, `/charon-data` on the `charon-data-<fullname>-0` PVC holds `cluster-lock.json`, `validator_keys/`
-(key shares) and `deposit-data*.json`. Back it up off the cluster before activating validators:
+(key shares) and `deposit-data*.json`. Back it up off the cluster before activating validators. Copy it from the
+`validator-client` container; the charon container (`dv-pod`) can't see the key shares:
 
 ```sh
-kubectl cp dv-pod/my-dv-pod-0:/charon-data ./my-dv-pod-charon-data -c dv-pod
-# Obol Stack: obol kubectl cp dv-pod/my-dv-pod-0:/charon-data ./my-dv-pod-charon-data -c dv-pod
+kubectl cp dv-pod/my-dv-pod-0:/charon-data ./my-dv-pod-charon-data -c validator-client
+# Obol Stack: obol kubectl cp dv-pod/my-dv-pod-0:/charon-data ./my-dv-pod-charon-data -c validator-client
+ls my-dv-pod-charon-data/validator_keys   # must list keystore-*.json; if empty, the backup has no key shares
 tar czf my-dv-pod-charon-data.tgz my-dv-pod-charon-data && rm -rf my-dv-pod-charon-data   # store encrypted
+```
+
+With `validatorClient.enabled: false`, or a validator client image without `tar`, mount the PVC read-only in a
+short-lived pod on the same node and copy from that:
+
+```sh
+NODE=$(kubectl get pod my-dv-pod-0 -n dv-pod -o jsonpath='{.spec.nodeName}')
+kubectl run charon-data-backup -n dv-pod --restart=Never --image=busybox:1.37.0 --overrides='{
+  "spec": {"nodeName": "'"$NODE"'", "securityContext": {"runAsUser": 1000, "runAsNonRoot": true},
+    "containers": [{"name": "backup", "image": "busybox:1.37.0", "command": ["sleep", "600"],
+      "securityContext": {"allowPrivilegeEscalation": false, "capabilities": {"drop": ["ALL"]}},
+      "volumeMounts": [{"name": "data", "mountPath": "/charon-data", "readOnly": true}]}],
+    "volumes": [{"name": "data", "persistentVolumeClaim": {"claimName": "charon-data-my-dv-pod-0", "readOnly": true}}]}}'
+kubectl wait -n dv-pod --for=condition=Ready pod/charon-data-backup
+kubectl cp dv-pod/charon-data-backup:/charon-data ./my-dv-pod-charon-data
+kubectl delete pod -n dv-pod charon-data-backup
 ```
 
 Also keep the ENR Secret (`kubectl get secret <name> -o yaml`). The PVCs and the ENR Secret survive
@@ -466,7 +497,7 @@ The command removes the Kubernetes components associated with the chart and dele
 | clusterThreshold | string | `""` | Maximum number of pods that can be unavailable for cluster threshold Used in pod disruption budget when minAvailable is not specified |
 | configMaps | object | `{"clusterLock":""}` | Kubernetes configMaps names for non-sensitive configuration data. |
 | configMaps.clusterLock | string | `""` | Name of the ConfigMap containing the cluster-lock.json file (`mode: lock`). Set this to the name of an existing ConfigMap to skip the DKG process. Example: kubectl create configmap cluster-lock --from-file=.charon/cluster-lock.json Then set: clusterLock: "cluster-lock" If not set or if the ConfigMap doesn't exist, the DKG process will run. NOTE: For large cluster-lock files (>1MB), use charon.lockHash instead clusterLock: "cluster-lock" |
-| containerSecurityContext | object | See `values.yaml` | The security context for containers |
+| containerSecurityContext | object | See `values.yaml` | The security context for the charon container. Charon has an empty tmpfs mounted over /charon-data/validator_keys to hide the key shares; keep it non-root and without CAP_SYS_ADMIN so it can't unmount it. |
 | dkg | object | `{"definition":{"configHash":"","configMap":"","configMapKey":"cluster-definition.json","url":""},"extraArgs":[],"publish":true,"resources":{"limits":{"cpu":"1000m","memory":"1Gi"},"requests":{"cpu":"100m","memory":"256Mi"}},"retryDelaySeconds":10,"runner":"charon","status":{"enabled":true},"timeout":""}` | DKG (distributed key generation) settings. See `mode` for how the cluster definition is found. |
 | dkg.definition | object | `{"configHash":"","configMap":"","configMapKey":"cluster-definition.json","url":""}` | Cluster definition for `mode: definition` (or `mode: auto`). Set exactly one source. |
 | dkg.definition.configMap | string | `""` | Name of a ConfigMap in the release namespace holding the cluster-definition.json. Example: kubectl create configmap cluster-definition --from-file=cluster-definition.json |

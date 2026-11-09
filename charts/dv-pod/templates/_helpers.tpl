@@ -427,6 +427,15 @@ fi
 {{- end -}}
 
 {{/*
+Shell snippet for the DKG paths: removes the empty validator_keys/ that prepare-charon-data leaves as a mount
+point, for a data dir whose cluster-lock.json was removed. charon dkg refuses any validator_keys/ entry.
+rmdir only removes an empty directory, so key shares are never touched.
+*/}}
+{{- define "dv-pod.removeEmptyKeysMountPoint" -}}
+rmdir /charon-data/validator_keys 2>/dev/null || true
+{{- end -}}
+
+{{/*
 UDP (QUIC) listen port, parsed from the first charon.p2pUdpAddress entry ("" when UDP is off).
 */}}
 {{- define "dv-pod.p2pUdpPort" -}}

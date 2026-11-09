@@ -83,6 +83,9 @@ spec:
               {{- else }}
               # charon dkg reads the ENR private key from its data dir
               {{- include "dv-pod.stageEnrKey" . | nindent 14 }}
+              if [ ! -e /charon-data/cluster-lock.json ]; then
+                {{- include "dv-pod.removeEmptyKeysMountPoint" . | nindent 16 }}
+              fi
               {{- end }}
               exec node /app/dist/index.js
           {{- end }}
@@ -169,7 +172,7 @@ spec:
             {{- toYaml .Values.charon.dkgSidecar.resources | nindent 12 }}
         {{- if and $runsDkg (eq $runner "charon") }}
         # Runs `charon dkg` with the node's own charon image (same version as `charon run`), retrying until
-        # every peer is online. Skipped once cluster-lock.json exists. Never deletes anything from /charon-data.
+        # every peer is online. Skipped once cluster-lock.json exists. Never deletes key material from /charon-data.
         - name: charon-dkg
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
@@ -198,6 +201,7 @@ spec:
                 exit 1
               fi
               {{- include "dv-pod.stageEnrKey" . | nindent 14 }}
+              {{- include "dv-pod.removeEmptyKeysMountPoint" . | nindent 14 }}
               # charon dkg refuses a data dir with partial output; that needs a human (back up first, see README).
               partial_output() {
                 [ -n "$(ls -A "$DATA/validator_keys" 2>/dev/null)" ] || ls "$DATA"/deposit-data* >/dev/null 2>&1
@@ -275,6 +279,49 @@ spec:
               mountPath: /charon-data
           resources:
             {{- toYaml .Values.dkg.resources | nindent 12 }}
+        {{- end }}
+        {{- end }}
+        # Creates the validator_keys/ mount point that hides the key shares from charon (volume
+        # validator-keys-mask). It has to exist on the volume because charon mounts /charon-data read-only.
+        # Runs after the DKG and only once cluster-lock.json exists: charon dkg refuses a data dir that
+        # already contains validator_keys/, even an empty one.
+        - name: prepare-charon-data
+          image: busybox:1.37.0
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          command:
+            - /bin/sh
+            - -c
+            - |
+              if [ -e /charon-data/cluster-lock.json ]; then
+                mkdir -p /charon-data/validator_keys
+              else
+                echo "No cluster-lock.json yet; not creating validator_keys/."
+              fi
+          volumeMounts:
+            - name: charon-data
+              mountPath: /charon-data
+            {{- if .Values.configMaps.clusterLock }}
+            - name: cluster-lock
+              mountPath: /charon-data/cluster-lock.json
+              subPath: cluster-lock.json
+              readOnly: true
+            {{- end }}
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 32Mi
+        {{- if and .Values.charon.dkgSidecar.enabled $runsDkg (eq $runner "charon") }}
         # Records the DKG result (status phase Complete, lock hash, validator count) for agents watching the
         # status ConfigMap.
         - name: dkg-report
@@ -317,12 +364,15 @@ spec:
             - name: charon-data
               mountPath: /charon-data
               readOnly: true
+            # Only needs cluster-lock.json; hide the key shares.
+            - name: validator-keys-mask
+              mountPath: /charon-data/validator_keys
+              readOnly: true
             {{- if $status }}
             {{- include "dv-pod.kubeApiAccessMount" . | nindent 12 }}
             {{- end }}
           resources:
             {{- toYaml .Values.charon.dkgSidecar.resources | nindent 12 }}
-        {{- end }}
         {{- end }}
         {{- if .Values.validatorClient.enabled }}
         # Keystore Import Init Container
@@ -848,6 +898,12 @@ spec:
             - name: charon-data
               mountPath: /charon-data
               readOnly: true
+            # charon run never reads the key shares (only --simnet-validator-keys-dir does), so an empty
+            # read-only tmpfs covers validator_keys/. Without CAP_SYS_ADMIN charon can't unmount it.
+            # Back up key shares from the validator-client container instead.
+            - name: validator-keys-mask
+              mountPath: /charon-data/validator_keys
+              readOnly: true
           {{- with .Values.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
@@ -1027,6 +1083,11 @@ spec:
         {{- if $status }}
         {{- include "dv-pod.kubeApiAccessVolume" . | nindent 8 }}
         {{- end }}
+        # Empty, read-only tmpfs mounted over /charon-data/validator_keys in containers that don't need the key shares.
+        - name: validator-keys-mask
+          emptyDir:
+            medium: Memory
+            sizeLimit: 4Ki
         # Volume for the shared ENR private key and public ENR
         - name: charon-enr-private-key
           secret:
