@@ -35,6 +35,8 @@ spec:
           capabilities:
             drop:
             - ALL
+        resources:
+          {{- toYaml .Values.centralMonitoring.resources | nindent 10 }}
         volumeMounts:
         - mountPath: /etc/prometheus/prometheus.yaml
           name: config

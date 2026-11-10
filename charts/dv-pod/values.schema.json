@@ -354,6 +354,10 @@
                 },
                 "image": {
                   "description": "Deprecated and ignored (the ENR job uses `image`). Accepted so older values files still validate."
+                },
+                "resources": {
+                  "type": "object",
+                  "description": "Kubernetes resource requirements"
                 }
               },
               "additionalProperties": false
@@ -552,6 +556,10 @@
         "existingSecretKey": {
           "type": "string",
           "minLength": 1
+        },
+        "resources": {
+          "type": "object",
+          "description": "Kubernetes resource requirements"
         }
       },
       "additionalProperties": false
@@ -1113,6 +1121,10 @@
         }
       },
       "additionalProperties": false
+    },
+    "initContainerResources": {
+      "type": "object",
+      "description": "Kubernetes resource requirements"
     }
   },
   "allOf": [

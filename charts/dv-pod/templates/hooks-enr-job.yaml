@@ -137,6 +137,8 @@ spec:
           volumeMounts:
             - name: enr-data
               mountPath: /enr-shared
+          resources:
+            {{- toYaml .Values.charon.enr.generate.resources | nindent 12 }}
       containers:
         - name: charon-key-generator
           image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
@@ -218,6 +220,8 @@ spec:
               mountPath: /enr-output
             - name: enr-data
               mountPath: /enr-shared
+          resources:
+            {{- toYaml .Values.charon.enr.generate.resources | nindent 12 }}
         - name: kubectl-secret-creator
           image: "{{ .Values.charon.enr.generate.kubectlImage.repository }}:{{ .Values.charon.enr.generate.kubectlImage.tag }}"
           imagePullPolicy: {{ .Values.charon.enr.generate.kubectlImage.pullPolicy }}
@@ -302,6 +306,8 @@ spec:
               mountPath: /enr-input
             - name: enr-data  
               mountPath: /enr-shared
+          resources:
+            {{- toYaml .Values.charon.enr.generate.resources | nindent 12 }}
       {{- with .Values.charon.enr.generate.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

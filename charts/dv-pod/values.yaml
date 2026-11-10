@@ -266,6 +266,13 @@ charon:
         repository: "bitnamisecure/kubectl"
         tag: "latest@sha256:999d5eb28f404b45f15117f2a110ff23c6164f76edac261d75d783b6e88252b7"
         pullPolicy: "IfNotPresent"
+      # -- Resources for each container of the ENR generation job (it runs once, briefly, at install)
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          memory: 256Mi
 
 
 # -- DKG (distributed key generation) settings. See `mode` for how the cluster definition is found.
@@ -381,6 +388,14 @@ centralMonitoring:
   existingSecret: ""
   # -- Key in `existingSecret` that holds the token
   existingSecretKey: token
+  # -- Resources for the Prometheus that forwards metrics to central monitoring. It scrapes only this pod
+  # (charon and the validator client) and keeps no long-term data.
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
 
 # -- Charon image repository, pull policy, and tag version
 image:
@@ -524,6 +539,16 @@ service:
       port: 3620
       protocol: TCP
       targetPort: 3620
+
+# -- Resources for the busybox init containers that prepare the validator data directory and copy key shares
+# (`prepare-validator-data`, `import-keystores`). The Prysm and Nimbus import init containers use
+# `validatorClient.resources`.
+initContainerResources:
+  requests:
+    cpu: 10m
+    memory: 16Mi
+  limits:
+    memory: 128Mi
 
 # -- Pod resources limits and requests
 resources:
