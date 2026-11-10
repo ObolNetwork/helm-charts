@@ -395,6 +395,8 @@ spec:
           volumeMounts:
             - name: validator-data
               mountPath: /validator-data
+          resources:
+            {{- toYaml .Values.initContainerResources | nindent 12 }}
         {{- end }}
         # This container imports validator keystores for the validator client.
         # It handles different validator client formats and sources:
@@ -582,6 +584,8 @@ spec:
               readOnly: true
             - name: validator-data
               mountPath: /validator-data
+          resources:
+            {{- toYaml .Values.initContainerResources | nindent 12 }}
 
         # Prysm Wallet Creation and Keystore Import Init Container
         # Only runs when validator client type is Prysm
@@ -671,6 +675,8 @@ spec:
           volumeMounts:
             - name: validator-data
               mountPath: /validator-data
+          resources:
+            {{- toYaml .Values.validatorClient.resources | nindent 12 }}
         {{- end }}
 
         # Nimbus Keystore Import Init Container
@@ -746,6 +752,8 @@ spec:
           volumeMounts:
             - name: validator-data
               mountPath: /validator-data
+          resources:
+            {{- toYaml .Values.validatorClient.resources | nindent 12 }}
         {{- end }}
         {{- end }}
       containers:

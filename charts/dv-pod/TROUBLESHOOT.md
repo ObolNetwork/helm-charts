@@ -21,8 +21,8 @@ After a successful Distributed Key Generation (DKG) ceremony, you may need to re
    - `<pod-name>` - The dv-pod pod name (e.g., `<release-name>-0`)
 
    Use `-c validator-client`, not `-c dv-pod`: the charon container can't see `validator_keys/`, so a copy from it
-   has no key shares. With `validatorClient.enabled: false`, use the short-lived pod in the README's
-   "Backing up charon-data" section.
+   has no key shares. With `validatorClient.enabled: false`, or the Prysm validator client (its image has no
+   `tar`, which `kubectl cp` needs), use the short-lived pod in the README's "Backing up charon-data" section.
 
 3. **Verify the recovery:**
    ```bash
@@ -58,6 +58,12 @@ After recovery, you can share the relevant files with your cluster peers:
 - The `deposit-data.json` is needed by whoever will submit the validator deposits
 
 **Security Note**: Handle validator keystores and passwords with extreme care. Never share keystores over insecure channels.
+
+## `charon exit` or `charon edit` can't find the key shares
+
+Since chart 0.23 the charon container (`dv-pod`) sees an empty `/charon-data/validator_keys`, so commands that need
+the key shares (`charon exit sign`, `charon edit …`) fail through `kubectl exec -c dv-pod`. Run them from a backup
+copy of `charon-data` (see "Recovering .charon Directory After DKG" above) with a local charon of the same version.
 
 ## DKG and identity
 

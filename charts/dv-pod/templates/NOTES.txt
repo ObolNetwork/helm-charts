@@ -72,14 +72,17 @@ Everything below is copy-paste ready. None of it needs access to Secrets.
    kubectl get pod {{ $pod }} -n {{ $ns }} -o jsonpath='{.status.containerStatuses[?(@.name=="{{ .Chart.Name }}")].ready}'   # /readyz
 
 5. Back up after the DKG (cluster-lock + key shares; the PVC is kept on uninstall)
-   {{- if .Values.validatorClient.enabled }}
+   {{- if and .Values.validatorClient.enabled (ne .Values.validatorClient.type "prysm") }}
    kubectl cp {{ $ns }}/{{ $pod }}:/charon-data ./charon-backup -c validator-client
    ls ./charon-backup/validator_keys   # must list keystore-*.json
    (in the Obol Stack: obol kubectl cp ...). Not -c {{ .Chart.Name }}: charon can't see validator_keys/.
    See the chart README, "Backing up charon-data".
+   Charon commands that need the key shares (charon exit sign, charon edit) run from this copy.
    {{- else }}
-   The charon container can't see validator_keys/; copy it with the short-lived PVC pod in the chart
-   README, "Backing up charon-data".
+   The charon container can't see validator_keys/{{ if .Values.validatorClient.enabled }}, and the Prysm image has no tar for kubectl cp{{ end }};
+   copy it with the short-lived PVC pod in the chart README, "Backing up charon-data".
+   Charon commands that need the key shares (charon exit sign, charon edit) run from that backup copy,
+   not through kubectl exec -c {{ .Chart.Name }}.
    {{- end }}
 
 Beacon node: {{ include "dv-pod.beaconNodeEndpoints" . }}
