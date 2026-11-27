@@ -12,6 +12,11 @@ metadata:
   labels:
     {{- include "dv-pod.labels" . | nindent 4 }}
 spec:
+  {{- if eq $mode "enr" }}
+  # mode enr: identity only. The StatefulSet is kept (its ENR Secret volume is what keeps the identity on the
+  # upgrade to definition/launchpad mode) but runs no pod. Other modes leave replicas unset (1).
+  replicas: 0
+  {{- end }}
   serviceName: {{ include "dv-pod.fullname" . }}
   updateStrategy:
     type: {{ .Values.updateStrategy }}
@@ -65,7 +70,7 @@ spec:
         # dkg.definition source) and, with dkg.runner=sidecar, also runs the DKG itself.
         # charon-dkg (dkg.runner=charon): runs `charon dkg` with the node's own charon image.
         # dkg-report (dkg.runner=charon): records the outcome in the status ConfigMap.
-        {{- if .Values.charon.dkgSidecar.enabled }}
+        {{- if and .Values.charon.dkgSidecar.enabled (ne $mode "enr") }}
         - name: dkg-sidecar
           image: {{ include "dv-pod.sidecarImage" . | quote }}
           imagePullPolicy: {{ .Values.charon.dkgSidecar.image.pullPolicy }}
@@ -592,7 +597,7 @@ spec:
         # Follows Obol reference: https://github.com/ObolNetwork/charon-distributed-validator-node/blob/main/prysm/run.sh
         {{- if and .Values.validatorClient.enabled (eq .Values.validatorClient.type "prysm") }}
         - name: prysm-wallet-import
-          image: {{ .Values.validatorClient.image.repository | default "gcr.io/prysmaticlabs/prysm/validator" }}:{{ .Values.validatorClient.image.tag | default "v7.2.1" }}
+          image: {{ .Values.validatorClient.image.repository | default "gcr.io/prysmaticlabs/prysm/validator" }}:{{ .Values.validatorClient.image.tag | default "v7.3.2" }}
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -685,7 +690,7 @@ spec:
         {{- if and .Values.validatorClient.enabled (eq .Values.validatorClient.type "nimbus") }}
         - name: nimbus-import
           # The import uses nimbus_beacon_node, which is only in the nimbus-eth2 image (not the VC image).
-          image: statusim/nimbus-eth2:{{ .Values.validatorClient.image.tag | default "multiarch-v26.10.0" }}
+          image: statusim/nimbus-eth2:{{ .Values.validatorClient.image.tag | default "multiarch-v26.10.2" }}
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -920,7 +925,7 @@ spec:
         # Validator Client Container
         - name: validator-client
           {{- if eq .Values.validatorClient.type "lighthouse" }}
-          image: {{ .Values.validatorClient.image.repository | default "sigp/lighthouse" }}:{{ .Values.validatorClient.image.tag | default "v8.2.3" }}
+          image: {{ .Values.validatorClient.image.repository | default "sigp/lighthouse" }}:{{ .Values.validatorClient.image.tag | default "v8.3.3" }}
           command:
             - lighthouse
             - validator_client
@@ -943,7 +948,7 @@ spec:
             - {{ . }}
             {{- end }}
           {{- else if eq .Values.validatorClient.type "teku" }}
-          image: {{ .Values.validatorClient.image.repository | default "consensys/teku" }}:{{ .Values.validatorClient.image.tag | default "26.10.0" }}
+          image: {{ .Values.validatorClient.image.repository | default "consensys/teku" }}:{{ .Values.validatorClient.image.tag | default "26.10.3" }}
           command:
             - /opt/teku/bin/teku
             - validator-client
@@ -971,7 +976,7 @@ spec:
             - {{ . }}
             {{- end }}
           {{- else if eq .Values.validatorClient.type "prysm" }}
-          image: {{ .Values.validatorClient.image.repository | default "gcr.io/prysmaticlabs/prysm/validator" }}:{{ .Values.validatorClient.image.tag | default "v7.2.1" }}
+          image: {{ .Values.validatorClient.image.repository | default "gcr.io/prysmaticlabs/prysm/validator" }}:{{ .Values.validatorClient.image.tag | default "v7.3.2" }}
           command:
             - /app/cmd/validator/validator
             - --beacon-rest-api-provider=http://localhost:3600
@@ -1003,7 +1008,7 @@ spec:
             - {{ . }}
             {{- end }}
           {{- else if eq .Values.validatorClient.type "nimbus" }}
-          image: {{ .Values.validatorClient.image.repository | default "statusim/nimbus-validator-client" }}:{{ .Values.validatorClient.image.tag | default "multiarch-v26.10.0" }}
+          image: {{ .Values.validatorClient.image.repository | default "statusim/nimbus-validator-client" }}:{{ .Values.validatorClient.image.tag | default "multiarch-v26.10.2" }}
           command:
             - /home/user/nimbus_validator_client
             - --beacon-node=http://localhost:3600
@@ -1022,7 +1027,7 @@ spec:
             - {{ . }}
             {{- end }}
           {{- else if eq .Values.validatorClient.type "lodestar" }}
-          image: {{ .Values.validatorClient.image.repository | default "chainsafe/lodestar" }}:{{ .Values.validatorClient.image.tag | default "v1.50.1" }}
+          image: {{ .Values.validatorClient.image.repository | default "chainsafe/lodestar" }}:{{ .Values.validatorClient.image.tag | default "v1.51.0" }}
           command:
             - node
             - /usr/app/packages/cli/bin/lodestar

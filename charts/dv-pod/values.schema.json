@@ -21,7 +21,8 @@
         "launchpad",
         "definition",
         "lock",
-        "lockHash"
+        "lockHash",
+        "enr"
       ],
       "description": "How this node joins its cluster; see values.yaml."
     },

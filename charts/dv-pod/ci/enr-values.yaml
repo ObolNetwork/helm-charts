@@ -1,0 +1,5 @@
+mode: enr
+network: hoodi
+statusReaders:
+  - namespace: hermes-obol-agent
+    serviceAccount: hermes

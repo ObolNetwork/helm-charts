@@ -22,10 +22,10 @@ Everything below is copy-paste ready. None of it needs access to Secrets.
    kubectl get configmap {{ $enrCm }} -n {{ $ns }} -o jsonpath='{.data.enr}'
 
 2. DKG / participation status
-{{- if eq (include "dv-pod.statusEnabled" .) "true" }}
+{{- if eq (include "dv-pod.statusConfigMapRendered" .) "true" }}
    kubectl get configmap {{ $statusCm }} -n {{ $ns }} -o jsonpath='{.data.phase}{"\n"}{.data.message}{"\n"}'
    kubectl get configmap {{ $statusCm }} -n {{ $ns }} -o yaml      # all keys: phase, signatures, configHash, lockHash, ...
-   Phases: Initializing, WaitingForInvite, WaitingForSignatures, DefinitionReady, RunningDKG, Complete, LockPresent, Failed
+   Phases: WaitingForDefinition (mode enr), Initializing, WaitingForInvite, WaitingForSignatures, DefinitionReady, RunningDKG, Complete, LockPresent, Failed
 {{- else }}
    Status ConfigMap disabled (dkg.status.enabled, serviceAccount.enabled and rbac.enabled must all be true); use the logs below.
 {{- end }}
@@ -33,6 +33,9 @@ Everything below is copy-paste ready. None of it needs access to Secrets.
    Read access (get/watch by name; no list) granted to:{{ range .Values.statusReaders }} {{ .namespace }}/{{ .serviceAccount }}{{ end }}
    An agent with that access reads with get/describe by name, e.g. kubectl describe configmap {{ $statusCm }} -n {{ $ns }}
 {{- end }}
+{{- if eq $mode "enr" }}
+   No pod runs in mode enr (the StatefulSet has 0 replicas); the ENR job's logs: kubectl logs job/{{ $full }}-enr-job -n {{ $ns }}
+{{- else }}
    kubectl get pod {{ $pod }} -n {{ $ns }}        # Init:N/M while waiting for the DKG, then Running
 {{- if .Values.charon.dkgSidecar.enabled }}
    kubectl logs {{ $pod }} -n {{ $ns }} -c dkg-sidecar -f
@@ -41,9 +44,17 @@ Everything below is copy-paste ready. None of it needs access to Secrets.
    kubectl logs {{ $pod }} -n {{ $ns }} -c charon-dkg -f       # the DKG ceremony itself
 {{- end }}{{ end }}
    kubectl logs {{ $pod }} -n {{ $ns }} -c {{ .Chart.Name }} -f   # charon, once the cluster-lock exists
+{{- end }}
 
 3. Next steps for mode "{{ $mode }}"
-{{- if eq $mode "launchpad" }}
+{{- if eq $mode "enr" }}
+   This release only holds the node's identity: nothing polls the Obol API and no DKG runs.
+   a. Share the ENR (step 1): paste it on {{ include "dv-pod.launchpadURL" . }}, or give it to whoever runs `charon create dkg --operator-enrs=...`.
+   b. Then switch modes with the same release name and namespace (the ENR Secret {{ include "dv-pod.enrSecretName" . }} is kept):
+        helm upgrade {{ .Release.Name }} <chart> -n {{ $ns }} --reset-then-reuse-values --set mode=definition --set dkg.definition.configHash=0xCONFIG_HASH
+        helm upgrade {{ .Release.Name }} <chart> -n {{ $ns }} --reset-then-reuse-values --set mode=launchpad --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS
+      The pod starts at that upgrade; all operators' pods must be up at the same time for the DKG.
+{{- else if eq $mode "launchpad" }}
    a. Open {{ include "dv-pod.launchpadURL" . }} with operator wallet {{ .Values.charon.operatorAddress | default "<charon.operatorAddress>" }}.
    b. Create the cluster or accept the invite, paste THIS node's ENR (step 1) and sign. The chart never signs.
    c. The sidecar polls {{ .Values.charon.dkgSidecar.apiEndpoint }} until every operator has signed{{ with .Values.charon.dkgSidecar.targetConfigHash }} definition {{ . }}{{ end }},

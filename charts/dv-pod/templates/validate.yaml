@@ -42,6 +42,15 @@
 {{- end }}
 {{- end }}
 
+{{- if eq $mode "enr" }}
+{{- if not (or (eq (include "dv-pod.shouldCreateEnrJob" .) "true") .Values.charon.enr.existingSecret.name) }}
+{{- fail "mode enr: nothing would create this node's identity. Keep charon.enrJob.enabled with charon.enr.generate.enabled (or charon.enr.privateKey), or set charon.enr.existingSecret.name" }}
+{{- end }}
+{{- if and .Values.charon.operatorAddress (not (regexMatch $addrRe .Values.charon.operatorAddress)) }}
+{{- fail (printf "charon.operatorAddress must be a 0x-prefixed 20-byte hex Ethereum address, got %q" .Values.charon.operatorAddress) }}
+{{- end }}
+{{- end }}
+
 {{- if and (eq $mode "lock") (not .Values.configMaps.clusterLock) }}
 {{- fail "mode lock: configMaps.clusterLock is required (kubectl create configmap cluster-lock --from-file=cluster-lock.json). For locks over 1MB use mode=lockHash with charon.lockHash" }}
 {{- end }}

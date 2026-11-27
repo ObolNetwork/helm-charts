@@ -2,7 +2,7 @@
 DV-Pod
 ===========
 
-![Version: 0.23.0](https://img.shields.io/badge/Version-0.23.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.11.3](https://img.shields.io/badge/AppVersion-1.11.3-informational?style=flat-square)
+![Version: 0.24.0](https://img.shields.io/badge/Version-0.24.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.11.4](https://img.shields.io/badge/AppVersion-1.11.4-informational?style=flat-square)
 
 A Helm chart for deploying a single distributed validator pod consisting of a Charon middleware client and validator client.
 
@@ -37,6 +37,7 @@ Each operator in a DV cluster runs one `dv-pod` release. How the node joins its 
 | `definition` | Someone ran `charon create dkg` and shares the definition (config hash, URL or file) | exactly one of `dkg.definition.configHash`, `.url`, `.configMap` |
 | `lock` | You already have a `cluster-lock.json` and key shares | `configMaps.clusterLock` (+ `validatorClient.keystores.secretName`) |
 | `lockHash` | Same, but the lock is over 1MB | `charon.lockHash` (+ `validatorClient.keystores.secretName`) |
+| `enr` | You only need this node's ENR for now; the cluster definition comes later | none |
 
 Missing or conflicting values fail at `helm install` time with a message naming the value to set.
 
@@ -66,7 +67,7 @@ kubectl get configmap my-dv-pod-enr -n dv-pod -o jsonpath='{.data.enr}'
 kubectl get configmap my-dv-pod-dkg-status -n dv-pod -o jsonpath='{.data.phase}{"\n"}{.data.message}{"\n"}'
 ```
 
-Phases: `Initializing`, `WaitingForInvite`, `WaitingForSignatures`, `DefinitionReady`, `RunningDKG`, `Complete`,
+Phases: `WaitingForDefinition` (`mode: enr`, written by the chart), `Initializing`, `WaitingForInvite`, `WaitingForSignatures`, `DefinitionReady`, `RunningDKG`, `Complete`,
 `LockPresent`, `Failed`. To let an agent in another namespace watch these two ConfigMaps (get/watch by name only,
 never Secrets), list its service account in `statusReaders`.
 
@@ -109,6 +110,37 @@ Use `dkg.definition.url` for a definition served over HTTPS, or `dkg.definition.
 node's ENR is in the definition. Definitions created with operator addresses still need every operator to sign
 on the Launchpad; ENR-only definitions don't. See [values-examples/definition.yaml](./values-examples/definition.yaml).
 
+## Identity first (`mode: enr`)
+
+`mode: enr` creates and publishes this node's ENR and nothing else. The ENR job runs as in every mode; the
+StatefulSet is rendered with 0 replicas, so no pod runs, nothing polls the Obol API and no DKG starts. The chart
+writes phase `WaitingForDefinition` to the status ConfigMap. Use it to hand out ENRs before a cluster definition
+exists, instead of parking the node on a placeholder Launchpad invite.
+
+```sh
+helm upgrade --install my-dv-pod obol/dv-pod -n dv-pod --create-namespace \
+  --set mode=enr --set network=hoodi \
+  --set 'charon.beaconNodeEndpoints[0]=<BEACON_NODE_ENDPOINT>'
+```
+
+To join, upgrade the **same release in the same namespace** to `definition` or `launchpad` mode. The StatefulSet
+and its ENR Secret volume are kept while in `mode: enr`, so the upgrade reuses the same ENR Secret
+(`<fullname>-enr-key`, see [ENR identity](#enr-identity)) and the ENR you shared stays valid. The pod and its PVCs
+are created at that upgrade:
+
+```sh
+helm upgrade my-dv-pod obol/dv-pod -n dv-pod --reset-then-reuse-values \
+  --set mode=definition --set dkg.definition.configHash=0xCONFIG_HASH
+```
+
+> [!WARNING]
+> Switching a running node to `mode: enr` scales it to zero: charon and the validator client stop. Its PVCs are
+> retained (`persistence.retentionPolicy`).
+
+No central-monitoring Prometheus runs in `mode: enr` either. Switching a release that is still polling a placeholder Launchpad invite: if its old sidecar writes once more while the pod terminates, the phase can show `WaitingForInvite` again; re-run the same `helm upgrade` to restore `WaitingForDefinition`.
+
+See [values-examples/enr.yaml](./values-examples/enr.yaml).
+
 ## Obol Stack
 
 In the [Obol Stack](https://obol.org/stack) use the in-cluster beacon node, the Stack's Prometheus and let the
@@ -121,9 +153,27 @@ Hermes agent watch progress. [values-examples/obol-stack.yaml](./values-examples
 - `statusReaders: [{namespace: hermes-obol-agent, serviceAccount: hermes}]`
 - `charon.builderApi: false`: the Stack runs no MEV-boost (local blocks until Gloas, in-protocol builder bids after it)
 
+With obol v0.19 or later, install it with `obol app`. That example becomes the app's `values.yaml`, and the
+release and namespace are `dv-pod-<id>`:
+
+```sh
+obol app install obol/dv-pod@0.24.0 --name dv-pod --id hoodi --set network=hoodi \
+  --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS
+```
+
+Change it later by editing that `values.yaml` and running `obol app sync`. Don't also `obol helm upgrade` an
+`obol app` release: the next sync refuses (or, with `--force`, reverts it). Put the central monitoring token in a
+Secret with `obol app secret set dv-pod/hoodi obol-monitoring --from-file token=<file>` and set
+`centralMonitoring.existingSecret: obol-monitoring`.
+
+To publish the ENR before there is a cluster to join, use `--set mode=enr` instead of the operator address, then
+set `mode: definition` or `mode: launchpad` in `values.yaml` and sync. The ENR is kept.
+
+Plain Helm still works, for example for releases installed before obol v0.19:
+
 ```sh
 obol helm upgrade --install my-dv-pod obol/dv-pod -n dv-pod --create-namespace \
-  -f obol-stack.yaml --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS
+  -f obol-stack.yaml --set network=hoodi --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS
 ```
 
 ## Import an existing cluster (`mode: lock`)
@@ -218,6 +268,21 @@ at runtime and copies an existing identity into `<fullname>-enr-key` instead of 
   override it, keep charon non-root and without `CAP_SYS_ADMIN`, or it could unmount the tmpfs. `helm upgrade
   --reuse-values` keeps the old release's values, including the old `containerSecurityContext`; use
   `--reset-then-reuse-values` (Helm 3.14+) to pick up the new defaults.
+
+## Upgrading from chart < 0.24
+
+- Charon v1.11.4 (DKG robustness fixes, secret redaction). It is not Gloas-ready; Gloas support comes with
+  charon v2.0.0.
+- Default validator client images: Lighthouse v8.3.3, Teku 26.10.3, Prysm v7.3.2, Nimbus v26.10.2,
+  Lodestar v1.51.0. None of them schedules Gloas on mainnet or Hoodi. Sepolia has forked into Gloas, which
+  charon v1.11.x does not support. Values that pin `validatorClient.image.tag` are unaffected. Prometheus
+  (central monitoring) moves to v3.16.0.
+- New `mode: enr` (identity only, phase `WaitingForDefinition`); see [Identity first](#identity-first-mode-enr).
+  A release parked on a placeholder Launchpad invite can switch to it; its ENR Secret and PVCs are kept.
+- The charon tag (`image.tag`) and the ENR job's kubectl digest are chart values: `helm upgrade --reuse-values`
+  keeps the old ones (charon v1.11.3). Use `--reset-then-reuse-values` (Helm 3.14+), or set them explicitly. The same
+  applies to deployment tools that store the chart's full defaults as user values. The validator client and
+  Prometheus defaults live in the templates and always follow the chart.
 
 ## Backing up charon-data
 
@@ -467,9 +532,9 @@ The command removes the Kubernetes components associated with the chart and dele
 | charon.enr.existingSecret | object | `{"name":"","privateKeyDataKey":"charon-enr-private-key","publicKeyDataKey":"enr"}` | Point to an existing Kubernetes secret that holds the ENR private key. The ENR job never overwrites it; it only adds a missing public `enr` field. NOTE: If not set, see `secrets` above for how the secret name is chosen. |
 | charon.enr.existingSecret.privateKeyDataKey | string | `"charon-enr-private-key"` | Key in the secret's 'data' field holding the private key hex string |
 | charon.enr.existingSecret.publicKeyDataKey | string | `"enr"` | Key in the secret's 'data' field holding the public ENR string |
-| charon.enr.generate | object | `{"annotations":{},"enabled":true,"kubectlImage":{"pullPolicy":"IfNotPresent","repository":"bitnamisecure/kubectl","tag":"latest@sha256:999d5eb28f404b45f15117f2a110ff23c6164f76edac261d75d783b6e88252b7"},"nodeSelector":{},"resources":{"limits":{"memory":"256Mi"},"requests":{"cpu":"10m","memory":"32Mi"}}}` | Enable automatic generation of an ENR private key. Only used if 'privateKey' and 'existingSecret.name' are not provided. The generated key will be stored in a secret with data keys 'charon-enr-private-key' and 'enr'. |
+| charon.enr.generate | object | `{"annotations":{},"enabled":true,"kubectlImage":{"pullPolicy":"IfNotPresent","repository":"bitnamisecure/kubectl","tag":"latest@sha256:8919c149c2e3d6860e0143c117900e64d71395172aaef0e01e604bb98c8e7ce0"},"nodeSelector":{},"resources":{"limits":{"memory":"256Mi"},"requests":{"cpu":"10m","memory":"32Mi"}}}` | Enable automatic generation of an ENR private key. Only used if 'privateKey' and 'existingSecret.name' are not provided. The generated key will be stored in a secret with data keys 'charon-enr-private-key' and 'enr'. |
 | charon.enr.generate.annotations | object | `{}` | Annotations to add to the ENR generation job |
-| charon.enr.generate.kubectlImage | object | `{"pullPolicy":"IfNotPresent","repository":"bitnamisecure/kubectl","tag":"latest@sha256:999d5eb28f404b45f15117f2a110ff23c6164f76edac261d75d783b6e88252b7"}` | Image to use for kubectl operations within the ENR generation job This image must contain a compatible kubectl binary and a POSIX shell. bitnamisecure only publishes `latest`, so it is pinned by digest. |
+| charon.enr.generate.kubectlImage | object | `{"pullPolicy":"IfNotPresent","repository":"bitnamisecure/kubectl","tag":"latest@sha256:8919c149c2e3d6860e0143c117900e64d71395172aaef0e01e604bb98c8e7ce0"}` | Image to use for kubectl operations within the ENR generation job This image must contain a compatible kubectl binary and a POSIX shell. bitnamisecure only publishes `latest`, so it is pinned by digest (kubectl 1.37.2, built 2026-11-11). |
 | charon.enr.generate.nodeSelector | object | `{}` | Node selector for the ENR generation job The job generates the key with the main charon image (`image`). |
 | charon.enr.generate.resources | object | `{"limits":{"memory":"256Mi"},"requests":{"cpu":"10m","memory":"32Mi"}}` | Resources for each container of the ENR generation job (it runs once, briefly, at install) |
 | charon.enr.privateKey | string | `""` | Provide the ENR private key directly (hex format, e.g., 0x...). The ENR job uses it to create the ENR secret (passed via a short-lived hook Secret, not the Job spec). Ignored if the ENR secret already exists, so an existing identity is never overwritten. Prefer 'existingSecret': values are stored in the Helm release. |
@@ -514,17 +579,17 @@ The command removes the Kubernetes components associated with the chart and dele
 | dkg.resources | object | `{"limits":{"cpu":"1000m","memory":"1Gi"},"requests":{"cpu":"100m","memory":"256Mi"}}` | Resources for the `charon-dkg` init container. |
 | dkg.retryDelaySeconds | int | `10` | Seconds to wait between `charon dkg` attempts while peers come online. Runner `charon` only. |
 | dkg.runner | string | `"charon"` | Who runs `charon dkg`: - `charon` (default): the sidecar only fetches/validates the definition and exits; a `charon-dkg` init   container then runs `charon dkg` with this chart's charon `image`, so the DKG always uses the same   charon version as the node. A `dkg-report` init container records the result. - `sidecar`: legacy; the sidecar runs the charon binary bundled in its own image. |
-| dkg.status.enabled | bool | `true` | Have the sidecar publish DKG progress to the ConfigMap "<fullname>-dkg-status" (keys: phase, message, updatedAt, enr, operatorAddress, definitionSource, configHash, clusterName, signatures, lockHash, numValidators, sidecarVersion), so agents can watch it without reading Secrets or logs. Creates a Role allowing only get/patch on that ConfigMap; the service account token is mounted only into the sidecar containers. Needs `serviceAccount.enabled` and `rbac.enabled`. |
+| dkg.status.enabled | bool | `true` | Have the sidecar publish DKG progress to the ConfigMap "<fullname>-dkg-status" (keys: phase, message, updatedAt, enr, operatorAddress, definitionSource, configHash, clusterName, signatures, lockHash, numValidators, sidecarVersion), so agents can watch it without reading Secrets or logs. Creates a Role allowing only get/patch on that ConfigMap; the service account token is mounted only into the sidecar containers. Needs `serviceAccount.enabled` and `rbac.enabled`. In `mode: enr` no sidecar runs: the chart itself writes phase `WaitingForDefinition` (only this setting is needed). |
 | dkg.timeout | string | `""` | Timeout for one `charon dkg` attempt, e.g. "5m" (empty: charon default, 2m). Runner `charon` only. |
 | fullnameOverride | string | `""` | Provide a name to substitute for the full names of resources |
 | global | object | `{"annotations":{}}` | Global configuration that can be referenced across the chart Used for test configurations and shared settings |
 | global.annotations | object | `{}` | Global annotations applied to resources |
-| image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.11.3"}` | Charon image repository, pull policy, and tag version |
+| image | object | `{"pullPolicy":"IfNotPresent","repository":"obolnetwork/charon","tag":"v1.11.4"}` | Charon image repository, pull policy, and tag version |
 | imagePullSecrets | list | `[]` | Credentials to fetch images from private registry # ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ |
 | initContainerResources | object | `{"limits":{"memory":"128Mi"},"requests":{"cpu":"10m","memory":"16Mi"}}` | Resources for the busybox init containers that prepare the validator data directory and copy key shares (`prepare-validator-data`, `import-keystores`). The Prysm and Nimbus import init containers use `validatorClient.resources`. |
 | livenessProbe | object | `{"enabled":false,"httpGet":{"path":"/livez","port":3620},"initialDelaySeconds":10,"periodSeconds":5}` | Configure liveness probes # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ |
 | livenessProbe.httpGet.port | int | `3620` | Port for liveness probe HTTP checks |
-| mode | string | `"auto"` | How this node joins its distributed validator cluster: - `auto` (default): infer from the values set, as charts < 0.22 did:   `configMaps.clusterLock` -> lock, `charon.lockHash` -> lockHash, any `dkg.definition.*` -> definition,   otherwise launchpad. - `launchpad`: Launchpad invite. The DKG sidecar polls the Obol API for a definition containing this   node's ENR under `charon.operatorAddress` (required), waits for every operator to sign, then runs the DKG. - `definition`: direct route. The cluster definition (from `charon create dkg`) is given by exactly one of   `dkg.definition.configHash`, `.url` or `.configMap`. No operator address needed; this node's ENR must be   one of the definition's operators. - `lock`: import an existing cluster; `configMaps.clusterLock` is required. No DKG. - `lockHash`: like `lock` for large locks; `charon.lockHash` is required and the lock is fetched from the Obol API. |
+| mode | string | `"auto"` | How this node joins its distributed validator cluster: - `auto` (default): infer from the values set, as charts < 0.22 did:   `configMaps.clusterLock` -> lock, `charon.lockHash` -> lockHash, any `dkg.definition.*` -> definition,   otherwise launchpad. - `launchpad`: Launchpad invite. The DKG sidecar polls the Obol API for a definition containing this   node's ENR under `charon.operatorAddress` (required), waits for every operator to sign, then runs the DKG. - `definition`: direct route. The cluster definition (from `charon create dkg`) is given by exactly one of   `dkg.definition.configHash`, `.url` or `.configMap`. No operator address needed; this node's ENR must be   one of the definition's operators. - `lock`: import an existing cluster; `configMaps.clusterLock` is required. No DKG. - `lockHash`: like `lock` for large locks; `charon.lockHash` is required and the lock is fetched from the Obol API. - `enr`: identity only. The ENR job creates the ENR key Secret and publishes the ENR to the "<fullname>-enr"   ConfigMap; the StatefulSet is kept at 0 replicas (and no central-monitoring Prometheus runs), so nothing polls   the Obol API or runs a DKG, and the status ConfigMap reads `WaitingForDefinition`. Share the ENR, then upgrade to `definition` or `launchpad`: the same   ENR Secret is kept. Never set on a running validator: it stops charon and the validator client.   Only chosen explicitly; `auto` never infers it. |
 | nameOverride | string | `""` | Provide a name in place of charon for `app:` labels |
 | network | string | `"mainnet"` | Network name for the Ethereum network Supported values: mainnet, sepolia, hoodi The chainId is automatically derived from the network name |
 | networkPolicy | object | `{"beaconNodes":{"enabled":true,"ipBlock":{},"namespaceSelector":{},"podSelector":{},"port":""},"customEgress":[],"customIngress":[],"enabled":false,"kubeApi":{"cidr":"0.0.0.0/0","enabled":true,"ports":[443,6443]},"monitoring":{"enabled":true,"extraFrom":[],"namespaceSelector":{},"podSelector":{}},"obolApi":{"cidr":"0.0.0.0/0","enabled":true,"except":[]},"p2p":{"allowInbound":false,"cidr":"0.0.0.0/0","enabled":true,"except":[],"ports":[3610]},"validatorClientNamespaceSelector":{},"validatorClientSelector":{}}` | NetworkPolicy configuration for pod network isolation |

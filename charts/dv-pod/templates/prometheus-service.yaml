@@ -1,4 +1,4 @@
-{{- if .Values.centralMonitoring.enabled -}}
+{{- if and .Values.centralMonitoring.enabled (ne (include "dv-pod.mode" .) "enr") -}}
 apiVersion: v1
 kind: Service
 metadata:

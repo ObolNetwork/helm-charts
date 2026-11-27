@@ -96,6 +96,37 @@ the same way. All operators' pods must be running at the same time for the DKG.
 
 ---
 
+## Scenario 1c: Identity first (ENR only, definition later)
+
+If the cluster definition doesn't exist yet (for example, you hand out ENRs first and someone runs
+`charon create dkg --operator-enrs=...` later), install with `mode=enr`. The chart creates and publishes the ENR
+and does nothing else: the StatefulSet stays at 0 replicas, nothing polls the Obol API, and the status ConfigMap
+reads `WaitingForDefinition`.
+
+```bash
+helm upgrade --install my-dv-pod obol/dv-pod \
+  --set mode=enr \
+  --set network=hoodi \
+  --set 'charon.beaconNodeEndpoints[0]=http://YOUR_BEACON_NODE:5052' \
+  --namespace=dv-pod --create-namespace
+
+kubectl get configmap my-dv-pod-enr -n dv-pod -o jsonpath='{.data.enr}'
+kubectl get configmap my-dv-pod-dkg-status -n dv-pod -o jsonpath='{.data.phase}{"\n"}'   # WaitingForDefinition
+```
+
+When the definition exists, upgrade the **same release in the same namespace** to `definition` (Scenario 1b) or
+`launchpad` (Scenario 1) mode. The release keeps its ENR Secret (`my-dv-pod-enr-key`), so the ENR you shared stays
+valid; the pod starts at this upgrade:
+
+```bash
+helm upgrade my-dv-pod obol/dv-pod -n dv-pod --reset-then-reuse-values \
+  --set mode=definition --set dkg.definition.configHash=0xCONFIG_HASH
+```
+
+Don't switch a running validator to `mode=enr`: it scales the pod to zero.
+
+---
+
 ## Scenario 2: Join Existing Cluster (Import Existing ENR)
 
 Use this if you already have an ENR from a previous DV setup or want to join a specific cluster.
@@ -260,6 +291,9 @@ kubectl get secret <your-enr-secret> -n dv-pod -o json | jq -r '.data | keys'
 ```
 
 ### DKG Polling Forever
+
+If you don't have a cluster yet and only need the ENR, use `mode=enr` (Scenario 1c) instead of a placeholder
+Launchpad invite: it polls nothing.
 
 If DKG sidecar keeps polling:
 - Verify your operator address matches the Launchpad

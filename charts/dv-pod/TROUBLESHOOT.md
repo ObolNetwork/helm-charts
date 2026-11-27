@@ -76,6 +76,12 @@ copy of `charon-data` (see "Recovering .charon Directory After DKG" above) with 
   them? is the lock published on the Obol API?), then clean up by hand.
 - **"differs from the ENR private key in Secret"**: `/charon-data/charon-enr-private-key` was written with another
   identity. Find which identity the cluster definition/lock lists before changing anything.
+- **Phase `WaitingForDefinition`, no pod**: the release is in `mode: enr` (identity only; the StatefulSet has 0
+  replicas and nothing polls the Obol API). Upgrade the same release to `mode: definition` or `mode: launchpad` to
+  join; the ENR Secret is kept. Don't use a placeholder Launchpad invite (fake operator address, zero config hash)
+  to park a node: the sidecar polls the Obol API forever and reports a 404. If a release switched from such an
+  invite to `mode: enr` still shows `WaitingForInvite`, the old sidecar wrote once more while its pod terminated;
+  re-run the same `helm upgrade`.
 - **ENR job "refusing to overwrite"**: the ENR Secret exists without the private key field. Fix the Secret or
   delete it (only if this identity is not in any cluster).
 - **Two releases in one namespace shared `charon-enr-private-key`** (charts < 0.22): one of them has the wrong
