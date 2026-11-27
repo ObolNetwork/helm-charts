@@ -5,15 +5,24 @@
 # The beacon node defaults to the Stack's node for `network` (ethereum-<network>, the id that
 # `obol network install ethereum --network <network>` gives the first deployment). Check with `obol network list`.
 #
-# Launchpad route (default here):
-#   obol helm upgrade --install my-dv-pod obol/dv-pod -n dv-pod --create-namespace \
-#     -f obol-stack.yaml --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS
-# Direct route (cluster definition from `charon create dkg --publish`):
-#   ... -f obol-stack.yaml --set mode=definition --set dkg.definition.configHash=0xCONFIG_HASH
+# Install with obol app (obol >= 0.19). Release and namespace are dv-pod-<id>, e.g. dv-pod-hoodi.
+# obol app writes this file as the app's values.yaml; change it there, then run `obol app sync`.
+# Don't also `obol helm upgrade` the release: the next sync refuses (or, with --force, reverts it).
+#   Launchpad route (default here):
+#     obol app install obol/dv-pod@<version> --name dv-pod --id hoodi --set network=hoodi \
+#       --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS
+#   Direct route (cluster definition from `charon create dkg --publish`):
+#     ... --set mode=definition --set dkg.definition.configHash=0xCONFIG_HASH
+#   Identity first, no definition yet (ENR only, nothing polls the Obol API; phase WaitingForDefinition):
+#     ... --set mode=enr
+#   then set mode: definition or launchpad in values.yaml and run `obol app sync`; the ENR is kept.
+# Central monitoring token (never printed): obol app secret set dv-pod/hoodi obol-monitoring --from-file token=<file>
+# then set centralMonitoring.existingSecret: obol-monitoring.
+# Plain helm instead: obol helm upgrade --install dv-pod-hoodi obol/dv-pod -n dv-pod-hoodi --create-namespace -f obol-stack.yaml --set network=hoodi ...
 #
 # Then read the ENR / status without Secrets:
-#   obol kubectl get cm my-dv-pod-enr -n dv-pod -o jsonpath='{.data.enr}'
-#   obol kubectl get cm my-dv-pod-dkg-status -n dv-pod -o jsonpath='{.data.phase}'
+#   obol kubectl get cm dv-pod-hoodi-enr -n dv-pod-hoodi -o jsonpath='{.data.enr}'
+#   obol kubectl get cm dv-pod-hoodi-dkg-status -n dv-pod-hoodi -o jsonpath='{.data.phase}'
 
 network: mainnet   # hoodi for a testnet run
 
@@ -27,7 +36,7 @@ charon:
   # The Stack runs no MEV-boost: its beacon node builds blocks locally until Gloas, and from Gloas
   # builder bids arrive in-protocol (p2p). Keep this false; with true, charon only proposes builder blocks.
   builderApi: false
-  nickname: "obol-stack"
+  # nickname: "my-node"   # shown to the other operators; set your own
 
 # Let the Hermes agent read this release's DKG status and ENR ConfigMaps (get/watch by name only).
 # Its service account is `hermes` (not `hermes-obol-agent`).

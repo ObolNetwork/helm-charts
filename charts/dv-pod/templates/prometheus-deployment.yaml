@@ -1,4 +1,4 @@
-{{- if .Values.centralMonitoring.enabled -}}
+{{- if and .Values.centralMonitoring.enabled (ne (include "dv-pod.mode" .) "enr") -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -25,7 +25,7 @@ spec:
       containers:
       - args:
         - --config.file=/etc/prometheus/prometheus.yaml
-        image: prom/prometheus:v3.11.1
+        image: prom/prometheus:v3.16.0
         name: prometheus
         ports:
         - containerPort: 9090

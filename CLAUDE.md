@@ -8,7 +8,7 @@ For the simpler Docker Compose launcher, see `ObolNetwork/charon-distributed-val
 
 | Chart | Version | App | Purpose |
 |-------|---------|-----|---------|
-| **`dv-pod`** ⭐ | 0.23.0 | Charon 1.11.3 | **Flagship.** Single DV node: Charon + VC, with automatic DKG orchestration. The default recommendation for "run a DV on k8s". |
+| **`dv-pod`** ⭐ | 0.24.0 | Charon 1.11.4 | **Flagship.** Single DV node: Charon + VC, with automatic DKG orchestration. The default recommendation for "run a DV on k8s". |
 | `obol-app` | 0.1.1 | latest | General-purpose "run any Docker image on the [Obol Stack](https://obol.org/stack)" chart. Not DV-specific — the Stack's generic service-deploy mechanism. |
 | `charon` | 0.7.1 | 1.11.3 | Standalone Charon middleware (no VC). For bespoke stacks that wire their own VC. |
 | `charon-cluster` | 0.6.1 | 1.11.3 | Multiple Charon instances in one release. Intended for test/local setups; **not** the production-operator path. |
@@ -44,7 +44,7 @@ helm upgrade --install my-dv-pod obol/dv-pod \
   --timeout=10m
 ```
 
-`network` picks the network (`mainnet`, `hoodi`, `sepolia`); the chart derives the chainId. `charon.beaconNodeEndpoints` must point at a synced beacon node for that network; left empty it defaults to the Obol Stack's node for `network` (`http://ethereum-beacon.ethereum-<network>.svc.cluster.local:5052`, see `values-examples/obol-stack.yaml`). `mode` selects the route: `launchpad` (above), `definition` (`dkg.definition.configHash|url|configMap` from `charon create dkg`), `lock`/`lockHash` (import). After install, retrieve the ENR and DKG progress without reading Secrets:
+`network` picks the network (`mainnet`, `hoodi`, `sepolia`); the chart derives the chainId. `charon.beaconNodeEndpoints` must point at a synced beacon node for that network; left empty it defaults to the Obol Stack's node for `network` (`http://ethereum-beacon.ethereum-<network>.svc.cluster.local:5052`, see `values-examples/obol-stack.yaml`). `mode` selects the route: `launchpad` (above), `definition` (`dkg.definition.configHash|url|configMap` from `charon create dkg`), `lock`/`lockHash` (import), `enr` (identity only: publish the ENR, no pod, no Obol API polling, status `WaitingForDefinition`; upgrade the same release to `definition`/`launchpad` later and the ENR is kept). After install, retrieve the ENR and DKG progress without reading Secrets:
 
 ```bash
 kubectl get configmap my-dv-pod-enr -n dv-pod -o jsonpath='{.data.enr}'
@@ -80,7 +80,7 @@ For DV workloads keep using `dv-pod`; for everything else on the Stack (agents, 
 
 ## Versioning
 
-All Charon-based charts (`dv-pod`, `charon`, `charon-cluster`, `charon-relay`) ship with `appVersion: 1.11.3` (current Charon release at time of writing). Bump `charon.image.tag` in values, or let the chart track its pinned appVersion. Chart versions (SemVer) are independent of appVersion.
+`dv-pod` ships with `appVersion: 1.11.4` (current Charon release at time of writing); `charon`, `charon-cluster` and `charon-relay` with `1.11.3`. Bump `charon.image.tag` in values, or let the chart track its pinned appVersion. Chart versions (SemVer) are independent of appVersion.
 
 ## Development
 

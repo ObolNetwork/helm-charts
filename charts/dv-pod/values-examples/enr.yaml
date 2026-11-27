@@ -1,0 +1,26 @@
+# Identity first: create this node's ENR and wait, without joining any cluster yet.
+#
+# Use it when the cluster definition does not exist yet, e.g. you collect every operator's ENR first and then
+# run `charon create dkg --operator-enrs=...`. The ENR job creates the ENR key Secret and publishes the ENR;
+# the StatefulSet is kept at 0 replicas, so nothing polls the Obol API and no DKG runs. The status ConfigMap
+# reads phase `WaitingForDefinition`.
+#
+#   helm upgrade --install my-dv-pod obol/dv-pod -n dv-pod --create-namespace -f enr.yaml
+#   kubectl get configmap my-dv-pod-enr -n dv-pod -o jsonpath='{.data.enr}'
+#
+# Later, upgrade the same release (same name and namespace) to join; the ENR Secret is kept:
+#   helm upgrade my-dv-pod obol/dv-pod -n dv-pod -f enr.yaml \
+#     --set mode=definition --set dkg.definition.configHash=0xCONFIG_HASH
+# or, for a Launchpad invite that lists this ENR:
+#   helm upgrade my-dv-pod obol/dv-pod -n dv-pod -f enr.yaml \
+#     --set mode=launchpad --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS
+#
+# Do not switch a running validator to this mode: it stops charon and the validator client.
+
+network: hoodi
+
+mode: enr
+
+charon:
+  beaconNodeEndpoints:
+    - "http://your-beacon-node:5052"

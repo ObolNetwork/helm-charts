@@ -1,8 +1,12 @@
-{{- if eq (include "dv-pod.statusEnabled" .) "true" }}
+{{- $mode := include "dv-pod.mode" . }}
+{{- if eq (include "dv-pod.statusConfigMapRendered" .) "true" }}
 # DKG status, written by the dkg-sidecar / dkg-report init containers (merge-patch of `data`).
 # The chart creates it without `data` on purpose: Helm's three-way merge only patches fields the chart
 # renders, so keys written by the sidecar survive `helm upgrade` (but not `helm upgrade --force`, which
 # recreates it; the sidecar rewrites it on the next pod start).
+# Exception: in `mode: enr` no pod runs, so the chart owns `data` (phase WaitingForDefinition) and blanks the
+# keys an earlier sidecar run may have left. On the upgrade to another mode Helm removes these keys again,
+# before the sidecar starts and writes its own.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -11,6 +15,23 @@ metadata:
   labels:
     {{- include "dv-pod.labels" . | nindent 4 }}
     app.kubernetes.io/component: dkg-status
+{{- if eq $mode "enr" }}
+data:
+  phase: WaitingForDefinition
+  message: {{ printf "mode=enr: this node only has an identity (ENR in ConfigMap %s). Nothing polls the Obol API and no pod runs. Share the ENR, then upgrade with mode=definition (dkg.definition.*) or mode=launchpad (charon.operatorAddress); the ENR is kept." (include "dv-pod.enrConfigMapName" .) | quote }}
+  updatedAt: ""
+  enr: ""
+  operatorAddress: {{ .Values.charon.operatorAddress | quote }}
+  definitionSource: "none"
+  configHash: ""
+  clusterName: ""
+  signatures: ""
+  lockHash: ""
+  numValidators: ""
+  sidecarVersion: ""
+{{- end }}
+{{- end }}
+{{- if and (eq (include "dv-pod.statusEnabled" .) "true") (ne $mode "enr") }}
 ---
 # Lets the pod's sidecar containers read and patch the status ConfigMap, and nothing else.
 apiVersion: rbac.authorization.k8s.io/v1

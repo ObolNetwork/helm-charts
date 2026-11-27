@@ -149,6 +149,16 @@ true
 {{- end -}}
 
 {{/*
+"true" when the chart renders the status ConfigMap: whenever the sidecar reports to it, and in `mode: enr`,
+where no pod runs and the chart writes the status itself.
+*/}}
+{{- define "dv-pod.statusConfigMapRendered" -}}
+{{- if or (eq (include "dv-pod.statusEnabled" .) "true") (and .Values.dkg.status.enabled (eq (include "dv-pod.mode" .) "enr")) -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
 Normalise a boolean-ish value: true, "true" -> "true"; false, "false", "", null -> "".
 Older values files pass charon.builderApi / directConnectionEnabled as strings.
 */}}
@@ -163,7 +173,7 @@ Older values files pass charon.builderApi / directConnectionEnabled as strings.
 {{/*
 Effective participation mode. `auto` keeps the pre-0.22 inference:
 configMaps.clusterLock -> lock, charon.lockHash -> lockHash, any dkg.definition source -> definition,
-otherwise launchpad (poll the Obol API by operator address).
+otherwise launchpad (poll the Obol API by operator address). `enr` is never inferred.
 */}}
 {{- define "dv-pod.mode" -}}
 {{- $mode := .Values.mode | default "auto" -}}

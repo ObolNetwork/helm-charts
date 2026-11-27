@@ -38,6 +38,7 @@ Each operator in a DV cluster runs one `dv-pod` release. How the node joins its 
 | `definition` | Someone ran `charon create dkg` and shares the definition (config hash, URL or file) | exactly one of `dkg.definition.configHash`, `.url`, `.configMap` |
 | `lock` | You already have a `cluster-lock.json` and key shares | `configMaps.clusterLock` (+ `validatorClient.keystores.secretName`) |
 | `lockHash` | Same, but the lock is over 1MB | `charon.lockHash` (+ `validatorClient.keystores.secretName`) |
+| `enr` | You only need this node's ENR for now; the cluster definition comes later | none |
 
 Missing or conflicting values fail at `helm install` time with a message naming the value to set.
 
@@ -67,7 +68,7 @@ kubectl get configmap my-dv-pod-enr -n dv-pod -o jsonpath='{.data.enr}'
 kubectl get configmap my-dv-pod-dkg-status -n dv-pod -o jsonpath='{.data.phase}{"\n"}{.data.message}{"\n"}'
 ```
 
-Phases: `Initializing`, `WaitingForInvite`, `WaitingForSignatures`, `DefinitionReady`, `RunningDKG`, `Complete`,
+Phases: `WaitingForDefinition` (`mode: enr`, written by the chart), `Initializing`, `WaitingForInvite`, `WaitingForSignatures`, `DefinitionReady`, `RunningDKG`, `Complete`,
 `LockPresent`, `Failed`. To let an agent in another namespace watch these two ConfigMaps (get/watch by name only,
 never Secrets), list its service account in `statusReaders`.
 
@@ -110,6 +111,37 @@ Use `dkg.definition.url` for a definition served over HTTPS, or `dkg.definition.
 node's ENR is in the definition. Definitions created with operator addresses still need every operator to sign
 on the Launchpad; ENR-only definitions don't. See [values-examples/definition.yaml](./values-examples/definition.yaml).
 
+## Identity first (`mode: enr`)
+
+`mode: enr` creates and publishes this node's ENR and nothing else. The ENR job runs as in every mode; the
+StatefulSet is rendered with 0 replicas, so no pod runs, nothing polls the Obol API and no DKG starts. The chart
+writes phase `WaitingForDefinition` to the status ConfigMap. Use it to hand out ENRs before a cluster definition
+exists, instead of parking the node on a placeholder Launchpad invite.
+
+```sh
+helm upgrade --install my-dv-pod obol/dv-pod -n dv-pod --create-namespace \
+  --set mode=enr --set network=hoodi \
+  --set 'charon.beaconNodeEndpoints[0]=<BEACON_NODE_ENDPOINT>'
+```
+
+To join, upgrade the **same release in the same namespace** to `definition` or `launchpad` mode. The StatefulSet
+and its ENR Secret volume are kept while in `mode: enr`, so the upgrade reuses the same ENR Secret
+(`<fullname>-enr-key`, see [ENR identity](#enr-identity)) and the ENR you shared stays valid. The pod and its PVCs
+are created at that upgrade:
+
+```sh
+helm upgrade my-dv-pod obol/dv-pod -n dv-pod --reset-then-reuse-values \
+  --set mode=definition --set dkg.definition.configHash=0xCONFIG_HASH
+```
+
+> [!WARNING]
+> Switching a running node to `mode: enr` scales it to zero: charon and the validator client stop. Its PVCs are
+> retained (`persistence.retentionPolicy`).
+
+No central-monitoring Prometheus runs in `mode: enr` either. Switching a release that is still polling a placeholder Launchpad invite: if its old sidecar writes once more while the pod terminates, the phase can show `WaitingForInvite` again; re-run the same `helm upgrade` to restore `WaitingForDefinition`.
+
+See [values-examples/enr.yaml](./values-examples/enr.yaml).
+
 ## Obol Stack
 
 In the [Obol Stack](https://obol.org/stack) use the in-cluster beacon node, the Stack's Prometheus and let the
@@ -122,9 +154,27 @@ Hermes agent watch progress. [values-examples/obol-stack.yaml](./values-examples
 - `statusReaders: [{namespace: hermes-obol-agent, serviceAccount: hermes}]`
 - `charon.builderApi: false`: the Stack runs no MEV-boost (local blocks until Gloas, in-protocol builder bids after it)
 
+With obol v0.19 or later, install it with `obol app`. That example becomes the app's `values.yaml`, and the
+release and namespace are `dv-pod-<id>`:
+
+```sh
+obol app install obol/dv-pod@{{ template "chart.version" . }} --name dv-pod --id hoodi --set network=hoodi \
+  --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS
+```
+
+Change it later by editing that `values.yaml` and running `obol app sync`. Don't also `obol helm upgrade` an
+`obol app` release: the next sync refuses (or, with `--force`, reverts it). Put the central monitoring token in a
+Secret with `obol app secret set dv-pod/hoodi obol-monitoring --from-file token=<file>` and set
+`centralMonitoring.existingSecret: obol-monitoring`.
+
+To publish the ENR before there is a cluster to join, use `--set mode=enr` instead of the operator address, then
+set `mode: definition` or `mode: launchpad` in `values.yaml` and sync. The ENR is kept.
+
+Plain Helm still works, for example for releases installed before obol v0.19:
+
 ```sh
 obol helm upgrade --install my-dv-pod obol/dv-pod -n dv-pod --create-namespace \
-  -f obol-stack.yaml --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS
+  -f obol-stack.yaml --set network=hoodi --set charon.operatorAddress=0xYOUR_OPERATOR_ADDRESS
 ```
 
 ## Import an existing cluster (`mode: lock`)
@@ -219,6 +269,21 @@ at runtime and copies an existing identity into `<fullname>-enr-key` instead of 
   override it, keep charon non-root and without `CAP_SYS_ADMIN`, or it could unmount the tmpfs. `helm upgrade
   --reuse-values` keeps the old release's values, including the old `containerSecurityContext`; use
   `--reset-then-reuse-values` (Helm 3.14+) to pick up the new defaults.
+
+## Upgrading from chart < 0.24
+
+- Charon v1.11.4 (DKG robustness fixes, secret redaction). It is not Gloas-ready; Gloas support comes with
+  charon v2.0.0.
+- Default validator client images: Lighthouse v8.3.3, Teku 26.10.3, Prysm v7.3.2, Nimbus v26.10.2,
+  Lodestar v1.51.0. None of them schedules Gloas on mainnet or Hoodi. Sepolia has forked into Gloas, which
+  charon v1.11.x does not support. Values that pin `validatorClient.image.tag` are unaffected. Prometheus
+  (central monitoring) moves to v3.16.0.
+- New `mode: enr` (identity only, phase `WaitingForDefinition`); see [Identity first](#identity-first-mode-enr).
+  A release parked on a placeholder Launchpad invite can switch to it; its ENR Secret and PVCs are kept.
+- The charon tag (`image.tag`) and the ENR job's kubectl digest are chart values: `helm upgrade --reuse-values`
+  keeps the old ones (charon v1.11.3). Use `--reset-then-reuse-values` (Helm 3.14+), or set them explicitly. The same
+  applies to deployment tools that store the chart's full defaults as user values. The validator client and
+  Prometheus defaults live in the templates and always follow the chart.
 
 ## Backing up charon-data
 

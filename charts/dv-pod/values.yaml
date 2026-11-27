@@ -18,6 +18,11 @@ network: mainnet  # Default to Mainnet
 #   one of the definition's operators.
 # - `lock`: import an existing cluster; `configMaps.clusterLock` is required. No DKG.
 # - `lockHash`: like `lock` for large locks; `charon.lockHash` is required and the lock is fetched from the Obol API.
+# - `enr`: identity only. The ENR job creates the ENR key Secret and publishes the ENR to the "<fullname>-enr"
+#   ConfigMap; the StatefulSet is kept at 0 replicas (and no central-monitoring Prometheus runs), so nothing polls
+#   the Obol API or runs a DKG, and the status ConfigMap reads `WaitingForDefinition`. Share the ENR, then upgrade to `definition` or `launchpad`: the same
+#   ENR Secret is kept. Never set on a running validator: it stops charon and the validator client.
+#   Only chosen explicitly; `auto` never infers it.
 mode: auto
 
 # -- Kubernetes secrets names.
@@ -261,10 +266,10 @@ charon:
       nodeSelector: {}
       # -- Image to use for kubectl operations within the ENR generation job
       # This image must contain a compatible kubectl binary and a POSIX shell.
-      # bitnamisecure only publishes `latest`, so it is pinned by digest.
+      # bitnamisecure only publishes `latest`, so it is pinned by digest (kubectl 1.37.2, built 2026-11-11).
       kubectlImage:
         repository: "bitnamisecure/kubectl"
-        tag: "latest@sha256:999d5eb28f404b45f15117f2a110ff23c6164f76edac261d75d783b6e88252b7"
+        tag: "latest@sha256:8919c149c2e3d6860e0143c117900e64d71395172aaef0e01e604bb98c8e7ce0"
         pullPolicy: "IfNotPresent"
       # -- Resources for each container of the ENR generation job (it runs once, briefly, at install)
       resources:
@@ -316,6 +321,7 @@ dkg:
     # signatures, lockHash, numValidators, sidecarVersion), so agents can watch it without reading Secrets or logs.
     # Creates a Role allowing only get/patch on that ConfigMap; the service account token is mounted only into
     # the sidecar containers. Needs `serviceAccount.enabled` and `rbac.enabled`.
+    # In `mode: enr` no sidecar runs: the chart itself writes phase `WaitingForDefinition` (only this setting is needed).
     enabled: true
 
 # -- Validator client configuration
@@ -401,7 +407,7 @@ centralMonitoring:
 image:
   repository: obolnetwork/charon
   pullPolicy: IfNotPresent
-  tag: v1.11.3
+  tag: v1.11.4
 
 # -- Credentials to fetch images from private registry
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
